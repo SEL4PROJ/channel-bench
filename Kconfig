@@ -22,6 +22,7 @@ endmenu
 
 menu "seL4 Applications"
     source "apps/side-bench/Kconfig"
+    source "apps/manager/Kconfig"
 endmenu
 
 menu "seL4 Libraries"

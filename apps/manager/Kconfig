@@ -8,6 +8,12 @@
 # @TAG(NICTA_BSD)
 #
 
+menuconfig APP_MANAGER 
+        bool "system resouce manager"
+        default y 
+        depends on LIB_SEL4 && LIB_MUSL_C 
+        help 
+             Partitioning system resources and setting up isolated domains. 
 
-components-$(CONFIG_APP_SIDE_BENCH)        += side-bench
-side-bench: common libsel4 libmuslc libcpio libsel4utils libsel4muslcsys libsel4allocman libsel4test libelf libplatsupport libsel4platsupport libsel4vspace
+
+
