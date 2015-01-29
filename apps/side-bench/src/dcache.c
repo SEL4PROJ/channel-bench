@@ -1,3 +1,15 @@
+/*
+ * Copyright 2014, NICTA
+ *
+ * This software may be distributed and modified according to the terms of
+ * the BSD 2-Clause license. Note that NO WARRANTY is provided.
+ * See "LICENSE_BSD2.txt" for details.
+ *
+ * @TAG(NICTA_BSD)
+ */
+
+
+
 /*L1 data cache attacks with 2 method*/
 /* L1 Data cache (prime + probe) the entire cache
                                 (evict + time) some cache patterns */
@@ -24,34 +36,31 @@ backward for probing
  distinguished up to the size of a cache line*/
 
 #include <stdlib.h>
+#include <sel4test/test.h>
 
+#include "bench.h"
 
-/*FIXME: declare sizes that related with this attack*/
-#define L1D_SIZE XXXX 
-#define CL_SIZE 
-#define N_SETS 
-#define N_WAYS 
-#define SET_SIZE  
-#define AES_MSG_SIZE 
-#define N_P_LINES   (256/16) /*0, 16, 32, 256*/
-#define AES_MSG_SIZE 
-#define MIN_DETECTABLE  16
-
+/*a buffer line layout, less than a cache line*/
 typedef struct bl{
     uint64_t time; 
     struct bl *prev; 
     struct bl *next; 
     struct bl *next_set; 
-} bl_s;                  /*a buffer line layout*/
+} bl_s;                  
 
-char p_buf[L1D_SIZE]; 
-char p_text[AES_MSG_SIZE]; 
-typedef  t_u p_time[N_P_LINES][N_SETS] p_time_t;
+/*prime buffer*/
+uint8_t p_buf[L1D_SIZE];
 
-p_time_t msg_time[AES_MSG_SIZE]; 
+/*encryption msg*/
+uint8_t p_text[AES_MSG_SIZE]; 
 
+/*record prime time after an encryption
+ we have AES_MSG_SIZE of the d_time_t in shared frame*/
+d_time_t *msg_time; 
 
+/*starting point for prime, traversing forward*/
 bl_s *set0_head = NULL; 
+/*starting point for probe, traversing backward*/
 bl_s *set0_tail = NULL; 
 
 void buffer_init(void) {
@@ -60,19 +69,20 @@ void buffer_init(void) {
     bl_s *set_h, *set_t, *p_set_h, *p_set_t; 
     uint32_t n_l, w; 
 
-    memset(p_buffer, 0, L1D_SIZE); 
+    memset(p_buf, 0, L1D_SIZE); 
 
-    for (int s = 0; s < N_SETS; s++) {
+    for (int s = 0; s < N_L1D_SETS; s++) {
 
         p_l = set_h = set_t = NULL; 
         n_l = 0; 
 
-        while (n_l < N_WAYS) {
+        while (n_l < N_L1D_WAYS) {
             /*memory initalized into a double linked list, 
               randomly permuted*/
-            w = rand() % N_WAYS; 
-            l = (bl_s *)(p_buff + s * CL_SIZE + w * SET_SIZE); 
-            
+            w = rand() % N_L1D_WAYS; 
+            l = (bl_s *)(p_buff + s * CL_SIZE + w * L1D_SET_SIZE); 
+           
+            /*is connected?*/
             if (l->prev || l->next) 
                 continue; 
 
@@ -84,15 +94,16 @@ void buffer_init(void) {
                 set_h = l; 
             
             n_l++; 
-            if (n_l == N_WAYS) 
+            if (n_l == N_L1D_WAYS) 
                 set_t = l; 
     }
-        if (!s) {
 
+        if (!s) {
+            /*the starting point for prime + probe*/
             set0_head = set_h; 
             set0_tail = set_t; 
         } else {
-            
+           /*reversing connection, see fig 7*/ 
             p_set_h->next_set = set_t; 
             p_set_t->next_set = set_h; 
         }
@@ -102,12 +113,14 @@ void buffer_init(void) {
     }
 }
 
-
+/*read a value from every memory block in buffer*/
 void prime (void) {
 
     bl_s *s, *l; 
 
     s = set0_head; 
+
+    /*starting from set 0, until the last set*/
     while (s) {
 
         l = s; 
@@ -121,11 +134,11 @@ void prime (void) {
 
 }
 
-
+/*probing set by set, record time in the same set*/
 void probe (void) {
 
     bl_s *s, *l; 
-    t_u start, end; 
+    uint64_t start, end; 
 
     s = set0_tail; 
 
@@ -140,38 +153,44 @@ void probe (void) {
             l = l->prev; 
         
         end = rdtsc_cpuid(); 
+        /*record the time in the set, not polluting cache*/
         l->time = end - start; 
         s = l->next_set; 
     }
 }
 
 
-void encry(void) {
+static void encry(void) {
+
+    uint8_t *out[AES_MSG_SIZE] = {0}; 
 
     /*constracting a plain text and trigger an AES encryption*/
-
     for (int i = 0; i < AES_MSG_SIZE; i++) 
-        p_test[i] = rand() % 256;
+        p_test[i] = rand() % N_PT_B;
 
-    /*aes_encryption*/
+    crypto_aes_en(p_test, out); 
 }
 
+/*record the time that collected in the cache lines after 
+ each probe attack*/
 void record(void) {
 
-    unsigned char p; 
+    uint8_t p; 
     bl_s *s_n, *l;
-    p_time_t *g; 
+    d_time_t *g; 
 
     for (int i = 0; i < AES_MSG_SIZE; i++) {
 
         g = msg_time + i; 
        
-        /*FIXME: fix this part*/
-        p = p_text[i] / MIN_DETECTABLE; /*16, the last few bits are unknown as cache line offset*/
+        /*data format: (plaintext value, set number) */
+        /*later on using guessing test for the key values
+         not included in the benchmark*/
+        p = p_text[i] 
 
         l = set0_tail; 
 
-        for (int s = 0; s < N_SETS; s++) {
+        for (int s = 0; s < N_L1D_SETS; s++) {
 
             while (l->prev) 
                 l = l->prev;
@@ -182,37 +201,24 @@ void record(void) {
     }
 }
 
-void process(void) {
 
-    p_time_t *g; 
+seL4_Word dcache_attack(void *vaddr) {
 
-    for (int i = 0; i < AES_MSG_SIZE; i++) {
-
-        g = msg_time + i; 
-
-        for (int p = 0; p < N_P_SETS; p++) {
-            for (int s = 0; s < N_SETS; s++) {
-            printf ("%d %s %llu\n", p, s, g[p][s]); 
-            }
-        }
-
-    }
-   
-}
-
-void dcache_attack(void) {
-
+    msg_time = (d_time_t *)vaddr;
+    
+    /*initialize prime + probe buffer*/
     buffer_init(); 
 
+    /*collecting data for N runs*/
     for (int n = 0; n < N_TESTS; n++) {
 
         prime(); 
         encry(); 
         
         probe(); 
-        record(); 
+        record(vaddr); 
     }
 
-    process(); 
 
+    return SUCCESS;
 }
