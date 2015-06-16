@@ -12,7 +12,10 @@
 /*benchmarks for the L1 i cache */
 /*Zhang_JRR_12*/
 /*FIXME: attack xxxx */
+#include <sel4/sel4.h>
 #include <platsupport/arch/tsc.h>
+#include "bench.h"
+#include "../../bench_common.h"
 
 /*Core i7 2600 has 32KB L1 caches, 8 way set associative 
  64 byte cache lines*/
@@ -47,24 +50,25 @@ typedef page buffer[CONFIG_L1_P];   /*combined size is equal to the L1 cache*/
 /*classifying code path: square and multiply
  classify each vector as indicating a multiplication, modular reduction, or squaring operation */
 
-
+/*FIXME: rewrite the record part*/
+/*for compile only*/
+#define CONFIG_L1_S  10
 typedef uint64_t t_u;  /*time unit*/
 t_u costs[CONFIG_L1_S]; 
 
 
-void inline  prime(unsigned int n) {
+extern void icache_pbuffer(void);
 
-    char *b = (char*)prime_buffer; 
+static void inline  prime(unsigned int n) {
+
+    /*FIXME: indirect function call*/
     /*jumping into the starting point of Nth set*/
-    asm volatile(" mov %0, %%eax; 
-                   call (%%eax, %1, 0x40)" 
-                   : : "r"(b), "r"(n) : 
-                   "%eax"); 
-
+    void *b = (char*)icache_pbuffer + n * CL_SIZE; 
+    asm volatile ("call *%0" : :"r"(b) :);
 }
 
 
-t_u inline probe(unsigned int n) {
+static t_u inline probe(unsigned int n) {
 
     /*probing the Nth cache set and return cost in CPU cycles*/
    t_u start, end; 

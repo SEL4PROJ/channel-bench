@@ -22,7 +22,7 @@
 #include <sel4utils/vspace.h>
 #include <sel4utils/stack.h>
 #include <sel4utils/process.h>
-
+#include <sel4platsupport/platsupport.h>
 #include <simple/simple.h> 
 
 #ifdef CONFIG_KERNEL_STABLE 
@@ -37,7 +37,7 @@
 #include <vka/capops.h>
 
 #include <vspace/vspace.h>
-
+#include "../../bench_common.h"
 #include "manager.h"
 
 /*system resources*/
@@ -53,7 +53,6 @@ static char allocator_mem_pool[ALLOCATOR_STATIC_POOL_SIZE];
 
 /*static memory for virtual memory bootstrapping*/
 static sel4utils_alloc_data_t vdata; 
-
 
 
 /*copy a cap to a thread, returning the cptr in its cspace*/
@@ -76,7 +75,7 @@ static inline
 void *map_frames_to(sel4utils_process_t *pro, seL4_CPtr *caps, int n) {
 
 
-    void *vaddr = vspace_map_pages(pro->vspace, 
+    void *vaddr = vspace_map_pages(&pro->vspace, 
             caps, NULL, seL4_AllRights, n, PAGE_BITS_4K, 1);
 
     assert(vaddr); 
@@ -91,7 +90,7 @@ static inline
 void send_msg_to(seL4_CPtr ep, seL4_Word w) {
 
     seL4_MessageInfo_t info = seL4_MessageInfo_new(seL4_NoFault, 0, 0, 1);
-
+    
     seL4_SetMR(0, w); 
     seL4_Send(ep, info);
 }
@@ -107,35 +106,35 @@ seL4_Word wait_msg_from(seL4_CPtr ep) {
 
     if (seL4_MessageInfo_get_label(info) != seL4_NoFault) {
         sel4utils_print_fault_message(info, CONFIG_BENCH_THREAD_NAME);
-        result = FAILURE;
+        result = BENCH_FAILURE;
     }
 
     return result;
 }
 
 /*init run time environment*/
-static void init_env (m_env_t env) {
+static void init_env (m_env_t *env) {
 
     allocman_t *allocman = NULL; 
     int error = 0; 
     void *vaddr; 
-    reservation_t v_reserv; 
+    reservation_t v_reserve; 
 
     /*create an allocator*/
-    allocman = bootstrap_use_current_simple(&env.simple, ALLOCATOR_STATIC_POOL_SIZE, allocator_mem_pool); 
-    assert(allocman);
+    allocman = bootstrap_use_current_simple(&env->simple, ALLOCATOR_STATIC_POOL_SIZE, allocator_mem_pool); 
+    assert(allocman != NULL);
 
     /*connect virtual interface with allocator*/
-    allocman_make_vka(&env.vka, allocman); 
+    allocman_make_vka(&env->vka, allocman); 
 
 
     /*create a vspace*/
-    error = sel4utils_bootstrap_vspace_with_bootinfo_leaky(&env.vspace, &vdata, simple_get_pd(&env.simple), &env.vka, seL4_GetBootInfo()); 
-    assert(error); 
+    error = sel4utils_bootstrap_vspace_with_bootinfo_leaky(&env->vspace, &vdata, simple_get_pd(&env->simple), &env->vka, seL4_GetBootInfo()); 
+    assert(error == BENCH_SUCCESS); 
 
     /*fill allocator with virtual memory*/ 
-    v_reserve = vspace_reserve_range(&env.vspace, ALLOCATOR_VIRTUAL_POOL_SIZE, seL4_AllRight, 1, &vaddr); 
-    assert(v_reserve.res); 
+    v_reserve = vspace_reserve_range(&env->vspace, ALLOCATOR_VIRTUAL_POOL_SIZE, seL4_AllRights, 1, &vaddr); 
+    assert(v_reserve.res != NULL); 
     
     bootstrap_configure_virtual_pool(allocman, vaddr, ALLOCATOR_VIRTUAL_POOL_SIZE, simple_get_pd(&env->simple)); 
 
@@ -149,11 +148,11 @@ void init_env_part (void) {
 
 }
 
-int main_continued (void) {
+static int main_continued (void) {
 
     cspacepath_t src, dest; 
     int ret; 
-    void *r_cp; 
+    void *r_cp, *vaddr; 
     seL4_Word bench_result;
 
     /*current format for argument: "name, endpoint slot, xxx"*/
@@ -169,19 +168,20 @@ int main_continued (void) {
 
     /*create frames that act as record buffer, mapping 
      to benchmark processes*/
-    env.record_vaddr = vspace_new_pages(&env.vpsace, seL4_AllRights, 
+    env.record_vaddr = vspace_new_pages(&env.vspace, seL4_AllRights, 
             CONFIG_BENCH_RECORD_PAGES, PAGE_BITS_4K); 
-    assert(env.record_vaddr); 
+    assert(env.record_vaddr != NULL); 
 
     /*copy the caps to map into the remote process*/
     for (int i = 0; i < CONFIG_BENCH_RECORD_PAGES; i++) {
-
+	
+	vaddr = env.record_vaddr + i * PAGE_SIZE_4K; 
         vka_cspace_make_path(&env.vka, vspace_get_cap(&env.vspace, 
-                    (env.record_vaddr + i * PAGE_SIZE_4K), &src); 
+                    vaddr), &src); 
         ret = vka_cspace_alloc(&env.vka, env.record_frames + i); 
         assert(ret == 0); 
 
-        vka_cspace_make_path(&env.vka, env.recrod_frames[i], &dest); 
+        vka_cspace_make_path(&env.vka, env.record_frames[i], &dest); 
         ret = vka_cnode_copy(&dest, &src, seL4_AllRights); 
         assert(ret == 0); 
 
@@ -205,22 +205,33 @@ int main_continued (void) {
      benchmark thread is resumed afterwards.*/ 
     snprintf(arg1, CONFIG_BENCH_MAX_UNIT, "%d", env.bench_ep);
 
-    ret = sel4utils_spawn_process(&env.bench_thread, &env.vka, 
+    /*entry point, system V ABI compliant*/
+    ret = sel4utils_spawn_process_v(&env.bench_thread, &env.vka, 
             &env.vspace, CONFIG_BENCH_ARGS, argv, 1); 
     assert(ret == 0); 
+
+    printf("sending init msg...\n"); 
+
+    /*send an init msg*/ 
+    send_msg_to(env.bench_thread.fault_endpoint.cptr, BENCH_INIT_MSG); 
 
     /*map the frames for data recording into benchmark pro*/
     r_cp = map_frames_to(&env.bench_thread, env.record_frames, 
             CONFIG_BENCH_RECORD_PAGES); 
 
+    printf("frames map to benchmark, manager: %p, side-bench: %p\n", 
+           env.record_vaddr, r_cp );
 
     send_msg_to(env.bench_thread.fault_endpoint.cptr, (seL4_Word)r_cp); 
 
+    printf("send msg to \n");
 
     /*waiting on benchmark to finish*/
-    bench_result = wait_msg_from(env.bench_thread_fault_endpoint.cptr); 
+    bench_result = wait_msg_from(env.bench_thread.fault_endpoint.cptr); 
+    
+    printf("wait msg from \n");
 
-    assert(bench_result != FAILURE); 
+    assert(bench_result != BENCH_FAILURE); 
 
     /*processing record*/
     bench_process_data(&env, bench_result); 
@@ -230,14 +241,16 @@ int main_continued (void) {
 
     /*NOTE: using while loop, as debug feature is disabled.*/
     while (1);
+
+    return 0;
 }
 
 
 int main (void) {
 
+    int ret = 0;
     seL4_BootInfo *info = seL4_GetBootInfo(); 
-    int ret;  
-
+    
 #ifdef CONFIG_KERNEL_STABLE 
     simple_stable_init_bootinfo(&env.simple, info); 
 #else 
@@ -245,10 +258,9 @@ int main (void) {
 #endif 
 
     /*allocator, vka, and vspace*/
-    init_env(env);
+    init_env(&env);
    
     /*FIXME: init resource partitioning*/
-
     /*enable serial driver*/
     platsupport_serial_setup_simple(NULL, &env.simple, &env.vka); 
 
@@ -259,7 +271,8 @@ int main (void) {
 
     /*starting test, never return from this function*/
     ret = sel4utils_run_on_stack(&env.vspace, main_continued);
-    test_assert_fatal(ret == 0); 
+    assert(ret == 0); 
+
 
     return 0;
 

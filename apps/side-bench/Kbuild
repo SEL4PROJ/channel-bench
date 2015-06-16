@@ -8,6 +8,10 @@
 # @TAG(NICTA_BSD)
 #
 
-
 components-$(CONFIG_APP_SIDE_BENCH)        += side-bench
-side-bench: common libsel4 libmuslc libcpio libsel4utils libsel4muslcsys libsel4allocman libsel4test libelf libplatsupport libsel4platsupport libsel4vspace
+side-bench: common libsel4 libmuslc libsel4vka libcpio libelf \
+                                             libsel4allocman \
+        libplatsupport libsel4platsupport libsel4muslcsys libsel4test \
+         libsel4simple libsel4vspace libsel4utils libutils \
+         libcachecolour
+

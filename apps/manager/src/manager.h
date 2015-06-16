@@ -18,7 +18,9 @@
 
 #include <vka/vka.h>
 #include <sel4utils/elf.h>
+#include <sel4utils/process.h>
 
+#include <simple/simple.h>
 /*common definitions*/
 #include "../../bench_common.h"
 

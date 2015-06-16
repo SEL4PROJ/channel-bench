@@ -15,26 +15,47 @@
 
 #include "manager.h"
 
+/*the average probing time for each cache set
+ currently only for the byte 0*/
+uint64_t prob_avg[N_L1D_SETS]; 
+
 /*printing out the prime+probe attack on L1 D cache*/
 static void print_dcache_attack(m_env_t *env) {
 
     d_time_t *time_total = (d_time_t *)env->record_vaddr; 
-
-    for (int i = 0; i < AES_MSG_SIZE; i++) {
-       
-        printf("P%d    \n", i); 
-        
-        for (int p = 0; p < N_PT_B ; p++) {
-        
-            for (int s = 0; s < N_L1D_SETS; s++) {
-                /*data format: plaintext value, set number, time*/
-                printf("%d %d %llu \n", p, s, time_total[p][s]); 
-
-            }
-        }
     
-        time_total++;
+    printf("PRIME DATA START\n");
+
+    /*note: focusing on P0 at this stage*/
+    for (int p = 0; p < N_PT_B ; p++) {
+
+        for (int s = 0; s < N_L1D_SETS; s++) {
+          
+            prob_avg[s] += time_total->t[p][s];
+            /*data format: plaintext value, set number, time*/
+            printf(" %d %d %llu \n", p, s, time_total->t[p][s]); 
+
+        }
     }
+
+    printf("PRIME DATA END\n");
+
+    /*calculating the average for each cache set*/
+    for (int s = 0; s < N_L1D_SETS; s++ ) 
+        prob_avg[s] /= N_PT_B; 
+
+    printf("PRIME AVG START\n"); 
+
+    /*print out the data after substracting with the average*/
+    for (int p = 0; p < N_PT_B; p++) {
+
+        for (int s = 0; s < N_L1D_SETS; s++) 
+            printf(" %d %d %lld \n", p, s, 
+                    time_total->t[p][s] - prob_avg[s]);
+
+    }
+    printf("PRIME AVG END\n");
+
 }
 
 
@@ -46,7 +67,8 @@ void bench_process_data(m_env_t *env, seL4_Word result) {
 
     printf("benchmark result: 0x%x \n", result); 
 
-    printf{"analysing data in vaddr 0x%x\n", env->record_vaddr};
-   
-    print_dcache_attack(env); 
+    printf("analysing data in vaddr %p\n", env->record_vaddr);
+
+    print_dcache_attack(env);
+
 }

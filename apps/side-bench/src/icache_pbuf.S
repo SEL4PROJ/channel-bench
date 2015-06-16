@@ -8,31 +8,44 @@
  * @TAG(NICTA_BSD)
  */
 
+/*page size*/
+#define BENCH_PAGE_SIZE    0x1000 
+
+/*cache line size*/
+#define CL_SIZE    64 
 
 /*The prime buffer for the icache attack*/
+
+
+#define ICACHE_PBUFFER   \
+.global icache_pbuffer;                        \
+.type icache_pbuffer, %function;               \
+.align CL_SIZE; \
+icache_pbuffer:                                \
+    jmp   .+BENCH_PAGE_SIZE; /*jump to next ith line in next page*/    \
+.size icache_pbuffer, .-icache_pbuffer;
+
 
 #define LINE_JUMP(number)    \
 .global line_jump_##number;                        \
 .type line_jump_##number, %function;               \
-.align CONFIG_LINE_B; \
+.align CL_SIZE; \
 line_jump_##number:                                \
-    jmp   .+CONFIG_PAGE; /*jump to next ith line in next page*/    \
-    .size line_jump_##number, .-line_jump_##number;
+    jmp   .+BENCH_PAGE_SIZE; /*jump to next ith line in next page*/    \
+.size line_jump_##number, .-line_jump_##number;
 
-#define PROBE_RETURN    \
-.global probe_return;                        \
-.type probe_return, %function;               \
-.align CONFIG_LINE_B;   \
-probe_return:                                \
+#define PROBE_RETURN(number)    \
+.global probe_return_##number;                        \
+.type probe_return_##number, %function;               \
+.align CL_SIZE;   \
+probe_return_##number:                                \
     ret; \
-.size probe_return, .-probe_return;
+.size probe_return_##number, .-probe_return_##number;
 
 
 /*prime buffer for L1 cache, 64 sets, 8 ways, a cache line per jump*/
-.setction .data.prime 
-.align  CONFIG_PAGE 
-prime_buffer:
-    LINE_JUMP(0)
+.section .data 
+    ICACHE_PBUFFER
     LINE_JUMP(1)
     LINE_JUMP(2)
     LINE_JUMP(3)
@@ -480,67 +493,67 @@ prime_buffer:
     LINE_JUMP(445)
     LINE_JUMP(446)
     LINE_JUMP(447)  /*7 ways*/
-    PROBE_RETURN /*0*/
-    PROBE_RETURN /*1*/
-    PROBE_RETURN /*2*/
-    PROBE_RETURN /*3*/
-    PROBE_RETURN /*4*/
-    PROBE_RETURN /*5*/
-    PROBE_RETURN /*6*/
-    PROBE_RETURN /*7*/
-    PROBE_RETURN /*8*/
-    PROBE_RETURN /*9*/
-    PROBE_RETURN /*10*/
-    PROBE_RETURN /*11*/
-    PROBE_RETURN /*12*/
-    PROBE_RETURN /*13*/
-    PROBE_RETURN /*14*/
-    PROBE_RETURN /*15*/
-    PROBE_RETURN /*16*/
-    PROBE_RETURN /*17*/
-    PROBE_RETURN /*18*/
-    PROBE_RETURN /*19*/
-    PROBE_RETURN /*20*/
-    PROBE_RETURN /*21*/
-    PROBE_RETURN /*22*/
-    PROBE_RETURN /*23*/
-    PROBE_RETURN /*24*/
-    PROBE_RETURN /*25*/
-    PROBE_RETURN /*26*/
-    PROBE_RETURN /*27*/
-    PROBE_RETURN /*28*/
-    PROBE_RETURN /*29*/
-    PROBE_RETURN /*30*/
-    PROBE_RETURN /*31*/
-    PROBE_RETURN /*32*/
-    PROBE_RETURN /*33*/
-    PROBE_RETURN /*34*/
-    PROBE_RETURN /*35*/
-    PROBE_RETURN /*36*/
-    PROBE_RETURN /*37*/
-    PROBE_RETURN /*38*/
-    PROBE_RETURN /*39*/
-    PROBE_RETURN /*40*/
-    PROBE_RETURN /*41*/
-    PROBE_RETURN /*42*/
-    PROBE_RETURN /*43*/
-    PROBE_RETURN /*44*/
-    PROBE_RETURN /*45*/
-    PROBE_RETURN /*46*/
-    PROBE_RETURN /*47*/
-    PROBE_RETURN /*48*/
-    PROBE_RETURN /*49*/
-    PROBE_RETURN /*50*/
-    PROBE_RETURN /*51*/
-    PROBE_RETURN /*52*/
-    PROBE_RETURN /*53*/
-    PROBE_RETURN /*54*/
-    PROBE_RETURN /*55*/
-    PROBE_RETURN /*56*/
-    PROBE_RETURN /*57*/
-    PROBE_RETURN /*58*/
-    PROBE_RETURN /*59*/
-    PROBE_RETURN /*60*/
-    PROBE_RETURN /*61*/
-    PROBE_RETURN /*62*/
-    PROBE_RETURN /*63*/
+    PROBE_RETURN(0)
+    PROBE_RETURN(1)
+    PROBE_RETURN(2)
+    PROBE_RETURN(3)
+    PROBE_RETURN(4)
+    PROBE_RETURN(5)
+    PROBE_RETURN(6)
+    PROBE_RETURN(7)
+    PROBE_RETURN(8)
+    PROBE_RETURN(9)
+    PROBE_RETURN(10)
+    PROBE_RETURN(11)
+    PROBE_RETURN(12)
+    PROBE_RETURN(13)
+    PROBE_RETURN(14)
+    PROBE_RETURN(15)
+    PROBE_RETURN(16)
+    PROBE_RETURN(17)
+    PROBE_RETURN(18)
+    PROBE_RETURN(19)
+    PROBE_RETURN(20)
+    PROBE_RETURN(21)
+    PROBE_RETURN(22)
+    PROBE_RETURN(23)
+    PROBE_RETURN(24)
+    PROBE_RETURN(25)
+    PROBE_RETURN(26)
+    PROBE_RETURN(27)
+    PROBE_RETURN(28)
+    PROBE_RETURN(29)
+    PROBE_RETURN(30)
+    PROBE_RETURN(31)
+    PROBE_RETURN(32)
+    PROBE_RETURN(33)
+    PROBE_RETURN(34)
+    PROBE_RETURN(35)
+    PROBE_RETURN(36)
+    PROBE_RETURN(37)
+    PROBE_RETURN(38)
+    PROBE_RETURN(39)
+    PROBE_RETURN(40)
+    PROBE_RETURN(41)
+    PROBE_RETURN(42)
+    PROBE_RETURN(43)
+    PROBE_RETURN(44)
+    PROBE_RETURN(45)
+    PROBE_RETURN(46)
+    PROBE_RETURN(47)
+    PROBE_RETURN(48)
+    PROBE_RETURN(49)
+    PROBE_RETURN(50)
+    PROBE_RETURN(51)
+    PROBE_RETURN(52)
+    PROBE_RETURN(53)
+    PROBE_RETURN(54)
+    PROBE_RETURN(55)
+    PROBE_RETURN(56)
+    PROBE_RETURN(57)
+    PROBE_RETURN(58)
+    PROBE_RETURN(59)
+    PROBE_RETURN(60)
+    PROBE_RETURN(61)
+    PROBE_RETURN(62)
+PROBE_RETURN(63)

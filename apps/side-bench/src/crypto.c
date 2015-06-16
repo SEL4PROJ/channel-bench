@@ -7,15 +7,19 @@
  *
  * @TAG(NICTA_BSD)
  */
-
 #include <stdlib.h>
+#include "../../bench_common.h"
 #include "bench.h"
 #include "aes/aes.h"
 
 /*This file contains the crypto services for AES, etc.*/
 
 /*AES key*/
+#ifdef AES_KEY_ALL_ZERO 
+static uint8_t aes_key[AES_KEY_SIZE] = {0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0 };
+#else 
 static uint8_t aes_key[AES_KEY_SIZE] = {0x43, 0x74, 0x84, 0xa9, 0x89, 0xb1, 0x62, 0xa7, 0xbb, 0x7f, 0xd0, 0x3d, 0x9e, 0xec, 0x3d, 0x35};
+#endif
 
 /*expended aes key after initialization*/
 static AES_KEY aes_e_key;
@@ -23,7 +27,7 @@ static AES_KEY aes_e_key;
 
 
 /*providing aes encryption*/
-void cryto_aes_en (uint8_t *in, uint8_t *out) {
+void crypto_aes_en (uint8_t *in, uint8_t *out) {
 
     AES_encrypt(in, out, &aes_e_key); 
 
@@ -35,7 +39,7 @@ void crypto_init(void) {
 
 
     /*TODO: currently include the AES service in the same process
-     current version is OPEN SSL 1.0.2 */
+     current version is OPEN SSL 0.9.8 */
 
      /*set AES key */
     AES_set_encrypt_key(aes_key, AES_BITS, &aes_e_key);

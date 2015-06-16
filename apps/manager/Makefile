@@ -8,20 +8,46 @@
 # @TAG(NICTA_BSD)
 #
 
-# Targets
+# Targets                                                                  
 TARGETS := $(notdir $(SOURCE_DIR)).bin
 
-# Make sure this symbol stays around as we don't reference this, but
-# whoever loads us will
-LDFLAGS += -u __vsyscall_ptr
+# Set custom entry point as we are a rootserver and will not be            
+# started in a standard way
+ENTRY_POINT := _sel4_start
 
-# Source files required to build the target     
-CFILES :=  $(patsubst $(SOURCE_DIR)/%,%,$(wildcard $(SOURCE_DIR)/src/*.c))
+# Source files required to build the target                                
+CFILES   := $(patsubst $(SOURCE_DIR)/%,%,$(wildcard $(SOURCE_DIR)/src/*.c))
+
+# CPIO archive                                                             
+OFILES := archive.o                                                        
+
+# Libraries required to build the target                                   
+LIBS = c sel4 cpio elf sel4muslcsys sel4vka sel4allocman \
+platsupport sel4platsupport sel4test sel4vspace \
+sel4utils sel4simple utils cachecolour                                     
 
 
-# Libraries
-LIBS := sel4 c cpio sel4muslcsys sel4utils sel4allocman sel4simple sel4test elf sel4platsupport platsupport sel4vspace 
+ifdef CONFIG_KERNEL_STABLE 
+LIBS += sel4simple-stable 
+else 
+LIBS += sel4simple-default 
+endif 
+
+
+# extra cflag for manager
+CFLAGS += -Werror -g
+ifdef CONFIG_X86_64
+CFLAGS += -mno-sse
+endif
 
 include $(SEL4_COMMON)/common.mk
+
+# targets to generate CPIO archive of elf files
+${COMPONENTS}:
+	false
+
+archive.o: ${COMPONENTS}
+	$(Q)mkdir -p $(dir $@)
+	${COMMON_PATH}/files_to_obj.sh $@ _cpio_archive $^
 
 

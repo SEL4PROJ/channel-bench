@@ -19,6 +19,9 @@
 #ifndef _BENCH_COMMON_H 
 #define _BENCH_COMMON_H 
 
+
+#include <stdint.h>
+
 /*elf file name of benchmark thread*/ 
 #define CONFIG_BENCH_THREAD_NAME    "side-bench"
 
@@ -26,7 +29,14 @@
 #define CONFIG_BENCH_ARGS    3
 
 /*num of digits used for maximum unsigned int*/
-#define CONFIG_BENCH_MAX_UINT   10 
+#define CONFIG_BENCH_MAX_UNIT   10 
+
+/*benchmark thread priority*/
+#define CONFIG_BENCH_PRIORITY    100 
+
+
+/*benchmark communication protocol*/ 
+#define BENCH_INIT_MSG      0x11
 
 /*number of shared frames for benchmark recording*/
 
@@ -35,12 +45,19 @@
  * 64 (number of cache sets) * 8 (timing measurement) = 0x200000 */
 #define CONFIG_BENCH_RECORD_PAGES 0x200 
 
+#define BENCH_FAILURE (-1)
+#define BENCH_SUCCESS 0
 
 /*cache line size*/
 #define CL_SIZE    64 
 /**************************************************/
 /*prime + probe attack on L1 D cache, in dcache.c*/
 /*AES attack, synchrous*/
+
+/*number of probes*/
+#define N_D_TESTS   900000
+/*all zero bits for aes key value*/
+#define AES_KEY_ALL_ZERO 
 
 /*L1 d cache size 32K*/
 #define L1D_SIZE  0x8000
@@ -49,6 +66,9 @@
 #define N_L1D_SETS   64
 /*number of l1 d cache ways*/
 #define N_L1D_WAYS   8 
+/*bit masks used for recording connected cache lines*/
+#define N_L1D_WAY_BITMASK 0xff 
+
 /*size of an entire L1 D set: 4096 */
 #define L1D_SET_SIZE  0x1000
 /*AES msg size, 128 bits 
@@ -64,7 +84,12 @@
 
 /*data maxtix for probing result (x,y) = (Plain text 
   value, set number)*/
-typedef uint64_t p_time[N_PT_B][N_SETS] d_time_t;
+//typedef uint64_t d_time_t [N_PT_B][N_L1D_SETS];
+typedef struct {
+
+    uint64_t t[N_PT_B][N_L1D_SETS];
+} d_time_t; 
+
 
 
 /****************************************************/

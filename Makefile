@@ -30,8 +30,14 @@ simulate-beagle:
 
 simulate-ia32:
 	qemu-system-i386 \
-		-m 512 -nographic -kernel images/kernel-ia32-pc99 \
-		-initrd images/sel4test-driver-image-ia32-pc99
+		-m 512 -nographic -s -S -kernel images/kernel-ia32-pc99 \
+		-initrd images/manager-image-ia32-pc99
+
+#running images in machine queue
+machine-ia32:
+	/scratch/bamboo/machine_queue/mq.sh run -c "All is well" \
+            -l output -s vtd2 -f images/kernel-ia32-pc99 \
+            -f images/manager-image-ia32-pc99 
 
 .PHONY: help
 help:

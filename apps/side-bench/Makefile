@@ -16,14 +16,17 @@ TARGETS := $(notdir $(SOURCE_DIR)).bin
 LDFLAGS += -u __vsyscall_ptr
 
 # Source files required to build the target     
-CFILES :=  $(patsubst $(SOURCE_DIR)/%,%,$(wildcard $(SOURCE_DIR)/src/*.c))
-CFILES :=  $(patsubst $(SOURCE_DIR)/%,%,$(wildcard $(SOURCE_DIR)/src/aes/*.c))
 ASMFILES :=  $(patsubst $(SOURCE_DIR)/%,%,$(wildcard $(SOURCE_DIR)/src/*.S))
-
-
-
+CFILES :=  $(patsubst $(SOURCE_DIR)/%,%,$(wildcard $(SOURCE_DIR)/src/aes/*.c))
+CFILES +=  $(patsubst $(SOURCE_DIR)/%,%,$(wildcard $(SOURCE_DIR)/src/*.c))
 # Libraries
-LIBS := sel4 c cpio sel4muslcsys sel4utils sel4allocman sel4simple sel4test elf sel4platsupport platsupport sel4vspace 
+LIBS = c sel4 cpio elf sel4muslcsys sel4vka sel4allocman \
+platsupport sel4platsupport sel4test sel4vspace \
+sel4utils sel4simple utils cachecolour            
+
+#macros for openssl compile
+CFLAGS += -DOPENSSL_SYSNAME_LINUX
+
 
 include $(SEL4_COMMON)/common.mk
 

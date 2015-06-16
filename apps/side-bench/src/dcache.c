@@ -34,10 +34,11 @@ backward for probing
 
 /*For the first round, each of the table access is independent 
  distinguished up to the size of a cache line*/
-
+#include <stdio.h>
 #include <stdlib.h>
-#include <sel4test/test.h>
-
+#include <string.h>
+#include <platsupport/arch/tsc.h>
+#include "../../bench_common.h"
 #include "bench.h"
 
 /*a buffer line layout, less than a cache line*/
@@ -48,8 +49,9 @@ typedef struct bl{
     struct bl *next_set; 
 } bl_s;                  
 
-/*prime buffer*/
-uint8_t p_buf[L1D_SIZE];
+/*prime buffer, aligned to cache set size
+ in order to simplify buffer init*/
+uint8_t p_buf[L1D_SIZE] __attribute__ ((aligned (L1D_SET_SIZE)));
 
 /*encryption msg*/
 uint8_t p_text[AES_MSG_SIZE]; 
@@ -65,37 +67,43 @@ bl_s *set0_tail = NULL;
 
 void buffer_init(void) {
 
-    bl_s *p_l, *l; 
-    bl_s *set_h, *set_t, *p_set_h, *p_set_t; 
-    uint32_t n_l, w; 
+    bl_s *p_l = NULL, *l = NULL; 
+    bl_s *set_h = NULL, *set_t = NULL, *p_set_h = NULL, *p_set_t = NULL; 
+    uint32_t w = 0, bit_mask = 0;
 
     memset(p_buf, 0, L1D_SIZE); 
 
     for (int s = 0; s < N_L1D_SETS; s++) {
 
         p_l = set_h = set_t = NULL; 
-        n_l = 0; 
+        bit_mask = 0; 
+        
+        while (bit_mask != N_L1D_WAY_BITMASK) {
 
-        while (n_l < N_L1D_WAYS) {
             /*memory initalized into a double linked list, 
               randomly permuted*/
             w = rand() % N_L1D_WAYS; 
-            l = (bl_s *)(p_buff + s * CL_SIZE + w * L1D_SET_SIZE); 
-           
+            l = (bl_s *)(p_buf + s * CL_SIZE + w * L1D_SET_SIZE); 
+
+           // printf("buffer_init: s %d w %d l %p \n", s, w, l);
+
             /*is connected?*/
-            if (l->prev || l->next) 
-                continue; 
+            if (bit_mask & (1 << w))
+                continue;
 
             l->prev = p_l; 
             if (p_l) 
                 p_l->next = l; 
 
-            if (!n_l)
+            /*the first line as set head*/
+            if (!bit_mask)
                 set_h = l; 
             
-            n_l++; 
-            if (n_l == N_L1D_WAYS) 
-                set_t = l; 
+            bit_mask |= 1 << w;
+            if (bit_mask == N_L1D_WAY_BITMASK) 
+                set_t = l;
+
+            p_l = l;
     }
 
         if (!s) {
@@ -154,7 +162,7 @@ void probe (void) {
         
         end = rdtsc_cpuid(); 
         /*record the time in the set, not polluting cache*/
-        l->time = end - start; 
+        l->time = end - start;
         s = l->next_set; 
     }
 }
@@ -162,13 +170,13 @@ void probe (void) {
 
 static void encry(void) {
 
-    uint8_t *out[AES_MSG_SIZE] = {0}; 
+    uint8_t out[AES_MSG_SIZE] = {0}; 
 
     /*constracting a plain text and trigger an AES encryption*/
     for (int i = 0; i < AES_MSG_SIZE; i++) 
-        p_test[i] = rand() % N_PT_B;
+        p_text[i] = rand() % N_PT_B;
 
-    crypto_aes_en(p_test, out); 
+    crypto_aes_en(p_text, out); 
 }
 
 /*record the time that collected in the cache lines after 
@@ -176,7 +184,7 @@ static void encry(void) {
 void record(void) {
 
     uint8_t p; 
-    bl_s *s_n, *l;
+    bl_s *l;
     d_time_t *g; 
 
     for (int i = 0; i < AES_MSG_SIZE; i++) {
@@ -186,7 +194,7 @@ void record(void) {
         /*data format: (plaintext value, set number) */
         /*later on using guessing test for the key values
          not included in the benchmark*/
-        p = p_text[i] 
+        p = p_text[i]; 
 
         l = set0_tail; 
 
@@ -195,30 +203,43 @@ void record(void) {
             while (l->prev) 
                 l = l->prev;
 
-            g[p][s] += l->time; 
+            g->t[p][s] += l->time; 
             l = l->next_set;
         }
     }
 }
 
+void record_clear(void) {
+
+    d_time_t *g = msg_time; 
+
+    for (int i = 0; i < AES_MSG_SIZE; i++) {
+
+        memset((void *)g, 0, sizeof (d_time_t));
+        g++;
+    }
+}
 
 seL4_Word dcache_attack(void *vaddr) {
 
     msg_time = (d_time_t *)vaddr;
     
+    /*clearing the record buffer */
+    record_clear();
+
     /*initialize prime + probe buffer*/
     buffer_init(); 
 
     /*collecting data for N runs*/
-    for (int n = 0; n < N_TESTS; n++) {
+    for (int n = 0; n < N_D_TESTS; n++) {
 
         prime(); 
         encry(); 
         
         probe(); 
-        record(vaddr); 
+        record(); 
     }
 
 
-    return SUCCESS;
+    return BENCH_SUCCESS;
 }

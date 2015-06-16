@@ -12,10 +12,7 @@
 #define _BENCH_H_
 
 
-#include "../../bench_common.h"
-
-/*data record structure*/
-typedef uint64_t l1d_time[N_P_LINES][N_SETS] l1d_time_t;
+#include <sel4/sel4.h>
 
 
 /*init crypto services*/

@@ -7,8 +7,26 @@
 #
 # @TAG(NICTA_BSD)
 #
+apps-$(CONFIG_APP_MANAGER)        += manager
 
+# list of libraries the app needs to build                                 
+manager-y = common libsel4 libmuslc libsel4vka libcpio libelf \
+                                             libsel4allocman \
+        libplatsupport libsel4platsupport libsel4muslcsys libsel4test \
+         libsel4simple libsel4vspace libsel4utils libutils \
+         libcachecolour
 
-components-$(CONFIG_APP_MANAGER)        += manager
-manager: common libsel4 libmuslc libcpio libsel4utils libsel4muslcsys libsel4allocman libsel4test libelf libplatsupport libsel4platsupport libsel4vspace
+# set up correct simple lib for our kernel
+ifdef CONFIG_KERNEL_STABLE                                                 
+manager-$(CONFIG_LIB_SEL4_SIMPLE_STABLE) += libsel4simple-stable  
+else
+manager-$(CONFIG_LIB_SEL4_SIMPLE_DEFAULT) += libsel4simple-default 
+endif
+
+# add the tests app  as a component so that we can elf load it
+manager-components-y += side-bench                             
+manager-components = $(addprefix $(STAGE_BASE)/bin/, $(manager-components-y))
+
+manager: export COMPONENTS=${manager-components}           
+manager: ${manager-components-y} kernel_elf $(manager-y)
 

@@ -22,12 +22,38 @@
  */
 
 #include <autoconf.h>
+#include <stdlib.h>
+#include <stdio.h>
 #include <sel4/sel4.h>
 
+#include "../../bench_common.h"
 #include "bench.h"
+
+
+/* dummy global for libsel4muslcsys */
+char _cpio_archive[1];
 
 /*endpoint used for communicate with root task*/
 seL4_CPtr endpoint; 
+
+/*wait for init msg from manager*/ 
+static 
+int wait_init_msg_from(seL4_CPtr endpoint) {
+
+    seL4_Word badge; 
+    seL4_MessageInfo_t info; 
+    
+    info = seL4_Wait(endpoint, &badge); 
+
+    assert(seL4_MessageInfo_get_label(info) == seL4_NoFault); 
+    assert(seL4_MessageInfo_get_length(info) == 1); 
+
+    if (seL4_GetMR(0) == BENCH_INIT_MSG) 
+        return BENCH_SUCCESS; 
+    else 
+        return BENCH_FAILURE; 
+}
+
 
 /*wait for shared frame address*/
 static 
@@ -62,6 +88,7 @@ int main (int argc, char **argv) {
 
     void *record_vaddr; 
     seL4_Word result; 
+    int ret; 
 
     /*current format for argument: "name, endpoint slot, xxx"*/
 
@@ -69,9 +96,18 @@ int main (int argc, char **argv) {
     assert(argc == CONFIG_BENCH_ARGS);
     endpoint = (seL4_Word)atoi(argv[1]); 
 
+    //printf("side-bench running \n");
+
+    /*waiting for init msg*/
+    ret = wait_init_msg_from(endpoint); 
+    assert(ret == BENCH_SUCCESS); 
+
     /*waiting for virtual address given by root task*/
     record_vaddr = wait_vaddr_from(endpoint); 
-    assert(record_vaddr); 
+    assert(record_vaddr != NULL); 
+    
+    //printf("side-bench record vaddr: %p\n", record_vaddr);
+
     /*FIXME: currently test the L1 data cache attack*/
 
     crypto_init(); 
@@ -81,7 +117,7 @@ int main (int argc, char **argv) {
 
     /*return result to root task*/
     send_result_to(endpoint, result); 
-
+    
     /*finished testing, halt*/
     while(1);
 
