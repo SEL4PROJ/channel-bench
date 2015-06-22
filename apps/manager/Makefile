@@ -24,7 +24,7 @@ OFILES := archive.o
 # Libraries required to build the target                                   
 LIBS = c sel4 cpio elf sel4muslcsys sel4vka sel4allocman \
 platsupport sel4platsupport sel4test sel4vspace \
-sel4utils sel4simple utils sel4cachecolor                        
+sel4utils sel4simple utils sel4cachecolor sel4bench                       
 
 
 ifdef CONFIG_KERNEL_STABLE 

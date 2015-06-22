@@ -8,12 +8,26 @@
 # @TAG(NICTA_BSD)
 #
 
-menuconfig APP_MANAGER 
+menu    "Manager task for benchmarking tests"
+        config APP_MANAGER 
         bool "system resouce manager"
         default y 
         depends on LIB_SEL4 && LIB_MUSL_C 
         help 
              Partitioning system resources and setting up isolated domains. 
+        config MANAGER_CACHE_FLUSH 
+        bool "cost of flushing caches"
+        default n 
+        depends on APP_MANAGER 
+        help 
+            see timing channel benchmarks 
 
+        config MANAGER_DCACHE_ATTACK 
+        bool "L1 dcache attack" 
+        default n 
+        depends on APP_MANAGER 
+        help 
+            see timing channel benchmarks
+endmenu
 
 

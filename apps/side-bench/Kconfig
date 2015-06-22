@@ -8,12 +8,61 @@
 # @TAG(NICTA_BSD)
 #
 
-menuconfig APP_SIDE_BENCH 
-        bool "side channel benchmarks"
+menu   "Timing Channel Benchmarks"
+       config APP_SIDE_BENCH 
+        bool "benchmarking thread"
         default y 
         depends on LIB_SEL4 && LIB_MUSL_C 
         help 
-              Generating published side channel attacks in seperated processes. 
+             a seperate benchmarking thread for measuring chosen features.
 
+        config BENCH_CACHE_LINE_SIZE 
+        int "cache line size (Bytes)" 
+        default 64 
+        depends on APP_SIDE_BENCH 
+        help 
+              the cache line size of benchmarked platform. 
 
+        config BENCH_CACHE_FLUSH 
+        bool "cost of flushing caches"
+        default n 
+        depends on APP_SIDE_BENCH 
+        help 
+             the indirect cost of flushing caches 
+       
+        choice 
+               prompt "Flushing Range"
+               
+               config BENCH_CACH_FLUSH_NONE 
+               bool "Flushing none"
+
+               config BENCH_CACHE_FLUSH_L1 
+               bool "Flushing L1 caches"
+
+               config BENCH_CACHE_FLUSH_ALL 
+               bool "Flushing all caches"
+        endchoice
+       
+        config BENCH_CACHE_BUFFER 
+        int "buffer size representing working set (Bytes)"
+        depends on BENCH_CACHE_FLUSH 
+        default 32768
+        help 
+               the buffer size for measuring indirect cost of flushing caches. Benchmarking thread writes each buffer lines which equal the size of cache line. 
+        
+        config BENCH_FLUSH_RUNS 
+        int "number of runs for cache flushing" 
+        depends on BENCH_CACHE_FLUSH 
+        default 10 
+        help 
+                number of runs for measuring the indirect cost of flushing caches. 
+
+        config BENCH_DCACHE_ATTACK 
+        bool "simulate the L1 dcache attack (Tromer_OS_10)"
+        depends on APP_SIDE_BENCH 
+        default n 
+        help 
+              reply the prime + probe attack published in Tromer_OS_10, extracting AES private keys. synchronous known-data attack.
+
+endmenu 
 

@@ -11,13 +11,15 @@
 
 #include <autoconf.h>
 #include <stdio.h>
-
-
+#include <sel4/benchmark.h>
+#include <sel4bench/sel4bench.h>
 #include "manager.h"
+
+#ifdef CONFIG_MANAGER_DCACHE_ATTACK
 
 /*the average probing time for each cache set
  currently only for the byte 0*/
-uint64_t prob_avg[N_L1D_SETS]; 
+static uint64_t prob_avg[N_L1D_SETS]; 
 
 /*printing out the prime+probe attack on L1 D cache*/
 static void print_dcache_attack(m_env_t *env) {
@@ -58,8 +60,23 @@ static void print_dcache_attack(m_env_t *env) {
 
 }
 
+#endif 
+#ifdef CONFIG_MANAGER_CACHE_FLUSH
+static void print_bench_cache_flush(void *record) {
 
+    sel4bench_counter_t *r_buf = (sel4bench_counter_t *)record;
 
+    /*printing out the result of cache flush benchmark*/ 
+    printf("benchmark result in kernel:\n");
+    seL4_BenchmarkDumpFullLog();
+
+    printf("benchmark result in user:\n");
+    for (int i = 0; i < CONFIG_BENCH_FLUSH_RUNS; i++) 
+        printf("%llu\n", r_buf[i]);
+
+}
+
+#endif
 
 /*analysing benchmark record in shared frames*/
 void bench_process_data(m_env_t *env, seL4_Word result) {
@@ -69,6 +86,12 @@ void bench_process_data(m_env_t *env, seL4_Word result) {
 
     printf("analysing data in vaddr %p\n", env->record_vaddr);
 
+#ifdef CONFIG_MANAGER_DCACHE_ATTACK
     print_dcache_attack(env);
+#endif 
+
+#ifdef CONFIG_MANAGER_CACHE_FLUSH
+    print_bench_cache_flush(env->record_vaddr);
+#endif 
 
 }

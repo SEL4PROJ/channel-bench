@@ -25,7 +25,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <sel4/sel4.h>
-
+#include <sel4bench/sel4bench.h>
 #include "../../bench_common.h"
 #include "bench.h"
 
@@ -108,13 +108,20 @@ int main (int argc, char **argv) {
     
     //printf("side-bench record vaddr: %p\n", record_vaddr);
 
-    /*FIXME: currently test the L1 data cache attack*/
+    /*init the benchmakring functions*/
+    sel4bench_init(); 
 
+#ifdef CONFIG_BENCH_DCACHE_ATTACK 
     crypto_init(); 
 
     /*passing the record vaddr in */
     result = dcache_attack(record_vaddr); 
-
+#endif 
+   
+#ifdef CONFIG_BENCH_CACHE_FLUSH 
+    /*measuring the cost of flushing caches*/
+    result = bench_flush(record_vaddr); 
+#endif 
     /*return result to root task*/
     send_result_to(endpoint, result); 
     

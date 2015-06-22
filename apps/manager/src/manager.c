@@ -148,7 +148,7 @@ void init_env_part (void) {
 
 }
 
-static int main_continued (void) {
+static void *main_continued (void* arg) {
 
     cspacepath_t src, dest; 
     int ret; 
@@ -222,14 +222,13 @@ static int main_continued (void) {
     printf("frames map to benchmark, manager: %p, side-bench: %p\n", 
            env.record_vaddr, r_cp );
 
+    printf("sending record vaddr... \n");
     send_msg_to(env.bench_thread.fault_endpoint.cptr, (seL4_Word)r_cp); 
 
-    printf("send msg to \n");
-
+    printf("waiting on results... \n");
     /*waiting on benchmark to finish*/
     bench_result = wait_msg_from(env.bench_thread.fault_endpoint.cptr); 
     
-    printf("wait msg from \n");
 
     assert(bench_result != BENCH_FAILURE); 
 
@@ -248,7 +247,6 @@ static int main_continued (void) {
 
 int main (void) {
 
-    int ret = 0;
     seL4_BootInfo *info = seL4_GetBootInfo(); 
     
 #ifdef CONFIG_KERNEL_STABLE 
@@ -270,9 +268,7 @@ int main (void) {
     fflush(stdout); 
 
     /*starting test, never return from this function*/
-    ret = sel4utils_run_on_stack(&env.vspace, main_continued);
-    assert(ret == 0); 
-
+    sel4utils_run_on_stack(&env.vspace, main_continued, NULL);
 
     return 0;
 

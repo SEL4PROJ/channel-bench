@@ -13,5 +13,5 @@ side-bench: common libsel4 libmuslc libsel4vka libcpio libelf \
                                              libsel4allocman \
         libplatsupport libsel4platsupport libsel4muslcsys libsel4test \
          libsel4simple libsel4vspace libsel4utils libutils \
-         libsel4cachecolor
+         libsel4cachecolor libsel4bench
 
