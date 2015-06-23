@@ -49,9 +49,11 @@ seL4_Word bench_flush(void *record) {
 
     /*recording the result at buffer, only return the result*/
     sel4bench_counter_t *r_buf = (sel4bench_counter_t*)record; 
-    
-    while (n_flush < CONFIG_BENCH_FLUSH_RUNS) {
 
+    /*warm up the cache*/
+    walk_buffer();
+
+    while (n_flush < CONFIG_BENCH_FLUSH_RUNS) {
    
         r_buf[n_flush++] = walk_buffer(); 
 
