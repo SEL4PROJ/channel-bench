@@ -44,12 +44,19 @@ menu   "Timing Channel Benchmarks"
         endchoice
        
         config BENCH_CACHE_BUFFER 
-        int "buffer size representing working set (Bytes)"
+        int "buffer size representing maximum working set (Bytes)"
         depends on BENCH_CACHE_FLUSH 
         default 32768
         help 
                the buffer size for measuring indirect cost of flushing caches. Benchmarking thread writes each buffer lines which equal the size of cache line. 
         
+        config BENCH_FLUSH_START 
+        int "starting size"
+        depends on BENCH_CACHE_FLUSH 
+        default 8192
+        help 
+              the starting size for testing the flushing cost, the working set size stepping for the power of 2 in each set.
+
         config BENCH_FLUSH_RUNS 
         int "number of runs for cache flushing" 
         depends on BENCH_CACHE_FLUSH 

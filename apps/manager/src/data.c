@@ -65,15 +65,30 @@ static void print_dcache_attack(m_env_t *env) {
 static void print_bench_cache_flush(void *record) {
 
     sel4bench_counter_t *r_buf = (sel4bench_counter_t *)record;
+    uint32_t start = CONFIG_BENCH_FLUSH_START; 
+    uint32_t count = 0, recorded = 0;
 
-    /*printing out the result of cache flush benchmark*/ 
-    printf("benchmark result in kernel:\n");
-    seL4_BenchmarkDumpFullLog();
+     while (start < CONFIG_BENCH_CACHE_BUFFER) {
 
-    printf("benchmark result in user:\n");
-    for (int i = 0; i < CONFIG_BENCH_FLUSH_RUNS; i++) 
-        printf("%llu\n", r_buf[i]);
+        printf("buffer size %d: \n", start);
+        
+        /*printing out the result of cache flush benchmark*/ 
+        printf("benchmark result in kernel:\n");
+        recorded = seL4_BenchmarkDumpLog(count, CONFIG_BENCH_FLUSH_RUNS);
+        for (int i = 0; i < recorded; i++)
+            printf("%u\t", seL4_GetMR(i));
+        printf("\n");
 
+        printf("benchmark result in user:\n");
+
+        for (int i = 0; i < CONFIG_BENCH_FLUSH_RUNS; i++) { 
+            printf("%llu\t", *r_buf);
+            r_buf++;
+        }
+        printf("\n");
+        start *= 2;
+        count += CONFIG_BENCH_FLUSH_RUNS;
+    }
 }
 
 #endif
