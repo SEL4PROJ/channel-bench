@@ -74,13 +74,11 @@ static void print_bench_cache_flush(void *record) {
 
 #ifndef CONFIG_MANAGER_CACHE_FLUSH_NONE 
         /*printing out the result of cache flush benchmark*/ 
-        printf("benchmark result in kernel:\n");
         uint32_t recorded = seL4_BenchmarkDumpLog(count, CONFIG_BENCH_FLUSH_RUNS);
         for (int i = 0; i < recorded; i++)
             printf("%u\t", seL4_GetMR(i));
         printf("\n");
 #endif
-        printf("benchmark result in user:\n");
 
         for (int i = 0; i < CONFIG_BENCH_FLUSH_RUNS; i++) { 
             printf("%llu\t", *r_buf);
