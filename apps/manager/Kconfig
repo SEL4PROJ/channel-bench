@@ -21,6 +21,13 @@ menu    "Manager task for benchmarking tests"
         depends on APP_MANAGER 
         help 
             see timing channel benchmarks 
+        
+        config MANAGER_CACHE_FLUSH_NONE 
+        bool "not flushing cache in kernel"
+        default n 
+        depends on MANAGER_CACHE_FLUSH 
+        help 
+              not flushing cache during sel4_yeild
 
         config MANAGER_DCACHE_ATTACK 
         bool "L1 dcache attack" 

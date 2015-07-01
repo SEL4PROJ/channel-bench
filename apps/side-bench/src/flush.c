@@ -49,7 +49,7 @@ seL4_Word bench_flush(void *record) {
     sel4bench_counter_t *r_buf = (sel4bench_counter_t*)record; 
     uint32_t n_flush = 0;
 
-    while (probe_size < CONFIG_BENCH_CACHE_BUFFER) {
+    while (probe_size <= CONFIG_BENCH_CACHE_BUFFER) {
 
         while (n_flush++ < CONFIG_BENCH_FLUSH_RUNS) {
 
