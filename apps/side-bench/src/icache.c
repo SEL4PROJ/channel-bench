@@ -8,7 +8,7 @@
  * @TAG(NICTA_BSD)
  */
 
-
+#ifdef CONFIG_ARCH_X86
 /*benchmarks for the L1 i cache */
 /*Zhang_JRR_12*/
 /*FIXME: attack xxxx */
@@ -93,4 +93,4 @@ FIXME: need to set up another CPU*/
 
     /*do some printing*/
 }
-
+#endif

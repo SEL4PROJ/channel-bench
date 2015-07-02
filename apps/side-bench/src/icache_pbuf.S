@@ -8,6 +8,7 @@
  * @TAG(NICTA_BSD)
  */
 
+#ifdef CONFIG_ARCH_X86
 /*page size*/
 #define BENCH_PAGE_SIZE    0x1000 
 
@@ -557,3 +558,4 @@ probe_return_##number:                                \
     PROBE_RETURN(61)
     PROBE_RETURN(62)
 PROBE_RETURN(63)
+#endif 

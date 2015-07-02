@@ -81,7 +81,11 @@ static void print_bench_cache_flush(void *record) {
 #endif
 
         for (int i = 0; i < CONFIG_BENCH_FLUSH_RUNS; i++) { 
+#ifdef CONFIG_ARCH_X86
             printf("%llu\t", *r_buf);
+#else 
+            printf("%u\t", *r_buf);
+#endif 
             r_buf++;
         }
         printf("\n");

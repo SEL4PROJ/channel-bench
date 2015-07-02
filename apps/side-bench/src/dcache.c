@@ -31,7 +31,7 @@
 backward for probing 
  -stores each obtained sample into the same cache set it has just finished measuring */
 
-
+#ifdef CONFIG_ARCH_X86
 /*For the first round, each of the table access is independent 
  distinguished up to the size of a cache line*/
 #include <stdio.h>
@@ -243,3 +243,4 @@ seL4_Word dcache_attack(void *vaddr) {
 
     return BENCH_SUCCESS;
 }
+#endif 
