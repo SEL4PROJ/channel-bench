@@ -81,6 +81,14 @@
 /*number of possible plaintext values in each byte*/
 #define N_PT_B 256   
 
+/* The fence is designed to try and prevent the compiler optimizing across code boundaries
+      that we don't want it to. The reason for preventing optimization is so that things like
+         overhead calculations aren't unduly influenced */
+#define FENCE() asm volatile("" ::: "memory")
+
+#define WARMUPS 16
+#define OVERHEAD_RUNS 10
+#define OVERHEAD_RETRIES 4
 
 /*data maxtix for probing result (x,y) = (Plain text 
   value, set number)*/

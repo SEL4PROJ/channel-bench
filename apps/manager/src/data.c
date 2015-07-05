@@ -74,11 +74,16 @@ static void print_bench_cache_flush(void *record) {
 
 #ifndef CONFIG_MANAGER_CACHE_FLUSH_NONE 
         /*printing out the result of cache flush benchmark*/ 
+        /*skip the warm up section*/
+        seL4_BenchmarkDumpLog(count, WARMUPS);
+        count += WARMUPS; 
+
         uint32_t recorded = seL4_BenchmarkDumpLog(count, CONFIG_BENCH_FLUSH_RUNS);
         for (int i = 0; i < recorded; i++)
             printf("%u\t", seL4_GetMR(i));
         printf("\n");
 #endif
+        r_buf += WARMUPS; 
 
         for (int i = 0; i < CONFIG_BENCH_FLUSH_RUNS; i++) { 
 #ifdef CONFIG_ARCH_X86
@@ -89,9 +94,22 @@ static void print_bench_cache_flush(void *record) {
             r_buf++;
         }
         printf("\n");
+
         start *= 2;
         count += CONFIG_BENCH_FLUSH_RUNS;
     }
+
+     /*dump the overhead measurment*/
+     printf("overhead measurments: ");
+     for (int i = 0; i < OVERHEAD_RUNS; i++) {
+#ifdef CONFIG_ARCH_X86
+            printf("%llu\t", *r_buf);
+#else 
+            printf("%u\t", *r_buf);
+#endif 
+            r_buf++;
+        }
+        printf("\n");
 }
 
 #endif

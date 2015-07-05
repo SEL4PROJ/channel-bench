@@ -1,7 +1,7 @@
 #
 # Automatically generated make config: don't edit
 # Project Configuration
-# Thu Jul  2 17:16:03 2015
+# Sun Jul  5 18:18:03 2015
 #
 
 #
@@ -79,7 +79,7 @@ CONFIG_DANGEROUS_CODE_INJECTION=y
 # Timing Channel Benchmarks
 #
 CONFIG_APP_SIDE_BENCH=y
-CONFIG_BENCH_CACHE_LINE_SIZE=64
+CONFIG_BENCH_CACHE_LINE_SIZE=32
 CONFIG_BENCH_CACHE_FLUSH=y
 CONFIG_BENCH_CACH_FLUSH_NONE=y
 # CONFIG_BENCH_CACHE_FLUSH_L1 is not set
