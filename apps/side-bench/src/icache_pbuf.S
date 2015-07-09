@@ -8,7 +8,7 @@
  * @TAG(NICTA_BSD)
  */
 
-#ifdef CONFIG_ARCH_X86
+#ifdef CONFIG_BENCH_ICACHE_ATTACK
 /*page size*/
 #define BENCH_PAGE_SIZE    0x1000 
 

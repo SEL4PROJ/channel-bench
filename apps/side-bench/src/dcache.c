@@ -31,7 +31,7 @@
 backward for probing 
  -stores each obtained sample into the same cache set it has just finished measuring */
 
-#ifdef CONFIG_ARCH_X86
+#ifdef CONFIG_BENCH_DCACHE_ATTACK 
 /*For the first round, each of the table access is independent 
  distinguished up to the size of a cache line*/
 #include <stdio.h>

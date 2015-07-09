@@ -70,7 +70,7 @@ static void print_bench_cache_flush(void *record) {
 
      while (start <= CONFIG_BENCH_CACHE_BUFFER) {
 
-        printf("buffer size %d: \n", start);
+        //printf("buffer size %d: \n", start);
 
 #ifndef CONFIG_MANAGER_CACHE_FLUSH_NONE 
         /*printing out the result of cache flush benchmark*/ 

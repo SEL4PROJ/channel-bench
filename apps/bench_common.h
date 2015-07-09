@@ -25,6 +25,7 @@
 /*elf file name of benchmark thread*/ 
 #define CONFIG_BENCH_THREAD_NAME    "side-bench"
 
+/*name, ep, option*/
 /*num of arguments passed to benchmark tests*/
 #define CONFIG_BENCH_ARGS    3
 
@@ -85,10 +86,108 @@
       that we don't want it to. The reason for preventing optimization is so that things like
          overhead calculations aren't unduly influenced */
 #define FENCE() asm volatile("" ::: "memory")
-
+/*for cache flushing benchmark*/
 #define WARMUPS 16
 #define OVERHEAD_RUNS 10
 #define OVERHEAD_RETRIES 4
+
+/*ipc benchmark, same as sel4bench*/
+#define IPC_RUNS   16 
+#define IPC_WARMUPS 16 
+#define IPC_OVERHEAD_RETRIES  4 
+
+#define IPC_PROCESS_PRIO_LOW 50 
+#define IPC_PROCESS_PRIO_HIGH 100 
+
+#define IPC_PROCESS_PRIO 100 
+
+/*maximum number of benchmarking thread in the system*/ 
+#define MAX_BENCH_THREADS  2
+
+
+/*dividing cache colours into security domains*/
+#define CC_NUM_DOMAINS     2
+#ifdef CONFIG_ARCH_X86
+#define CC_DIV             16
+#endif 
+#ifdef CONFIG_PLAT_IMX6
+#define CC_DIV             8
+#endif
+
+#if 0
+#define IPC_BENCH_CALL_START 0 
+#define IPC_BENCH_CALL_END   3 
+#define IPC_BENCH_REPLY_WAIT_START 4 
+#define IPC_BENCH_REPLY_WAIT_END   7
+#define IPC_WAIT        8 
+#define IPC_SEND        9 
+#define IPC_OVERHEAD    10
+#endif 
+
+/*ipc bench serial number*/
+enum ipc_funs{
+    IPC_CALL, 
+    IPC_CALL2, 
+    IPC_CALL_10, 
+    IPC_CALL2_10, 
+    IPC_REPLY_WAIT, 
+    IPC_REPLY_WAIT2, 
+    IPC_REPLY_WAIT_10, 
+    IPC_REPLY_WAIT2_10, 
+    IPC_WAIT, 
+    IPC_SEND, 
+    IPC_OVERHEAD, 
+    IPC_ALL
+};
+
+#if 0
+enum ipc_benchmarks {
+    INTRA_CALL, 
+    INTRA_REPLYWAIT, 
+    INTER_CALL, 
+    INTER_REPLYWAIT, 
+    INTER_CALL_LOW_TO_HIGH, 
+    INTER_REPLYWAIT_LOW_TO_HIGH, 
+    INTER_CALL_HIGH_TO_LOW, 
+    INTER_REPLYWAIT_HIGH_TO_LOW, 
+    INTER_SEND, 
+    INTER_CALL_10,
+    INTER_REPLYWAIT_10, 
+    NIPCBENCHMARKS
+}
+
+enum ipc_overhead_benchmarks {
+    CALL_OVERHEAD,
+    REPLY_WAIT_OVERHEAD,
+    SEND_OVERHEAD,
+    WAIT_OVERHEAD,
+    CALL_10_OVERHEAD,
+    REPLY_WAIT_10_OVERHEAD,
+    /******/
+    NOVERHEADBENCHMARKS
+};
+
+enum ipc_overheads {
+    CALL_REPLY_WAIT_OVERHEAD,
+    CALL_REPLY_WAIT_10_OVERHEAD,
+    SEND_WAIT_OVERHEAD,
+    /******/
+    NOVERHEADS
+};
+
+
+struct ipc_results {
+    /* Raw results from benchmarking. These get checked for sanity */
+    sel4bench_counter_t overhead_benchmarks[NOVERHEADBENCHMARKS][IPC_RUNS];
+    sel4bench_counter_t benchmarks[NIPCBENCHMARKS][IPC_RUNS];
+    /* A worst case overhead */
+    sel4bench_counter_t overheads[NOVERHEADS];
+    /* Calculated results to print out */
+    sel4bench_counter_t results[NIPCBENCHMARKS];
+
+};
+#endif 
+
 
 /*data maxtix for probing result (x,y) = (Plain text 
   value, set number)*/

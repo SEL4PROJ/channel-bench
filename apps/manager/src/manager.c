@@ -48,7 +48,7 @@ static m_env_t env;
 #define ALLOCATOR_VIRTUAL_POOL_SIZE ((1 << seL4_PageBits) * 100)
 
 /* static memory for the allocator to bootstrap with */
-#define ALLOCATOR_STATIC_POOL_SIZE ((1 << seL4_PageBits) * 10)
+#define ALLOCATOR_STATIC_POOL_SIZE ((1 << seL4_PageBits) * 50)
 static char allocator_mem_pool[ALLOCATOR_STATIC_POOL_SIZE];
 
 /*static memory for virtual memory bootstrapping*/
@@ -113,7 +113,7 @@ seL4_Word wait_msg_from(seL4_CPtr ep) {
 }
 
 /*init run time environment*/
-static void init_env (m_env_t *env) {
+void init_env (m_env_t *env) {
 
     allocman_t *allocman = NULL; 
     int error = 0; 
@@ -141,14 +141,58 @@ static void init_env (m_env_t *env) {
 
 }
 
+/*init run time environment for cache colouring*/
+void init_env_colour (m_env_t *env) {
 
-/*partition enviornment resources*/
-void init_env_part (void) {
+    /*allocator, vka, utils...*/
+    color_allocator_t *init_allocator; 
+    color_allocator_t *color_allocator[CC_NUM_DOMAINS]; 
+    reservation_t v_reserve; 
+    uint32_t div[CC_NUM_DOMAINS] = {CC_DIV, CC_DIV}; 
+    int error = 0; 
+    void *vaddr; 
 
+    /*create the init allocator*/
+    init_allocator = color_create_init_allocator_use_simple(
+            &env->simple, 
+            ALLOCATOR_STATIC_POOL_SIZE, 
+            allocator_mem_pool, CC_NUM_DOMAINS, div); 
+    assert(init_allocator); 
+    /*abstrating allocator*/
+    color_make_vka(&env->vka, init_allocator); 
+
+    /*create a vspace*/
+    error = sel4utils_bootstrap_vspace_with_bootinfo_leaky(&env->vspace, &vdata, simple_get_pd(&env->simple), &env->vka, seL4_GetBootInfo()); 
+    assert(error == BENCH_SUCCESS); 
+
+#if 0
+    /*config malloc to use virtual memory*/
+    sel4utils_reserve_range_no_alloc(&vspace, &muslc_brk_reservation_memory,
+            BRK_VIRTUAL_SIZE, seL4_AllRights, 1, &muslc_brk_reservation_start); 
+
+    muslc_this_vspace = &vspace; 
+    muslc_brk_reservation = &muslc_brk_reservation_memory; 
+#endif
+    /*fill allocator with virtual memory*/ 
+    v_reserve = vspace_reserve_range(&env->vspace, ALLOCATOR_VIRTUAL_POOL_SIZE, seL4_AllRights, 1, &vaddr); 
+    assert(v_reserve.res != NULL); 
+    
+    color_config_init_allocator(init_allocator, vaddr, ALLOCATOR_VIRTUAL_POOL_SIZE, simple_get_pd(&env->simple)); 
+
+    /*setup the colored allocators*/
+    for (int i = 0; i < CC_NUM_DOMAINS; i++) {
+
+        color_allocator[i] = color_create_domain_allocator(init_allocator, i); 
+        assert(color_allocator[i]);
+        color_make_vka(&env->vka_colour[i], color_allocator[i]); 
+    }
 
 }
 
-static void *main_continued (void* arg) {
+
+ void lanuch_bench_single (void *arg) {
+
+    /*lanuch single benchmark application*/
 
     cspacepath_t src, dest; 
     int ret; 
@@ -187,7 +231,6 @@ static void *main_continued (void* arg) {
 
     }
     
-    /*FIXME: start up the sub domains with partitioned system resources*/
 
     /*configure benchmark thread*/ 
     printf("Config benchmark thread...\n");
@@ -235,15 +278,40 @@ static void *main_continued (void* arg) {
     /*processing record*/
     bench_process_data(&env, bench_result); 
 
+
+}
+
+
+
+static void *main_continued (void* arg) {
+
+#ifdef CONFIG_MANAGER_IPC 
+    lanuch_bench_ipc(&env); 
+#else
+    lanuch_bench_single(arg);
+#endif 
     /*halt cpu*/
     printf("Finished benchmark, now halting...\n"); 
 
     /*NOTE: using while loop, as debug feature is disabled.*/
     while (1);
-
-    return 0;
+   
+    return NULL;
 }
 
+#ifdef CONFIG_CACHE_COLOURING
+/*creak kernel images*/
+void create_kernel_pd(seL4_BootInfo *info, m_env_t *env) {
+
+    for (int i = 0; i < CC_NUM_DOMAINS; i++) {
+
+        create_colored_kernel_image(info, &(env->vka_colour[i]), 
+                &(env->kernel_colour[i])); 
+
+    }
+
+}
+#endif
 
 int main (void) {
 
@@ -254,11 +322,14 @@ int main (void) {
 #else 
     simple_default_init_bootinfo(&env.simple, info); 
 #endif 
-
+#ifdef CONFIG_CACHE_COLOURING
     /*allocator, vka, and vspace*/
-    init_env(&env);
-   
-    /*FIXME: init resource partitioning*/
+    init_env_colour(&env);
+    create_kernel_pd(info, &env); 
+#else 
+    init_env(&env); 
+#endif
+
     /*enable serial driver*/
     platsupport_serial_setup_simple(NULL, &env.simple, &env.vka); 
 

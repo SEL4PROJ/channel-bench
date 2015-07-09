@@ -26,6 +26,7 @@
 #include <stdio.h>
 #include <sel4/sel4.h>
 #include <sel4bench/sel4bench.h>
+#include <utils/attribute.h>
 #include "../../bench_common.h"
 #include "bench.h"
 
@@ -56,8 +57,7 @@ int wait_init_msg_from(seL4_CPtr endpoint) {
 
 
 /*wait for shared frame address*/
-static 
-void *wait_vaddr_from(seL4_CPtr endpoint)
+static inline void *wait_vaddr_from(seL4_CPtr endpoint)
 {
     /* wait for a message */
     seL4_Word badge;
@@ -72,9 +72,9 @@ void *wait_vaddr_from(seL4_CPtr endpoint)
     return (void *)seL4_GetMR(0);
 }
 
+
 /*send benchmark result to the root task*/
-static 
-void send_result_to(seL4_CPtr endpoint, seL4_Word w) {
+static inline void send_result_to(seL4_CPtr endpoint, seL4_Word w) {
 
     seL4_MessageInfo_t info = seL4_MessageInfo_new(seL4_NoFault, 0, 0, 1);
 
@@ -83,20 +83,17 @@ void send_result_to(seL4_CPtr endpoint, seL4_Word w) {
 }
 
 
-
-int main (int argc, char **argv) {
-
+ void run_bench_single (char **argv) {
+    
     void *record_vaddr; 
-    seL4_Word result; 
+    seL4_Word result UNUSED; 
     int ret; 
+    seL4_CPtr endpoint; 
 
     /*current format for argument: "name, endpoint slot, xxx"*/
 
-    /*processing arguments*/
-    assert(argc == CONFIG_BENCH_ARGS);
-    endpoint = (seL4_Word)atoi(argv[1]); 
-
     //printf("side-bench running \n");
+    endpoint = (seL4_CPtr)atol(argv[1]);
 
     /*waiting for init msg*/
     ret = wait_init_msg_from(endpoint); 
@@ -108,23 +105,57 @@ int main (int argc, char **argv) {
     
     //printf("side-bench record vaddr: %p\n", record_vaddr);
 
-    /*init the benchmakring functions*/
-    sel4bench_init(); 
-
 #ifdef CONFIG_BENCH_DCACHE_ATTACK 
     crypto_init(); 
 
     /*passing the record vaddr in */
     result = dcache_attack(record_vaddr); 
+    /*return result to root task*/
+    send_result_to(endpoint, result); 
+
 #endif 
    
 #ifdef CONFIG_BENCH_CACHE_FLUSH 
     /*measuring the cost of flushing caches*/
     result = bench_flush(record_vaddr); 
-#endif 
     /*return result to root task*/
     send_result_to(endpoint, result); 
-    
+
+#endif
+
+
+}
+
+#ifdef CONFIG_BENCH_IPC
+void run_bench_ipc(char **argv) {
+    unsigned int test_num; 
+    seL4_CPtr ep, result_ep; 
+
+    /*get the test number*/
+    test_num = atol(argv[0]); 
+    ep = (seL4_CPtr)atol(argv[1]);
+    result_ep = (seL4_CPtr)atol(argv[2]);
+  
+    ipc_bench(result_ep, ep, test_num);
+
+}
+#endif 
+int main (int argc, char **argv) {
+
+
+    /*processing arguments*/
+    assert(argc == CONFIG_BENCH_ARGS);
+
+    /*init the benchmakring functions*/
+    sel4bench_init(); 
+
+
+#ifdef CONFIG_BENCH_IPC
+    run_bench_ipc(argv); 
+#else 
+    run_bench_single(argv);
+#endif 
+        
     /*finished testing, halt*/
     while(1);
 

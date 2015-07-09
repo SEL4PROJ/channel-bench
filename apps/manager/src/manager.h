@@ -21,15 +21,23 @@
 #include <sel4utils/process.h>
 
 #include <simple/simple.h>
+
+#ifdef CONFIG_CACHE_COLOURING 
+#include <cachecoloring/color_allocator.h>
+#endif
+
 /*common definitions*/
 #include "../../bench_common.h"
 
 
 typedef struct {
 
-    vka_t vka;      
+    vka_t vka;    
     vspace_t vspace; 
-    
+#ifdef CONFIG_CACHE_COLOURING  
+    vka_t vka_colour[CC_NUM_DOMAINS]; 
+    colored_kernel_t kernel_colour[CC_NUM_DOMAINS];
+#endif 
     /*abstracts over kernel version and boot envior*/
     simple_t simple; 
 
@@ -52,7 +60,8 @@ typedef struct {
     void *record_vaddr; 
 
     /*benchmark thread structure*/
-    sel4utils_process_t bench_thread; 
+    sel4utils_process_t bench_thread;
+   // [MAX_BENCH_THREADS]; 
 
     /*endpoint that root thread is waiting on*/ 
     seL4_CPtr bench_ep;
@@ -64,6 +73,10 @@ typedef struct {
 
 /*analysing benchmark results*/
 void bench_process_data(m_env_t *env, seL4_Word result); 
+
+/*interface in ipc.c*/
+/*lanuch ipc benchmarking threads*/ 
+void lanuch_bench_ipc(m_env_t *);
 
 #endif
 

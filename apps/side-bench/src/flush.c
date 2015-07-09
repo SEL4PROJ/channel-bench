@@ -22,6 +22,7 @@
 #include "../../bench_common.h"
 #include "bench.h"
 
+#ifdef CONFIG_BENCH_CACHE_FLUSH 
 
 static char flush_buf[CONFIG_BENCH_CACHE_BUFFER]; 
 static uint32_t probe_size = CONFIG_BENCH_FLUSH_START;
@@ -113,3 +114,4 @@ seL4_Word bench_flush(void *record) {
     return BENCH_SUCCESS;
 
 }
+#endif 

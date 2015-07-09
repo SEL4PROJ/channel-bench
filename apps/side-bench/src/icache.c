@@ -8,7 +8,7 @@
  * @TAG(NICTA_BSD)
  */
 
-#ifdef CONFIG_ARCH_X86
+#ifdef CONFIG_BENCH_ICACHE_ATTACK
 /*benchmarks for the L1 i cache */
 /*Zhang_JRR_12*/
 /*FIXME: attack xxxx */
