@@ -69,6 +69,21 @@ typedef struct {
 } m_env_t;  /*environment used by the manager*/  
 
 
+/*parameters for setting up a benchmark process*/ 
+struct bench_env {
+
+    seL4_CPtr kernel;       /*kernel image*/
+    seL4_CPtr ep;           /*communication ep*/
+    seL4_CPtr reply_ep;     /*reply ep, to the root task*/
+    vka_t *vka;              /*kernel object allocator*/
+    vspace_t *vspace;        /*virtual address space of the root task*/
+    char *image;            /*binary name of benchmarking elf file*/
+    seL4_Word prio;         /*priority of benchmarking thread*/
+    sel4utils_process_t process;  /*internal process context*/ 
+} bench_env_t; 
+
+
+
 /*interfaces in data.c*/
 
 /*analysing benchmark results*/

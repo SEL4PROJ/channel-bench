@@ -29,6 +29,10 @@ static ccnt_t get_result(seL4_CPtr ep) {
 
 vka_object_t ipc_ep; 
 vka_object_t ipc_reply_ep;
+/*two kernel objects used by ipc benchmarking*/
+seL4_CPtr kernel1, kernel2;
+/*the benchmarking enviornment for two ipc threads*/
+bench_env_t thread1, thread2; 
 
 struct bench_results results;
 
@@ -112,7 +116,10 @@ static void print_results(struct bench_results *results) {
 
 
 
-void create_benchmark_process(sel4utils_process_t *process, vka_t *vka, vspace_t *vspace, int prio, int no, char *image) {
+void create_benchmark_process(sel4utils_process_t *process, 
+        vka_t *vka, vspace_t *vspace, 
+        int prio, int no, 
+        char *image, seL4_CPtr kernel) {
 
     cspacepath_t src;
     seL4_CPtr ep_arg, reply_ep_arg; 
@@ -139,14 +146,15 @@ void create_benchmark_process(sel4utils_process_t *process, vka_t *vka, vspace_t
     sprintf(arg_str0, "%d", no); 
     sprintf(arg_str1, "%d", ep_arg); 
     sprintf(arg_str2, "%d", reply_ep_arg); 
-
-    /*start process*/ 
+#if CONFIG_CACHE_COLOURING
+    /*configure kernel image*/
+    bind_kernel_image(kernel, process->pd.cptr, process->thread.tcb.cptr)
+#endif
+   /*start process*/ 
     error = sel4utils_spawn_process_v(process, vka, vspace, argc, argv, 1);
     assert(error == 0); 
     
 }
-
-sel4utils_process_t ipc_process[2]; 
 
 
 void ipc_destory_process(vka_t *vka0, vka_t *vka1) {
@@ -177,12 +185,10 @@ void ipc_delete_eps(vka_t *vka) {
 
 }
 
-void ipc_overhead(vspace_t *vspace, vka_t *vka0, char *image) {
+void ipc_overhead (bench_env_t *thread) {
 
 
-    ipc_alloc_eps(vka0); 
-
-    create_benchmark_process(&ipc_process[0], vka0, vspace, IPC_PROCESS_PRIO, IPC_OVERHEAD, image); 
+    create_benchmark_process(&ipc_process[0], vka0, vspace, IPC_PROCESS_PRIO, IPC_OVERHEAD, image, kernel); 
 
     results.call_reply_wait_overhead = get_result(ipc_reply_ep.cptr);
     results.send_wait_overhead = get_result(ipc_reply_ep.cptr);
@@ -194,7 +200,8 @@ void ipc_overhead(vspace_t *vspace, vka_t *vka0, char *image) {
 }
 
 
-void ipc_reply_wait_time_inter(vspace_t *vspace, vka_t *vka0, vka_t *vka1, char *image, unsigned int prio0, unsigned int prio1, ccnt_t *result) {
+void ipc_reply_wait_time_inter(vspace_t *vspace, vka_t *vka0, vka_t *vka1, 
+        char *image, unsigned int prio0, unsigned int prio1, ccnt_t *result) {
 
     ccnt_t end, start; 
 
@@ -310,24 +317,17 @@ void ipc_send_time_inter(vspace_t *vspace, vka_t *vka0, vka_t *vka1, char *image
 
 }
 
-void ipc_benchmark(vspace_t *vspace, vka_t *vka0, vka_t *vka1, seL4_CPtr kernel_pd0, seL4_CPtr kernel_pd1, char *image)
-{
+
+void ipc_benchmark (bench_env_t *thread1, bench_env_t *thread2) {
+
 
     /*set up one thread to measure the overhead*/
     uint32_t i;
     ccnt_t result;
     
-    
     printf("Doing benchmarks...\n\n");
 
-#if 0
-#ifdef CONFIG_CACHE_COLORING 
-    ipc_process[0].kernelPD = kernel_pd0; 
-
-    ipc_process[1].kernelPD = kernel_pd1; 
-#endif
-#endif 
-    ipc_overhead(vspace, vka0, image); 
+    ipc_overhead(thread1); 
 
     for (i = 0; i < IPC_RUNS; i++) {
         printf("\tDoing iteration %d\n",i);
@@ -388,19 +388,26 @@ void lanuch_bench_ipc(m_env_t *env) {
     printf("ipc benchmarks\n");
     printf("========================\n");
 
+    thread2.image = thread1.image = CONFIG_BENCH_THREAD_NAME;
+    thread2.vspace = thread1.vspace = &env->vspace;
+
 #ifdef CONFIG_CACHE_COLOURING
-    /*giving 2 colours for ipc benchmarking*/
-    ipc_benchmark(&env->vspace, &(env->vka_colour[0]), 
-            &(env->vka_colour[1]), env->kernel_colour[0].image.cptr, 
-            env->kernel_colour[1].image.cptr, 
-            CONFIG_BENCH_THREAD_NAME);
-
+    thread1.kernel = env->kernel_colour[0].image.cptr; 
+    thread2.kernel = env->kernel_colour[1].image.cptr; 
+    thread1.vka = &env->vka_colour[0]; 
+    thread2.vka = &env->vka_colour[1]; 
+    /*regarding the thread 1 with low classification level*/
+    ipc_alloc_eps(&env->vka_colour[0]);
 #else
-    /*there is no other kernel image, using the root kernel*/
-    ipc_benchmark(&env->vspace, &(env->vka), 
-            &(env->vka), 0, 0, 
-            CONFIG_BENCH_THREAD_NAME);
-
+    thread1.vka = &env->vka; 
+    thread2.vka = &env->vka; 
+    ipc_alloc_eps (&env->vka); 
 #endif 
+
+    thread2.ep = thread1.ep = ipc_ep.cptr; 
+    thread2.ep = thread1.ep = ipc_reply_ep.cptr; 
+
+
+    ipc_benchmark(&thread1, &thread2); 
 
 }
