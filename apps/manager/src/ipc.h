@@ -3,7 +3,7 @@
 
 #include "../../bench_common.h"
 
-#ifdef CONFIG_ARCH_I386
+#ifdef CONFIG_ARCH_X86
 #define CCNT64BIT
 #define CCNT_FORMAT "%llu"
 typedef uint64_t ccnt_t;

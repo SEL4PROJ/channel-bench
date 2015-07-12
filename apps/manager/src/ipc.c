@@ -116,11 +116,9 @@ static void print_results(struct bench_results *results) {
 
 
 
-void create_benchmark_process(sel4utils_process_t *process, 
-        vka_t *vka, vspace_t *vspace, 
-        int prio, int no, 
-        char *image, seL4_CPtr kernel) {
-
+void create_benchmark_process(bench_env_t *t) {
+        
+    sel4utils_process_t *process = &t->process; 
     cspacepath_t src;
     seL4_CPtr ep_arg, reply_ep_arg; 
     int argc = 3;
@@ -132,36 +130,40 @@ void create_benchmark_process(sel4utils_process_t *process,
     
     int error; 
     /*configure process*/ 
-    error = sel4utils_configure_process(process, vka, vspace, prio, image); 
+    error = sel4utils_configure_process(process, 
+            t->vka, t->vspace, t->prio, 
+            t->image); 
+            
     assert(error == 0); 
 
-    vka_cspace_make_path(vka, ipc_ep.cptr, &src);
+    vka_cspace_make_path(t->vka, t->ep.cptr, &src);  
     ep_arg = sel4utils_copy_cap_to_process(process, src);
     assert(ep_arg); 
 
-    vka_cspace_make_path(vka, ipc_reply_ep.cptr, &src);
+    vka_cspace_make_path(t->vka, t->reply_ep.cptr, &src);  
     reply_ep_arg = sel4utils_copy_cap_to_process(process, src);
     assert(reply_ep_arg);
 
-    sprintf(arg_str0, "%d", no); 
+    sprintf(arg_str0, "%d", t->test_num); 
     sprintf(arg_str1, "%d", ep_arg); 
     sprintf(arg_str2, "%d", reply_ep_arg); 
 #if CONFIG_CACHE_COLOURING
     /*configure kernel image*/
-    bind_kernel_image(kernel, process->pd.cptr, process->thread.tcb.cptr)
+    bind_kernel_image(t->kernel,
+            process->pd.cptr, process->thread.tcb.cptr)
 #endif
    /*start process*/ 
-    error = sel4utils_spawn_process_v(process, vka, vspace, argc, argv, 1);
+    error = sel4utils_spawn_process_v(process, t->vka, 
+            t->vspace, argc, argv, 1);
     assert(error == 0); 
-    
 }
 
 
-void ipc_destory_process(vka_t *vka0, vka_t *vka1) {
+void ipc_destory_process(bench_env_t *t1, bench_env_t *t2) {
 
     /*destory the two processes used by ipc benchmarks*/
-    sel4utils_destroy_process(&ipc_process[0], vka0); 
-    sel4utils_destroy_process(&ipc_process[1], vka1);
+    sel4utils_destroy_process(&t1->process, t1->vka); 
+    sel4utils_destroy_process(&t2->process, t2->vka);
 
 }
 
@@ -187,28 +189,31 @@ void ipc_delete_eps(vka_t *vka) {
 
 void ipc_overhead (bench_env_t *thread) {
 
+    thread->prio = IPC_PROCESS_PRIO; 
+    thread->test_num = IPC_OVERHEAD; 
 
-    create_benchmark_process(&ipc_process[0], vka0, vspace, IPC_PROCESS_PRIO, IPC_OVERHEAD, image, kernel); 
-
+    create_benchmark_process(thread); 
+            
     results.call_reply_wait_overhead = get_result(ipc_reply_ep.cptr);
     results.send_wait_overhead = get_result(ipc_reply_ep.cptr);
     results.call_reply_wait_10_overhead = get_result(ipc_reply_ep.cptr);
     
     /*destory the two processes used by ipc benchmarks*/
-    sel4utils_destroy_process(&ipc_process[0], vka0); 
-
+    sel4utils_destroy_process(&thread->process, thread->vka);
 }
 
 
-void ipc_reply_wait_time_inter(vspace_t *vspace, vka_t *vka0, vka_t *vka1, 
-        char *image, unsigned int prio0, unsigned int prio1, ccnt_t *result) {
+void ipc_reply_wait_time_inter(bench_env_t *t1, bench_env_t *t2,
+        ccnt_t *result) {
 
     ccnt_t end, start; 
 
-    ipc_alloc_eps(vka0); 
+//    ipc_alloc_eps(vka0); 
 
-    create_benchmark_process(&ipc_process[0], vka0, vspace, prio0, IPC_CALL, image); 
-    create_benchmark_process(&ipc_process[1], vka1, vspace, prio1, IPC_REPLY_WAIT, image); 
+    t1->test_num = IPC_CALL; 
+    t2->test_num = IPC_REPLY_WAIT; 
+    create_benchmark_process(t1); 
+    create_benchmark_process(t2); 
 
     end = get_result(ipc_reply_ep.cptr);
     start = get_result(ipc_reply_ep.cptr);
@@ -216,42 +221,40 @@ void ipc_reply_wait_time_inter(vspace_t *vspace, vka_t *vka0, vka_t *vka1,
 
     *result = end - start; 
     //printf("start"CCNT_FORMAT" end "CCNT_FORMAT" result "CCNT_FORMAT"  \n", start, end, *result); 
-   
-
-    ipc_destory_process(vka0, vka1); 
-
+    ipc_destroy_process(t1, t2); 
     //ipc_delete_eps(vka0);
 }
 
-void ipc_reply_wait_10_time_inter(vspace_t *vspace, vka_t *vka0, vka_t *vka1, char *image, unsigned int prio0, unsigned int prio1, ccnt_t *result) {
+void ipc_reply_wait_10_time_inter(bench_env_t *t1, bench_env_m *t2, ccnt_t *result) {
 
     ccnt_t end, start; 
 
-    ipc_alloc_eps(vka0); 
-
-    create_benchmark_process(&ipc_process[0], vka0, vspace, prio0, IPC_CALL_10, image); 
-    create_benchmark_process(&ipc_process[1], vka1, vspace, prio1, IPC_REPLY_WAIT_10, image); 
-
+    //ipc_alloc_eps(vka0); 
+    t1->test_num = IPC_CALL_10; 
+    t2->test_num = IPC_REPLY_WAIT_10; 
+    create_benchmark_process(t1); 
+    create_benchmark_process(t2); 
+    
     end = get_result(ipc_reply_ep.cptr);
     start = get_result(ipc_reply_ep.cptr);
     assert(end > start); 
 
     *result = end - start; 
 //    printf("start"CCNT_FORMAT" end "CCNT_FORMAT" result "CCNT_FORMAT"  \n", start, end, *result); 
-    
-    ipc_destory_process(vka0, vka1); 
+    ipc_destroy_process(t1, t2);
 
     //ipc_delete_eps(vka0);
 }
-void ipc_call_time_inter(vspace_t *vspace, vka_t *vka0, vka_t *vka1, char *image,unsigned int prio0, unsigned int prio1, ccnt_t *result) {
+void ipc_call_time_inter(bench_env_t *t1, bench_env_t *t2, 
+        ccnt_t *result) {
 
     ccnt_t end, start; 
     
-    ipc_alloc_eps(vka0); 
-
-
-    create_benchmark_process(&ipc_process[0], vka0, vspace, prio0, IPC_CALL2, image); 
-    create_benchmark_process(&ipc_process[1], vka1, vspace, prio1, IPC_REPLY_WAIT2, image); 
+    //ipc_alloc_eps(vka0); 
+    t1->test_num = IPC_CALL2; 
+    t2->test_num = IPC_REPLY_WAIT2; 
+    create_benchmark_process(t1);
+    create_benchmark_process(t2);
 
     end = get_result(ipc_reply_ep.cptr);
     start = get_result(ipc_reply_ep.cptr);
@@ -261,23 +264,21 @@ void ipc_call_time_inter(vspace_t *vspace, vka_t *vka0, vka_t *vka1, char *image
 
     //printf("start"CCNT_FORMAT" end "CCNT_FORMAT" result "CCNT_FORMAT"  \n", start, end, *result); 
 
-    
-    ipc_destory_process(vka0, vka1);
+    ipc_destory_process(t1, t2);
     //ipc_delete_eps(vka0); 
-
-
 }
 
 
-void ipc_call_10_time_inter(vspace_t *vspace, vka_t *vka0, vka_t *vka1, char *image,unsigned int prio0, unsigned int prio1, ccnt_t *result) {
+void ipc_call_10_time_inter(bench_env_t *t1, bench_env_t *t2,
+        ccnt_t *result) {
 
     ccnt_t end, start; 
     
-    ipc_alloc_eps(vka0); 
-
-
-    create_benchmark_process(&ipc_process[0], vka0, vspace, prio0, IPC_CALL2_10, image); 
-    create_benchmark_process(&ipc_process[1], vka1, vspace, prio1, IPC_REPLY_WAIT2_10, image); 
+   // ipc_alloc_eps(vka0); 
+    t1->test_num = IPC_CALL2_10; 
+    t2->test_num = IPC_REPLY_WAIT2_10; 
+    create_benchmark_process(t1); 
+    create_benchmark_process(t2); 
 
     end = get_result(ipc_reply_ep.cptr);
     start = get_result(ipc_reply_ep.cptr);
@@ -287,21 +288,20 @@ void ipc_call_10_time_inter(vspace_t *vspace, vka_t *vka0, vka_t *vka1, char *im
 
    // printf("start"CCNT_FORMAT" end "CCNT_FORMAT" result "CCNT_FORMAT"  \n", start, end, *result); 
 
-    
-    ipc_destory_process(vka0, vka1);
+    ipc_destroy_process(t1, t2); 
+
     //ipc_delete_eps(vka0); 
-
-
 }
-void ipc_send_time_inter(vspace_t *vspace, vka_t *vka0, vka_t *vka1, char *image,unsigned int prio0, unsigned int prio1, ccnt_t *result) {
+void ipc_send_time_inter(bench_env_t *t1, bench_env_t *t2, 
+        ccnt_t *result) {
 
     ccnt_t end, start; 
-    
-    ipc_alloc_eps(vka0); 
+    //ipc_alloc_eps(vka0); 
 
-
-    create_benchmark_process(&ipc_process[0], vka0, vspace, prio0, IPC_SEND, image); 
-    create_benchmark_process(&ipc_process[1], vka1, vspace, prio1, IPC_WAIT, image); 
+    t1->test_num = IPC_SEND; 
+    t2->test_num = IPC_WAIT; 
+    create_benchmark_process(t1);
+    create_benchmark_process(t2);
 
     start = get_result(ipc_reply_ep.cptr);
     end = get_result(ipc_reply_ep.cptr);
@@ -311,10 +311,9 @@ void ipc_send_time_inter(vspace_t *vspace, vka_t *vka0, vka_t *vka1, char *image
 
     //printf("start"CCNT_FORMAT" end "CCNT_FORMAT" result "CCNT_FORMAT"  \n", start, end, *result); 
 
-    
-    ipc_destory_process(vka0, vka1);
-    //ipc_delete_eps(vka0); 
+    ipc_destroy_process(t1, t2); 
 
+    //ipc_delete_eps(vka0); 
 }
 
 
@@ -334,32 +333,48 @@ void ipc_benchmark (bench_env_t *thread1, bench_env_t *thread2) {
 
         /*one way IPC, reply -> call */
         printf("Running Call+ReplyWait Inter-AS test 1\n");
-
-        ipc_reply_wait_time_inter(vspace, vka0, vka1, image, IPC_PROCESS_PRIO, IPC_PROCESS_PRIO, &result); 
-        
+        thread1->prio = thread2->prio = IPC_PROCESS_PRIO; 
+        ipc_reply_wait_time_inter(thread1, thread2, &result);
         results.reply_wait_time_inter[i] = result - results.call_reply_wait_overhead;
         
         printf("Running Call+ReplyWait Inter-AS test 2\n");
-       
-        ipc_call_time_inter(vspace, vka0, vka1, image, IPC_PROCESS_PRIO, IPC_PROCESS_PRIO, &result); 
+        ipc_call_time_inter(thread1, thread2, &result); 
         results.call_time_inter[i] = result - results.call_reply_wait_overhead;
-        printf("Running Call+ReplyWait Different prio test 1\n");
-        ipc_reply_wait_time_inter(vspace, vka0, vka1, image, IPC_PROCESS_PRIO_LOW, IPC_PROCESS_PRIO_HIGH, &result); 
-
-        results.reply_wait_time_inter_high[i] = result - results.call_reply_wait_overhead;
-        printf("Running Call+ReplyWait Different prio test 2\n");
        
-        ipc_call_time_inter(vspace, vka0, vka1, image, IPC_PROCESS_PRIO_LOW, IPC_PROCESS_PRIO_HIGH, &result); 
+        printf("Running Send test\n");
+        ipc_send_time_inter(thread1, thread2, &result); 
+        results.send_time_inter[i] = result - results.send_wait_overhead;
+
+        printf("Running Call+ReplyWait long message test 1\n");
+        ipc_reply_wait_10_time_inter(t1, t2, &result);
+        results.reply_wait_10_time_inter[i] = result - results.call_reply_wait_10_overhead;
+        
+        printf("Running Call+ReplyWait long message test 2\n");
+        ipc_call_10_time_inter(t1, t2, &result); 
+        results.call_10_time_inter[i] = result - results.call_reply_wait_10_overhead;
+
+
+        printf("Running Call+ReplyWait Different prio test 1\n");
+        t1->prio = IPC_PROCESS_PRIO_LOW; 
+        t2->prio = IPC_PROCESS_PRIO_HIGH; 
+        ipc_reply_wait_time_inter(t1, t2, &result); 
+        results.reply_wait_time_inter_high[i] = result - results.call_reply_wait_overhead;
+        
+        
+        printf("Running Call+ReplyWait Different prio test 2\n");
+        ipc_call_time_inter(thread1, thread2, &result); 
         results.call_time_inter_low[i] = result -  results.call_reply_wait_overhead;
 
         printf("Running Call+ReplyWait Different prio test 3\n");
-        ipc_reply_wait_time_inter(vspace, vka0, vka1, image, IPC_PROCESS_PRIO_HIGH, IPC_PROCESS_PRIO_LOW, &result); 
-
+        t1->prio = IPC_PROCESS_PRIO_HIGH; 
+        t2->prio = IPC_PROCESS_PRIO_LOW; 
+        ipc_reply_wait_time_inter(t1, t2, &result); 
         results.reply_wait_time_inter_low[i] = result - results.call_reply_wait_overhead;
+        
         printf("Running Call+ReplyWait Different prio test 4\n");
-        ipc_call_time_inter(vspace, vka0, vka1, image, IPC_PROCESS_PRIO_HIGH, IPC_PROCESS_PRIO_LOW, &result); 
-
+        ipc_call_time_inter(thread1, thread2, &result); 
         results.call_time_inter_high[i] = result - results.call_reply_wait_overhead;
+        
         printf("Running Send test\n");
         ipc_send_time_inter(vspace, vka0, vka1, image, IPC_PROCESS_PRIO, IPC_PROCESS_PRIO, &result); 
 
@@ -402,10 +417,10 @@ void lanuch_bench_ipc(m_env_t *env) {
     thread1.vka = &env->vka; 
     thread2.vka = &env->vka; 
     ipc_alloc_eps (&env->vka); 
-#endif 
+#endif
 
-    thread2.ep = thread1.ep = ipc_ep.cptr; 
-    thread2.ep = thread1.ep = ipc_reply_ep.cptr; 
+    thread2.ep = thread1.ep = ipc_ep
+    thread2.reply_ep = thread1.reply_ep = ipc_reply_ep
 
 
     ipc_benchmark(&thread1, &thread2); 

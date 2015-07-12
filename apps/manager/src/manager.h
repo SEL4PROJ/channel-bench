@@ -73,13 +73,14 @@ typedef struct {
 struct bench_env {
 
     seL4_CPtr kernel;       /*kernel image*/
-    seL4_CPtr ep;           /*communication ep*/
-    seL4_CPtr reply_ep;     /*reply ep, to the root task*/
+    vka_object_t ep; 
+    vka_object_t reply_ep;
     vka_t *vka;              /*kernel object allocator*/
     vspace_t *vspace;        /*virtual address space of the root task*/
     char *image;            /*binary name of benchmarking elf file*/
     seL4_Word prio;         /*priority of benchmarking thread*/
     sel4utils_process_t process;  /*internal process context*/ 
+    uint32_t test_num;      /*test number*/
 } bench_env_t; 
 
 
