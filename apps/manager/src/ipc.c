@@ -149,7 +149,7 @@ void create_benchmark_process(bench_env_t *t) {
 #if CONFIG_CACHE_COLOURING
     /*configure kernel image*/
     bind_kernel_image(t->kernel,
-            process->pd.cptr, process->thread.tcb.cptr)
+            process->pd.cptr, process->thread.tcb.cptr);
 #endif
    /*start process*/ 
     error = sel4utils_spawn_process_v(process, t->vka, 
@@ -158,7 +158,7 @@ void create_benchmark_process(bench_env_t *t) {
 }
 
 
-void ipc_destory_process(bench_env_t *t1, bench_env_t *t2) {
+void ipc_destroy_process(bench_env_t *t1, bench_env_t *t2) {
 
     /*destory the two processes used by ipc benchmarks*/
     sel4utils_destroy_process(&t1->process, t1->vka); 
@@ -224,7 +224,7 @@ void ipc_reply_wait_time_inter(bench_env_t *t1, bench_env_t *t2,
     //ipc_delete_eps(vka0);
 }
 
-void ipc_reply_wait_10_time_inter(bench_env_t *t1, bench_env_m *t2, ccnt_t *result) {
+void ipc_reply_wait_10_time_inter(bench_env_t *t1, bench_env_t *t2, ccnt_t *result) {
 
     ccnt_t end, start; 
 
@@ -263,7 +263,7 @@ void ipc_call_time_inter(bench_env_t *t1, bench_env_t *t2,
 
     //printf("start"CCNT_FORMAT" end "CCNT_FORMAT" result "CCNT_FORMAT"  \n", start, end, *result); 
 
-    ipc_destory_process(t1, t2);
+    ipc_destroy_process(t1, t2);
     //ipc_delete_eps(vka0); 
 }
 
@@ -354,8 +354,8 @@ void ipc_benchmark (bench_env_t *thread1, bench_env_t *thread2) {
 
 
         printf("Running Call+ReplyWait Different prio test 1\n");
-        t1->prio = IPC_PROCESS_PRIO_LOW; 
-        t2->prio = IPC_PROCESS_PRIO_HIGH; 
+        thread1->prio = IPC_PROCESS_PRIO_LOW; 
+        thread2->prio = IPC_PROCESS_PRIO_HIGH; 
         ipc_reply_wait_time_inter(thread1, thread2, &result); 
         results.reply_wait_time_inter_high[i] = result - results.call_reply_wait_overhead;
         
@@ -365,8 +365,8 @@ void ipc_benchmark (bench_env_t *thread1, bench_env_t *thread2) {
         results.call_time_inter_low[i] = result -  results.call_reply_wait_overhead;
 
         printf("Running Call+ReplyWait Different prio test 3\n");
-        t1->prio = IPC_PROCESS_PRIO_HIGH; 
-        t2->prio = IPC_PROCESS_PRIO_LOW; 
+        thread1->prio = IPC_PROCESS_PRIO_HIGH; 
+        thread2->prio = IPC_PROCESS_PRIO_LOW; 
         ipc_reply_wait_time_inter(thread1, thread2, &result); 
         results.reply_wait_time_inter_low[i] = result - results.call_reply_wait_overhead;
         
@@ -403,8 +403,8 @@ void lanuch_bench_ipc(m_env_t *env) {
     ipc_alloc_eps (&env->vka); 
 #endif
 
-    thread2.ep = thread1.ep = ipc_ep
-    thread2.reply_ep = thread1.reply_ep = ipc_reply_ep
+    thread2.ep = thread1.ep = ipc_ep;
+    thread2.reply_ep = thread1.reply_ep = ipc_reply_ep;
 
     ipc_benchmark(&thread1, &thread2); 
 

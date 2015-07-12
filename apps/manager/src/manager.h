@@ -70,7 +70,7 @@ typedef struct {
 
 
 /*parameters for setting up a benchmark process*/ 
-struct bench_env {
+typedef struct bench_env {
 
     seL4_CPtr kernel;       /*kernel image*/
     vka_object_t ep; 
