@@ -10,7 +10,7 @@
 #include "ipc.h"
 #include "../../bench_common.h"
 #include "manager.h"
-//#include "util/ansi.h"
+#include "util/ansi.h"
 
 #if defined(CCNT32BIT)
 static ccnt_t get_result(seL4_CPtr ep) {
@@ -113,7 +113,6 @@ static void print_results(struct bench_results *results) {
     printf("\t<result name = \"Inter-AS Call(10)\">"CCNT_FORMAT"</result>\n",results->call_10_cycles_inter);
     printf("\t<result name = \"Inter-AS ReplyWait(10)\">"CCNT_FORMAT"</result>\n",results->reply_wait_10_cycles_inter);
 }
-
 
 
 void create_benchmark_process(bench_env_t *t) {
@@ -346,18 +345,18 @@ void ipc_benchmark (bench_env_t *thread1, bench_env_t *thread2) {
         results.send_time_inter[i] = result - results.send_wait_overhead;
 
         printf("Running Call+ReplyWait long message test 1\n");
-        ipc_reply_wait_10_time_inter(t1, t2, &result);
+        ipc_reply_wait_10_time_inter(thread1, thread2, &result);
         results.reply_wait_10_time_inter[i] = result - results.call_reply_wait_10_overhead;
         
         printf("Running Call+ReplyWait long message test 2\n");
-        ipc_call_10_time_inter(t1, t2, &result); 
+        ipc_call_10_time_inter(thread1, thread2, &result); 
         results.call_10_time_inter[i] = result - results.call_reply_wait_10_overhead;
 
 
         printf("Running Call+ReplyWait Different prio test 1\n");
         t1->prio = IPC_PROCESS_PRIO_LOW; 
         t2->prio = IPC_PROCESS_PRIO_HIGH; 
-        ipc_reply_wait_time_inter(t1, t2, &result); 
+        ipc_reply_wait_time_inter(thread1, thread2, &result); 
         results.reply_wait_time_inter_high[i] = result - results.call_reply_wait_overhead;
         
         
@@ -368,29 +367,14 @@ void ipc_benchmark (bench_env_t *thread1, bench_env_t *thread2) {
         printf("Running Call+ReplyWait Different prio test 3\n");
         t1->prio = IPC_PROCESS_PRIO_HIGH; 
         t2->prio = IPC_PROCESS_PRIO_LOW; 
-        ipc_reply_wait_time_inter(t1, t2, &result); 
+        ipc_reply_wait_time_inter(thread1, thread2, &result); 
         results.reply_wait_time_inter_low[i] = result - results.call_reply_wait_overhead;
         
         printf("Running Call+ReplyWait Different prio test 4\n");
         ipc_call_time_inter(thread1, thread2, &result); 
         results.call_time_inter_high[i] = result - results.call_reply_wait_overhead;
         
-        printf("Running Send test\n");
-        ipc_send_time_inter(vspace, vka0, vka1, image, IPC_PROCESS_PRIO, IPC_PROCESS_PRIO, &result); 
-
-        results.send_time_inter[i] = result - results.send_wait_overhead;
-
-        printf("Running Call+ReplyWait long message test 1\n");
-        ipc_reply_wait_10_time_inter(vspace, vka0, vka1, image, IPC_PROCESS_PRIO, IPC_PROCESS_PRIO, &result); 
-
-        results.reply_wait_10_time_inter[i] = result - results.call_reply_wait_10_overhead;
-        printf("Running Call+ReplyWait long message test 2\n");
-
-        ipc_call_10_time_inter(vspace, vka0, vka1, image, IPC_PROCESS_PRIO, IPC_PROCESS_PRIO, &result); 
-
-        results.call_10_time_inter[i] = result - results.call_reply_wait_10_overhead;
-    }
-
+    } 
     process_results(&results); 
     print_results(&results);
 
@@ -421,7 +405,6 @@ void lanuch_bench_ipc(m_env_t *env) {
 
     thread2.ep = thread1.ep = ipc_ep
     thread2.reply_ep = thread1.reply_ep = ipc_reply_ep
-
 
     ipc_benchmark(&thread1, &thread2); 
 

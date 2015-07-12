@@ -365,7 +365,7 @@ seL4_Word ipc_bench(seL4_CPtr result_ep, seL4_CPtr test_ep, int test_n) {
     if (!ipc_funs[test_n])
         return BENCH_FAILURE;
 
-    ipc_funs[test_n] (test_ep, result_ep);
+    ipc_funs[test_n](test_ep, result_ep);
   
     return BENCH_SUCCESS;
 }

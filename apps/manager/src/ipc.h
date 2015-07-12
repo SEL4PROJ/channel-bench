@@ -119,19 +119,6 @@ struct bench_results {
 };
 
 
-
-
-
-void create_benchmark_process(sel4utils_process_t *process, vka_t *vka, vspace_t *vspace, int prio, int no, char *image);
-
-
-
-void ipc_benchmark(vspace_t *vspace, vka_t *vka0, vka_t *vka1, seL4_CPtr kernel_pd0, seL4_CPtr kenel_pd1, char *image);
-void spec_benchmark(vspace_t *vspace, vka_t *vka, seL4_CPtr kernel_pd,  char *image);
-
-
-void covert_benchmark(vspace_t *vspace, vka_t *vka0, vka_t *vka1, seL4_CPtr kernel_pd0, seL4_CPtr kernel_pd1,  char *image);
-
 #endif 
 
 
