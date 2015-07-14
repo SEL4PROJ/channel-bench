@@ -179,6 +179,7 @@ void init_env_colour (m_env_t *env) {
     
     color_config_init_allocator(init_allocator, vaddr, ALLOCATOR_VIRTUAL_POOL_SIZE, simple_get_pd(&env->simple)); 
 
+    printf("create domain allocators "); 
     /*setup the colored allocators*/
     for (int i = 0; i < CC_NUM_DOMAINS; i++) {
 
@@ -187,6 +188,7 @@ void init_env_colour (m_env_t *env) {
         color_make_vka(&env->vka_colour[i], color_allocator[i]); 
     }
 
+    printf("...... done.\n"); 
 }
 
 
@@ -321,7 +323,9 @@ int main (void) {
     simple_stable_init_bootinfo(&env.simple, info); 
 #else 
     simple_default_init_bootinfo(&env.simple, info); 
-#endif 
+#endif
+    printf("Manager, init env\n"); 
+
 #ifdef CONFIG_CACHE_COLOURING
     /*allocator, vka, and vspace*/
     init_env_colour(&env);

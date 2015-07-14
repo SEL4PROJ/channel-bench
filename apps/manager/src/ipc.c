@@ -128,6 +128,8 @@ void create_benchmark_process(bench_env_t *t) {
     char *argv[3] = {arg_str0, arg_str1, arg_str2}; 
     
     int error; 
+
+    printf("configure process \n");
     /*configure process*/ 
     error = sel4utils_configure_process(process, 
             t->vka, t->vspace, t->prio, 
@@ -135,6 +137,7 @@ void create_benchmark_process(bench_env_t *t) {
             
     assert(error == 0); 
 
+    printf("copy endpoints to process\n"); 
     vka_cspace_make_path(t->vka, t->ep.cptr, &src);  
     ep_arg = sel4utils_copy_cap_to_process(process, src);
     assert(ep_arg); 
