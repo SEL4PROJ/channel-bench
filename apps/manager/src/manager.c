@@ -24,6 +24,7 @@
 #include <sel4utils/process.h>
 #include <sel4platsupport/platsupport.h>
 #include <simple/simple.h> 
+#include <sel4bench/sel4bench.h>
 
 #ifdef CONFIG_KERNEL_STABLE 
 #include <simple-stable/simple-stable.h>
@@ -179,7 +180,6 @@ void init_env_colour (m_env_t *env) {
     
     color_config_init_allocator(init_allocator, vaddr, ALLOCATOR_VIRTUAL_POOL_SIZE, simple_get_pd(&env->simple)); 
 
-    printf("create domain allocators "); 
     /*setup the colored allocators*/
     for (int i = 0; i < CC_NUM_DOMAINS; i++) {
 
@@ -188,7 +188,6 @@ void init_env_colour (m_env_t *env) {
         color_make_vka(&env->vka_colour[i], color_allocator[i]); 
     }
 
-    printf("...... done.\n"); 
 }
 
 
@@ -324,7 +323,6 @@ int main (void) {
 #else 
     simple_default_init_bootinfo(&env.simple, info); 
 #endif
-    printf("Manager, init env\n"); 
 
 #ifdef CONFIG_CACHE_COLOURING
     /*allocator, vka, and vspace*/
@@ -341,6 +339,10 @@ int main (void) {
 
     printf("Manager, switching to a safer, bigger stack... "); 
     fflush(stdout); 
+
+    /*init the benchmakring functions*/
+    sel4bench_init(); 
+
 
     /*starting test, never return from this function*/
     sel4utils_run_on_stack(&env.vspace, main_continued, NULL);

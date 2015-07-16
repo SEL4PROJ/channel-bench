@@ -23,6 +23,8 @@ static void send_result(seL4_CPtr ep, ccnt_t result) {
 #error Unknown ccnt size
 #endif
 
+#undef IPC_BENCH_PRINTOUT
+
 /*list of functions*/
 ipc_bench_func ipc_funs[IPC_ALL] = {
 
@@ -259,43 +261,60 @@ static int check_overhead(struct bench_results *results) {
     ccnt_t call_10_overhead, reply_wait_10_overhead;
     ccnt_t send_overhead, wait_overhead;
     if (!results_stable(results->call_overhead)) {
-        //printf("Benchmarking overhead of a call is not stable! Cannot continue\n");
-       // print_all(results->call_overhead);
+#ifdef IPC_BENCH_PRINTOUT
+ 
+        printf("Benchmarking overhead of a call is not stable! Cannot continue\n");
+       print_all(results->call_overhead);
+#endif 
 #ifndef ALLOW_UNSTABLE_OVERHEAD
         return 0;
 #endif
     }
     if (!results_stable(results->reply_wait_overhead)) {
-        //printf("Benchmarking overhead of a reply wait is not stable! Cannot continue\n");
-        //print_all(results->reply_wait_overhead);
+#ifdef IPC_BENCH_PRINTOUT
+
+        printf("Benchmarking overhead of a reply wait is not stable! Cannot continue\n");
+        print_all(results->reply_wait_overhead);
+#endif 
 #ifndef ALLOW_UNSTABLE_OVERHEAD
         return 0;
 #endif
     }
     if (!results_stable(results->send_overhead)) {
-        //printf("Benchmarking overhead of a send is not stable! Cannot continue\n");
-        //print_all(results->send_overhead);
+#ifdef IPC_BENCH_PRINTOUT
+
+        printf("Benchmarking overhead of a send is not stable! Cannot continue\n");
+        print_all(results->send_overhead);
+#endif 
 #ifndef ALLOW_UNSTABLE_OVERHEAD
         return 0;
 #endif
     }
     if (!results_stable(results->wait_overhead)) {
-        //printf("Benchmarking overhead of a wait is not stable! Cannot continue\n");
-        //print_all(results->wait_overhead);
+#ifdef IPC_BENCH_PRINTOUT
+
+        printf("Benchmarking overhead of a wait is not stable! Cannot continue\n");
+        print_all(results->wait_overhead);
+#endif 
 #ifndef ALLOW_UNSTABLE_OVERHEAD
         return 0;
 #endif
     }
     if (!results_stable(results->call_10_overhead)) {
-        //printf("Benchmarking overhead of a call is not stable! Cannot continue\n");
-        //print_all(results->call_10_overhead);
+#ifdef IPC_BENCH_PRINTOUT
+        printf("Benchmarking overhead of a call is not stable! Cannot continue\n");
+        print_all(results->call_10_overhead);
+#endif 
 #ifndef ALLOW_UNSTABLE_OVERHEAD
         return 0;
 #endif
     }
     if (!results_stable(results->reply_wait_10_overhead)) {
-        //printf("Benchmarking overhead of a reply wait is not stable! Cannot continue\n");
-        //print_all(results->reply_wait_10_overhead);
+#ifdef IPC_BENCH_PRINTOUT
+
+        printf("Benchmarking overhead of a reply wait is not stable! Cannot continue\n");
+        print_all(results->reply_wait_10_overhead);
+#endif 
 #ifndef ALLOW_UNSTABLE_OVERHEAD
         return 0;
 #endif
@@ -366,7 +385,7 @@ seL4_Word ipc_bench(seL4_CPtr result_ep, seL4_CPtr test_ep, int test_n) {
         return BENCH_FAILURE;
 
     ipc_funs[test_n](test_ep, result_ep);
-  
+ 
     return BENCH_SUCCESS;
 }
 

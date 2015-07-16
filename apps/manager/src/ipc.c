@@ -26,6 +26,7 @@ static ccnt_t get_result(seL4_CPtr ep) {
 #error Unknown ccnt size
 #endif
 /*FIXME the ep and reply ep need to be freed*/
+#undef IPC_BENCH_PRINTOUT
 
 vka_object_t ipc_ep; 
 vka_object_t ipc_reply_ep;
@@ -127,9 +128,8 @@ void create_benchmark_process(bench_env_t *t) {
 
     char *argv[3] = {arg_str0, arg_str1, arg_str2}; 
     
-    int error; 
+    int error __attribute__((unused)); 
 
-    printf("configure process \n");
     /*configure process*/ 
     error = sel4utils_configure_process(process, 
             t->vka, t->vspace, t->prio, 
@@ -137,7 +137,6 @@ void create_benchmark_process(bench_env_t *t) {
             
     assert(error == 0); 
 
-    printf("copy endpoints to process\n"); 
     vka_cspace_make_path(t->vka, t->ep.cptr, &src);  
     ep_arg = sel4utils_copy_cap_to_process(process, src);
     assert(ep_arg); 
@@ -157,7 +156,7 @@ void create_benchmark_process(bench_env_t *t) {
    /*start process*/ 
     error = sel4utils_spawn_process_v(process, t->vka, 
             t->vspace, argc, argv, 1);
-    assert(error == 0); 
+    assert(error == 0);
 }
 
 
@@ -172,7 +171,7 @@ void ipc_destroy_process(bench_env_t *t1, bench_env_t *t2) {
 
 void ipc_alloc_eps(vka_t *vka) {
     
-    int error; 
+    int error __attribute__((unused)); 
     /*create 2 end points: ep and reply ep*/
     error = vka_alloc_endpoint(vka, &ipc_ep);
     assert(error == 0); 
@@ -189,6 +188,15 @@ void ipc_delete_eps(vka_t *vka) {
 
 }
 
+void print_overhead(void) {
+
+     printf("call_reply_wait_overhead"CCNT_FORMAT" send_wait_overhead "CCNT_FORMAT" call_reply_wait_10_overhead "CCNT_FORMAT"  \n",
+             results.call_reply_wait_overhead, 
+             results.send_wait_overhead, 
+             results.call_reply_wait_10_overhead); 
+    
+
+}
 void ipc_overhead (bench_env_t *thread) {
 
     thread->prio = IPC_PROCESS_PRIO; 
@@ -198,8 +206,7 @@ void ipc_overhead (bench_env_t *thread) {
             
     results.call_reply_wait_overhead = get_result(ipc_reply_ep.cptr);
     results.send_wait_overhead = get_result(ipc_reply_ep.cptr);
-    results.call_reply_wait_10_overhead = get_result(ipc_reply_ep.cptr);
-    
+    results.call_reply_wait_10_overhead = get_result(ipc_reply_ep.cptr); 
     /*destory the two processes used by ipc benchmarks*/
     sel4utils_destroy_process(&thread->process, thread->vka);
 }
@@ -222,7 +229,9 @@ void ipc_reply_wait_time_inter(bench_env_t *t1, bench_env_t *t2,
     assert(end > start); 
 
     *result = end - start; 
-    //printf("start"CCNT_FORMAT" end "CCNT_FORMAT" result "CCNT_FORMAT"  \n", start, end, *result); 
+#ifdef IPC_BENCH_PRINTOUT
+    printf("start"CCNT_FORMAT" end "CCNT_FORMAT" result "CCNT_FORMAT"  \n", start, end, *result); 
+#endif 
     ipc_destroy_process(t1, t2); 
     //ipc_delete_eps(vka0);
 }
@@ -242,7 +251,9 @@ void ipc_reply_wait_10_time_inter(bench_env_t *t1, bench_env_t *t2, ccnt_t *resu
     assert(end > start); 
 
     *result = end - start; 
-//    printf("start"CCNT_FORMAT" end "CCNT_FORMAT" result "CCNT_FORMAT"  \n", start, end, *result); 
+#ifdef IPC_BENCH_PRINTOUT
+    printf("start"CCNT_FORMAT" end "CCNT_FORMAT" result "CCNT_FORMAT"  \n", start, end, *result); 
+#endif 
     ipc_destroy_process(t1, t2);
 
     //ipc_delete_eps(vka0);
@@ -263,9 +274,9 @@ void ipc_call_time_inter(bench_env_t *t1, bench_env_t *t2,
     assert(end > start); 
 
     *result = end - start; 
-
-    //printf("start"CCNT_FORMAT" end "CCNT_FORMAT" result "CCNT_FORMAT"  \n", start, end, *result); 
-
+#ifdef IPC_BENCH_PRINTOUT
+    printf("start"CCNT_FORMAT" end "CCNT_FORMAT" result "CCNT_FORMAT"  \n", start, end, *result); 
+#endif 
     ipc_destroy_process(t1, t2);
     //ipc_delete_eps(vka0); 
 }
@@ -287,9 +298,9 @@ void ipc_call_10_time_inter(bench_env_t *t1, bench_env_t *t2,
     assert(end > start); 
 
     *result = end - start; 
-
-   // printf("start"CCNT_FORMAT" end "CCNT_FORMAT" result "CCNT_FORMAT"  \n", start, end, *result); 
-
+#ifdef IPC_BENCH_PRINTOUT
+    printf("start"CCNT_FORMAT" end "CCNT_FORMAT" result "CCNT_FORMAT"  \n", start, end, *result); 
+#endif 
     ipc_destroy_process(t1, t2); 
 
     //ipc_delete_eps(vka0); 
@@ -310,9 +321,9 @@ void ipc_send_time_inter(bench_env_t *t1, bench_env_t *t2,
     assert(end > start); 
 
     *result = end - start; 
-
-    //printf("start"CCNT_FORMAT" end "CCNT_FORMAT" result "CCNT_FORMAT"  \n", start, end, *result); 
-
+#ifdef IPC_BENCH_PRINTOUT
+    printf("start"CCNT_FORMAT" end "CCNT_FORMAT" result "CCNT_FORMAT"  \n", start, end, *result); 
+#endif 
     ipc_destroy_process(t1, t2); 
 
     //ipc_delete_eps(vka0); 
@@ -329,10 +340,11 @@ void ipc_benchmark (bench_env_t *thread1, bench_env_t *thread2) {
     printf("Doing benchmarks...\n\n");
 
     ipc_overhead(thread1); 
+    print_overhead(); 
 
     for (i = 0; i < IPC_RUNS; i++) {
         printf("\tDoing iteration %d\n",i);
-
+        
         /*one way IPC, reply -> call */
         printf("Running Call+ReplyWait Inter-AS test 1\n");
         thread1->prio = thread2->prio = IPC_PROCESS_PRIO; 
@@ -355,7 +367,6 @@ void ipc_benchmark (bench_env_t *thread1, bench_env_t *thread2) {
         ipc_call_10_time_inter(thread1, thread2, &result); 
         results.call_10_time_inter[i] = result - results.call_reply_wait_10_overhead;
 
-
         printf("Running Call+ReplyWait Different prio test 1\n");
         thread1->prio = IPC_PROCESS_PRIO_LOW; 
         thread2->prio = IPC_PROCESS_PRIO_HIGH; 
@@ -376,7 +387,6 @@ void ipc_benchmark (bench_env_t *thread1, bench_env_t *thread2) {
         printf("Running Call+ReplyWait Different prio test 4\n");
         ipc_call_time_inter(thread1, thread2, &result); 
         results.call_time_inter_high[i] = result - results.call_reply_wait_overhead;
-        
     } 
     process_results(&results); 
     print_results(&results);

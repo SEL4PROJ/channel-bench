@@ -93,7 +93,7 @@
 
 /*ipc benchmark, same as sel4bench*/
 #define IPC_RUNS   16 
-#define IPC_WARMUPS 16 
+#define IPC_WARMUPS 16
 #define IPC_OVERHEAD_RETRIES  4 
 
 #define IPC_PROCESS_PRIO_LOW 50 

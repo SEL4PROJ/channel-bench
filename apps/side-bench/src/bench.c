@@ -25,7 +25,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <sel4/sel4.h>
-#include <sel4bench/sel4bench.h>
 #include <utils/attribute.h>
 #include "../../bench_common.h"
 #include "bench.h"
@@ -138,6 +137,12 @@ void run_bench_ipc(char **argv) {
   
     ipc_bench(result_ep, ep, test_num);
 
+    /*waiting on a endpoit which will never return*/
+    int  ret = wait_init_msg_from(ep); 
+    //printf("ERROR: IPC benchmark receive unexpected message\n"); 
+    assert(ret == BENCH_SUCCESS); 
+
+
 }
 #endif 
 int main (int argc, char **argv) {
@@ -145,9 +150,6 @@ int main (int argc, char **argv) {
 
     /*processing arguments*/
     assert(argc == CONFIG_BENCH_ARGS);
-
-    /*init the benchmakring functions*/
-    sel4bench_init(); 
 
 
 #ifdef CONFIG_BENCH_IPC
