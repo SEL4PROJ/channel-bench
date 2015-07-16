@@ -142,8 +142,9 @@ void init_env (m_env_t *env) {
 
 }
 
+#ifdef CONFIG_CACHE_COLOURING
 /*init run time environment for cache colouring*/
-void init_env_colour (m_env_t *env) {
+static void init_env_colour (m_env_t *env) {
 
     /*allocator, vka, utils...*/
     color_allocator_t *init_allocator; 
@@ -189,9 +190,10 @@ void init_env_colour (m_env_t *env) {
     }
 
 }
+#endif 
 
-
- void lanuch_bench_single (void *arg) {
+#ifdef CONFIG_MANAGER_CACHE_FLUSH
+static void lanuch_bench_single (void *arg) {
 
     /*lanuch single benchmark application*/
 
@@ -281,14 +283,15 @@ void init_env_colour (m_env_t *env) {
 
 
 }
-
+#endif 
 
 
 static void *main_continued (void* arg) {
 
-#ifdef CONFIG_MANAGER_IPC 
+#ifdef CONFIG_MANAGER_IPC
     lanuch_bench_ipc(&env); 
-#else
+#endif 
+#ifdef CONFIG_MANAGER_CACHE_FLUSH 
     lanuch_bench_single(arg);
 #endif 
     /*halt cpu*/
@@ -302,7 +305,7 @@ static void *main_continued (void* arg) {
 
 #ifdef CONFIG_CACHE_COLOURING
 /*creak kernel images*/
-void create_kernel_pd(seL4_BootInfo *info, m_env_t *env) {
+static void create_kernel_pd(seL4_BootInfo *info, m_env_t *env) {
 
     for (int i = 0; i < CC_NUM_DOMAINS; i++) {
 
@@ -311,6 +314,8 @@ void create_kernel_pd(seL4_BootInfo *info, m_env_t *env) {
 
     }
 
+    /*the default kernel image created at bootup*/ 
+    env->kernel = seL4_CapKernel; 
 }
 #endif
 

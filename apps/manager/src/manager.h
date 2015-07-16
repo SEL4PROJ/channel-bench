@@ -37,6 +37,7 @@ typedef struct {
 #ifdef CONFIG_CACHE_COLOURING  
     vka_t vka_colour[CC_NUM_DOMAINS]; 
     colored_kernel_t kernel_colour[CC_NUM_DOMAINS];
+    seL4_CPtr kernel; 
 #endif 
     /*abstracts over kernel version and boot envior*/
     simple_t simple; 

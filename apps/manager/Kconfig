@@ -16,13 +16,13 @@ menu    "Manager task for benchmarking tests"
         help 
              Partitioning system resources and setting up isolated domains. 
         
-        config MANAGER_IPC 
+        config MANAGER_IPC
         bool "ipc performance"
         default n 
         depends on APP_MANAGER 
         help 
-             see timing channel benchmarks
-             
+             ipc benchmarks
+
         config MANAGER_CACHE_FLUSH 
         bool "cost of flushing caches"
         default n 

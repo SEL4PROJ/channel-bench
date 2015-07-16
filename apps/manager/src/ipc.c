@@ -336,55 +336,77 @@ void ipc_benchmark (bench_env_t *thread1, bench_env_t *thread2) {
     /*set up one thread to measure the overhead*/
     uint32_t i;
     ccnt_t result;
-    
+
+#ifdef IPC_BENCH_PRINTOUT
     printf("Doing benchmarks...\n\n");
+#endif 
 
     ipc_overhead(thread1); 
+#ifdef IPC_BENCH_PRINTOUT 
     print_overhead(); 
+#endif 
 
     for (i = 0; i < IPC_RUNS; i++) {
+#ifdef IPC_BENCH_PRINTOUT
         printf("\tDoing iteration %d\n",i);
-        
+#endif  
         /*one way IPC, reply -> call */
+#ifdef IPC_BENCH_PRINTOUT
         printf("Running Call+ReplyWait Inter-AS test 1\n");
+#endif 
         thread1->prio = thread2->prio = IPC_PROCESS_PRIO; 
         ipc_reply_wait_time_inter(thread1, thread2, &result);
         results.reply_wait_time_inter[i] = result - results.call_reply_wait_overhead;
-        
+
+#ifdef IPC_BENCH_PRINTOUT
         printf("Running Call+ReplyWait Inter-AS test 2\n");
+#endif
         ipc_call_time_inter(thread1, thread2, &result); 
         results.call_time_inter[i] = result - results.call_reply_wait_overhead;
-       
+
+#ifdef IPC_BENCH_PRINTOUT 
         printf("Running Send test\n");
+#endif 
         ipc_send_time_inter(thread1, thread2, &result); 
         results.send_time_inter[i] = result - results.send_wait_overhead;
 
+#ifdef IPC_BENCH_PRINTOUT
         printf("Running Call+ReplyWait long message test 1\n");
+#endif 
         ipc_reply_wait_10_time_inter(thread1, thread2, &result);
         results.reply_wait_10_time_inter[i] = result - results.call_reply_wait_10_overhead;
-        
+
+#ifdef IPC_BENCH_PRINTOUT
         printf("Running Call+ReplyWait long message test 2\n");
+#endif 
         ipc_call_10_time_inter(thread1, thread2, &result); 
         results.call_10_time_inter[i] = result - results.call_reply_wait_10_overhead;
 
+#ifdef IPC_BENCH_PRINTOUT
         printf("Running Call+ReplyWait Different prio test 1\n");
+#endif 
         thread1->prio = IPC_PROCESS_PRIO_LOW; 
         thread2->prio = IPC_PROCESS_PRIO_HIGH; 
         ipc_reply_wait_time_inter(thread1, thread2, &result); 
         results.reply_wait_time_inter_high[i] = result - results.call_reply_wait_overhead;
         
-        
+#ifdef IPC_BENCH_PRINTOUT 
         printf("Running Call+ReplyWait Different prio test 2\n");
+#endif 
         ipc_call_time_inter(thread1, thread2, &result); 
         results.call_time_inter_low[i] = result -  results.call_reply_wait_overhead;
 
+#ifdef IPC_BENCH_PRINTOUT
         printf("Running Call+ReplyWait Different prio test 3\n");
+#endif 
         thread1->prio = IPC_PROCESS_PRIO_HIGH; 
         thread2->prio = IPC_PROCESS_PRIO_LOW; 
         ipc_reply_wait_time_inter(thread1, thread2, &result); 
         results.reply_wait_time_inter_low[i] = result - results.call_reply_wait_overhead;
-        
+
+#ifdef IPC_BENCH_PRINTOUT
         printf("Running Call+ReplyWait Different prio test 4\n");
+#endif  
         ipc_call_time_inter(thread1, thread2, &result); 
         results.call_time_inter_high[i] = result - results.call_reply_wait_overhead;
     } 
@@ -396,10 +418,6 @@ void ipc_benchmark (bench_env_t *thread1, bench_env_t *thread2) {
 /*entry point for ipc benchmarks */
 void lanuch_bench_ipc(m_env_t *env) {
 
-    printf("\n"); 
-    printf("ipc benchmarks\n");
-    printf("========================\n");
-
     thread2.image = thread1.image = CONFIG_BENCH_THREAD_NAME;
     thread2.vspace = thread1.vspace = &env->vspace;
 
@@ -408,17 +426,51 @@ void lanuch_bench_ipc(m_env_t *env) {
     thread2.kernel = env->kernel_colour[1].image.cptr; 
     thread1.vka = &env->vka_colour[0]; 
     thread2.vka = &env->vka_colour[1]; 
-    /*regarding the thread 1 with low classification level*/
+    /*FIXME: regarding the thread 1 with low classification level*/
+    
     ipc_alloc_eps(&env->vka_colour[0]);
-#else
-    thread1.vka = &env->vka; 
-    thread2.vka = &env->vka; 
-    ipc_alloc_eps (&env->vka); 
-#endif
+    thread2.ep = thread1.ep = ipc_ep;
+    thread2.reply_ep = thread1.reply_ep = ipc_reply_ep;
+   
+    printf("\n"); 
+    printf("ipc inter colour benchmarks\n");
+    printf("========================\n");
+    ipc_benchmark(&thread1, &thread2); 
+
+    printf("\n"); 
+    printf("ipc intra colour benchmarks\n");
+    printf("========================\n");
+    thread2.kernel = thread1.kernel = env->kernel_colour[0].image.cptr; 
+    thread2.vka = thread1.vka = &env->vka_colour[0]; 
+    ipc_benchmark(&thread1, &thread2); 
+
+    printf("\n"); 
+    printf("ipc no colour benchmarks\n");
+    printf("========================\n");
+    ipc_alloc_eps(&env->vka);
 
     thread2.ep = thread1.ep = ipc_ep;
     thread2.reply_ep = thread1.reply_ep = ipc_reply_ep;
 
+    thread2.kernel = thread1.kernel = env->kernel;
+    thread2.vka = thread1.vka = &env->vka; 
     ipc_benchmark(&thread1, &thread2); 
 
+#else
+    thread1.vka = &env->vka; 
+    thread2.vka = &env->vka; 
+    ipc_alloc_eps (&env->vka); 
+
+    thread2.ep = thread1.ep = ipc_ep;
+    thread2.reply_ep = thread1.reply_ep = ipc_reply_ep;
+    
+    printf("\n"); 
+    printf("ipc original kernel benchmarks\n");
+    printf("========================\n");
+    ipc_benchmark(&thread1, &thread2); 
+
+
+
+
+#endif
 }

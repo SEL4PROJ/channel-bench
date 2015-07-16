@@ -1,7 +1,7 @@
 #
 # Automatically generated make config: don't edit
 # Project Configuration
-# Thu Jul 16 16:57:52 2015
+# Thu Jul 16 16:44:54 2015
 #
 
 #
@@ -46,7 +46,10 @@ CONFIG_AEP_BINDING=y
 #
 # Mitigating Covert Channels
 #
-# CONFIG_CACHE_COLOURING is not set
+CONFIG_CACHE_COLOURING=y
+# CONFIG_MULTI_KERNEL_COVERT_CHANNELS is not set
+CONFIG_COLOURING_STACK=y
+# CONFIG_LOCK_KERNEL_DATA is not set
 # CONFIG_KERNEL_BENCH_OPERATIONS is not set
 
 #
