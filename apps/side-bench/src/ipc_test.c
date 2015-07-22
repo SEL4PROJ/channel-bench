@@ -70,10 +70,6 @@ seL4_Word ipc_call_func(seL4_CPtr ep, seL4_CPtr result_ep) {
 #endif
     } 
     FENCE();
-#ifdef CONFIG_BENCH_PMU_COUNTER
-    printf("call: \n"); 
-    print_pmu_results(pmu_v->pmuc[IPC_CALL]); 
-#endif
     send_result(result_ep, end); 
     seL4_Send(ep, tag); 
     return 0; 
@@ -98,10 +94,6 @@ seL4_Word ipc_call_func2(seL4_CPtr ep, seL4_CPtr result_ep) {
         READ_COUNTER_AFTER(end);
     } 
     FENCE();
-#ifdef CONFIG_BENCH_PMU_COUNTER
-    printf("call2 : \n"); 
-    print_pmu_results(pmu_v->pmuc[IPC_CALL2]); 
-#endif 
     send_result(result_ep, start); 
     dummy_seL4_Send(ep, tag); 
     return 0; 
@@ -173,10 +165,6 @@ seL4_Word ipc_reply_wait_func(seL4_CPtr ep, seL4_CPtr result_ep) {
         READ_COUNTER_AFTER(end); 
     } 
     FENCE(); 
-#if CONFIG_BENCH_PMU_COUNTER
-    printf("reply_wait: \n"); 
-    print_pmu_results(pmu_v->pmuc[IPC_REPLY_WAIT]); 
-#endif 
     send_result(result_ep, start); 
     dummy_seL4_Reply(tag); 
     return 0; 
@@ -198,10 +186,6 @@ seL4_Word ipc_reply_wait_func2(seL4_CPtr ep, seL4_CPtr result_ep) {
 #endif
     } 
     FENCE(); 
-#ifdef CONFIG_BENCH_PMU_COUNTER
-    printf("reply_wait_2: \n");
-    print_pmu_results(pmu_v->pmuc[IPC_REPLY_WAIT2]); 
-#endif 
     send_result(result_ep, end); 
     seL4_Reply(tag); 
     return 0; 
@@ -432,8 +416,6 @@ seL4_Word ipc_bench(seL4_CPtr result_ep, seL4_CPtr test_ep, int test_n,
 #ifdef CONFIG_BENCH_PMU_COUNTER 
 
     pmu_v = record_vaddr; 
-    sel4bench_reset_counters(BENCH_PMU_BITS); 
-
 #endif 
 
     if (!ipc_funs[test_n])

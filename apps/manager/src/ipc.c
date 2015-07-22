@@ -421,18 +421,6 @@ void ipc_benchmark (bench_env_t *thread1, bench_env_t *thread2) {
 #ifdef IPC_BENCH_PRINTOUT 
     print_overhead(); 
 #endif 
-#ifdef CONFIG_MANAGER_PUM_COUNTER
-    sel4bench_counter_t c = sel4bench_get_counter(1);
-    printf("c number %u\n", c); 
-    c = sel4bench_get_counter(2);
-    printf("c number %u\n", c); 
- c = sel4bench_get_counter(3);
-    printf("c number %u\n", c); 
- c = sel4bench_get_counter(4);
-    printf("c number %u\n", c); 
- c = sel4bench_get_counter(5);
-    printf("c number %u\n", c); 
-#endif 
 
     for (i = 0; i < IPC_RUNS; i++) {
 #ifdef IPC_BENCH_PRINTOUT
@@ -440,6 +428,8 @@ void ipc_benchmark (bench_env_t *thread1, bench_env_t *thread2) {
 #endif  
 #ifdef CONFIG_MANAGER_PMU_COUNTER 
         memset(pmu_v, 0, BENCH_PMU_PAGES * BIT(PAGE_BITS_4K)); 
+        sel4bench_reset_counters(BENCH_PMU_BITS); 
+
 #endif
 
         /*one way IPC, reply -> call */
