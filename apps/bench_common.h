@@ -21,7 +21,7 @@
 
 
 #include <stdint.h>
-
+#include <sel4bench/sel4bench.h>
 /*elf file name of benchmark thread*/ 
 #define CONFIG_BENCH_THREAD_NAME    "side-bench"
 
@@ -113,6 +113,10 @@
 #ifdef CONFIG_PLAT_IMX6
 #define CC_DIV             8
 #endif
+#ifdef CONFIG_PLAT_EXYNOS4
+#define CC_DIV             8
+#endif
+
 
 #if 0
 #define IPC_BENCH_CALL_START 0 
@@ -187,6 +191,30 @@ struct ipc_results {
 
 };
 #endif 
+
+#define BENCH_PMU_BITS 0x1f 
+#define BENCH_PMU_COUNTERS 5 
+#define BENCH_PMU_PAGES    1
+
+/*pmu counter result structure*/
+typedef struct {
+
+    sel4bench_counter_t pmuc[IPC_ALL][BENCH_PMU_COUNTERS]; 
+} ipc_pmu_t;  
+
+typedef struct {
+    /* Raw results from benchmarking. These get checked for sanity */
+    sel4bench_counter_t call_time_inter[IPC_RUNS][BENCH_PMU_COUNTERS];
+    sel4bench_counter_t reply_wait_time_inter[IPC_RUNS][BENCH_PMU_COUNTERS];
+    sel4bench_counter_t call_time_inter_low[IPC_RUNS][BENCH_PMU_COUNTERS];
+    sel4bench_counter_t reply_wait_time_inter_high[IPC_RUNS][BENCH_PMU_COUNTERS];
+    sel4bench_counter_t call_time_inter_high[IPC_RUNS][BENCH_PMU_COUNTERS];
+    sel4bench_counter_t reply_wait_time_inter_low[IPC_RUNS][BENCH_PMU_COUNTERS];
+    sel4bench_counter_t send_time_inter[IPC_RUNS][BENCH_PMU_COUNTERS];
+    sel4bench_counter_t wait_time_inter[IPC_RUNS][BENCH_PMU_COUNTERS];
+    sel4bench_counter_t call_10_time_inter[IPC_RUNS][BENCH_PMU_COUNTERS];
+    sel4bench_counter_t reply_wait_10_time_inter[IPC_RUNS][BENCH_PMU_COUNTERS];
+} ipc_test_pmu_t; 
 
 
 /*data maxtix for probing result (x,y) = (Plain text 

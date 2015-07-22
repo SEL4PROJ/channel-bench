@@ -82,6 +82,10 @@ typedef struct bench_env {
     seL4_Word prio;         /*priority of benchmarking thread*/
     sel4utils_process_t process;  /*internal process context*/ 
     uint32_t test_num;      /*test number*/
+    /*extra caps to the record data frames for mapping into 
+     the benchmark vspace*/ 
+    seL4_CPtr record_frames[BENCH_PMU_PAGES]; 
+
 } bench_env_t; 
 
 

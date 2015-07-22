@@ -86,6 +86,13 @@ menu   "Timing Channel Benchmarks"
        help 
            enable the ipc benchmarking functions 
 
+        config BENCH_PMU_COUNTER 
+        bool "using pmu counter to monitor events" 
+        default n 
+        depends on APP_SIDE_BENCH
+        help 
+              enable pmu counters 
+
 
 endmenu 
 

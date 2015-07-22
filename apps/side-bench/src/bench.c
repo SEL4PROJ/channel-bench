@@ -129,19 +129,25 @@ static inline void send_result_to(seL4_CPtr endpoint, seL4_Word w) {
 void run_bench_ipc(char **argv) {
     unsigned int test_num; 
     seL4_CPtr ep, result_ep; 
+    void *record_vaddr = NULL;
 
     /*get the test number*/
     test_num = atol(argv[0]); 
     ep = (seL4_CPtr)atol(argv[1]);
     result_ep = (seL4_CPtr)atol(argv[2]);
   
-    ipc_bench(result_ep, ep, test_num);
+#ifdef CONFIG_BENCH_PMU_COUNTER 
+    /*waiting for virtual address given by root task*/
+    record_vaddr = wait_vaddr_from(result_ep); 
+    assert(record_vaddr != NULL); 
+
+#endif 
+    ipc_bench(result_ep, ep, test_num, record_vaddr);
 
     /*waiting on a endpoit which will never return*/
     int  ret = wait_init_msg_from(ep); 
     //printf("ERROR: IPC benchmark receive unexpected message\n"); 
     assert(ret == BENCH_SUCCESS); 
-
 
 }
 #endif 

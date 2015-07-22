@@ -29,7 +29,8 @@ seL4_Word dcache_attack(void *record_vaddr);
 seL4_Word bench_flush(void *record_vaddr);
 
 /*ipc benchmark*/ 
-seL4_Word ipc_bench(seL4_CPtr result_ep, seL4_CPtr test_ep, int test_n);
+seL4_Word ipc_bench(seL4_CPtr result_ep, seL4_CPtr test_ep, int test_n,
+        void *record_vaddr);
 
 #endif 
 

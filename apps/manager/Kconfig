@@ -22,6 +22,14 @@ menu    "Manager task for benchmarking tests"
         depends on APP_MANAGER 
         help 
              ipc benchmarks
+        
+        config MANAGER_PMU_COUNTER 
+        bool "using pmu counter to monitor events" 
+        default n 
+        depends on APP_MANAGER 
+        help 
+              enable pmu counters 
+
 
         config MANAGER_CACHE_FLUSH 
         bool "cost of flushing caches"
