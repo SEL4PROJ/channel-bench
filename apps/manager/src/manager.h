@@ -76,7 +76,9 @@ typedef struct bench_env {
     seL4_CPtr kernel;       /*kernel image*/
     vka_object_t ep; 
     vka_object_t reply_ep;
+    vka_object_t null_ep;    /*never returned ep*/
     vka_t *vka;              /*kernel object allocator*/
+    vka_t *ipc_vka;          /*used for endpoint*/
     vspace_t *vspace;        /*virtual address space of the root task*/
     char *image;            /*binary name of benchmarking elf file*/
     seL4_Word prio;         /*priority of benchmarking thread*/

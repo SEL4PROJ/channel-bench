@@ -299,18 +299,17 @@ static void init_pmu_counters(void) {
     sel4bench_set_count_event(0, SEL4BENCH_EVENT_TLB_L1I_MISS); 
    // sel4bench_set_count_event(0, SEL4BENCH_EVENT_EXECUTE_INSTRUCTION); 
     sel4bench_set_count_event(1, SEL4BENCH_EVENT_TLB_L1D_MISS); 
-// sel4bench_set_count_event(2, SEL4BENCH_EVENT_BRANCH_MISPREDICT); 
-   // sel4bench_set_count_event(3, SEL4BENCH_EVENT_CACHE_L1I_MISS); 
-  //  sel4bench_set_count_event(4, SEL4BENCH_EVENT_CACHE_L1D_MISS); 
+    sel4bench_set_count_event(2, SEL4BENCH_EVENT_CACHE_L1I_MISS); 
+    sel4bench_set_count_event(3, SEL4BENCH_EVENT_CACHE_L1D_MISS); 
     //sel4bench_set_count_event(5, SEL4BENCH_EVENT_EXECUTE_INSTRUCTION); 
     
     /*stall due to instruction micro tlb miss*/ 
-    sel4bench_set_count_event(2, 0x84); 
+    //sel4bench_set_count_event(2, 0x84); 
     
     /*stall due to data micro tlb miss*/ 
-    sel4bench_set_count_event(3, 0x85); 
+    //sel4bench_set_count_event(3, 0x85); 
     /*stall due to main tlb miss*/ 
-    sel4bench_set_count_event(4, 0x62);
+    //sel4bench_set_count_event(4, 0x62);
     sel4bench_start_counters(bit_counter); 
     /*start the pmu counter*/ 
 }

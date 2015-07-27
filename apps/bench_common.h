@@ -92,7 +92,7 @@
 #define OVERHEAD_RETRIES 4
 
 /*ipc benchmark, same as sel4bench*/
-#define IPC_RUNS   16 
+#define IPC_RUNS    16 
 #define IPC_WARMUPS 16
 #define IPC_OVERHEAD_RETRIES  4 
 
@@ -191,9 +191,13 @@ struct ipc_results {
 
 };
 #endif 
-
+#ifdef CONFIG_ARCH_X86 
+#define BENCH_PMU_BITS 0xf 
+#define BENCH_PMU_COUNTERS 4 
+#else 
 #define BENCH_PMU_BITS 0x1f 
 #define BENCH_PMU_COUNTERS 5 
+#endif 
 #define BENCH_PMU_PAGES    1
 
 /*pmu counter result structure*/

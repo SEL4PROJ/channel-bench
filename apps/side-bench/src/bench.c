@@ -71,6 +71,21 @@ static inline void *wait_vaddr_from(seL4_CPtr endpoint)
     return (void *)seL4_GetMR(0);
 }
 
+/*wait for shared frame address*/
+static inline seL4_CPtr wait_ep_from(seL4_CPtr endpoint)
+{
+    /* wait for a message */
+    seL4_Word badge;
+    seL4_MessageInfo_t info;
+
+    info = seL4_Wait(endpoint, &badge);
+
+    /* check the label and length*/
+    assert(seL4_MessageInfo_get_label(info) == seL4_NoFault);
+    assert(seL4_MessageInfo_get_length(info) == 1);
+
+    return (seL4_CPtr)seL4_GetMR(0);
+}
 
 /*send benchmark result to the root task*/
 static inline void send_result_to(seL4_CPtr endpoint, seL4_Word w) {
@@ -128,14 +143,15 @@ static inline void send_result_to(seL4_CPtr endpoint, seL4_Word w) {
 #ifdef CONFIG_BENCH_IPC
 void run_bench_ipc(char **argv) {
     unsigned int test_num; 
-    seL4_CPtr ep, result_ep; 
+    seL4_CPtr ep, result_ep, null_ep; 
     void *record_vaddr = NULL;
-
     /*get the test number*/
     test_num = atol(argv[0]); 
     ep = (seL4_CPtr)atol(argv[1]);
     result_ep = (seL4_CPtr)atol(argv[2]);
-  
+
+    null_ep = wait_ep_from(result_ep); 
+
 #ifdef CONFIG_BENCH_PMU_COUNTER 
     /*waiting for virtual address given by root task*/
     record_vaddr = wait_vaddr_from(result_ep); 
@@ -145,9 +161,7 @@ void run_bench_ipc(char **argv) {
     ipc_bench(result_ep, ep, test_num, record_vaddr);
 
     /*waiting on a endpoit which will never return*/
-    int  ret = wait_init_msg_from(ep); 
-    //printf("ERROR: IPC benchmark receive unexpected message\n"); 
-    assert(ret == BENCH_SUCCESS); 
+    wait_init_msg_from(null_ep); 
 
 }
 #endif 

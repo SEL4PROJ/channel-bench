@@ -159,7 +159,6 @@ seL4_Word ipc_reply_wait_func(seL4_CPtr ep, seL4_CPtr result_ep) {
         sel4bench_get_counters(BENCH_PMU_BITS, 
                 pmu_v->pmuc[IPC_REPLY_WAIT]); 
 #endif
-
         READ_COUNTER_BEFORE(start); 
         DO_REAL_REPLY_WAIT(ep, tag); 
         READ_COUNTER_AFTER(end); 
