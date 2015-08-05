@@ -10,7 +10,7 @@ typedef uint64_t ccnt_t;
 #else
 #define CCNT32BIT
 typedef uint32_t ccnt_t;
-#define CCNT_FORMAT "%d"
+#define CCNT_FORMAT "%u"
 #endif
 
 #if 0

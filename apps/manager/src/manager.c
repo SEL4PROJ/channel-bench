@@ -295,23 +295,108 @@ static void init_pmu_counters(void) {
     num_counter =  sel4bench_get_num_counters(); 
     printf("\n num of pmu counter is %d \n", num_counter); 
    
+#ifdef CONFIG_ARCH_X86 
+    {
+        uint32_t eax, ebx, ecx, edx; 
+
+        sel4bench_private_cpuid(IA32_CPUID_LEAF_PMC, 0, &eax, &ebx, &ecx,
+                &edx);
+        printf("the cpuid for pmu leaf 0xa vaule eax  0x%x  ebx 0x%x edx 0x%x\n",
+                eax, ebx, edx);
+
+        sel4bench_private_cpuid(IA32_CPUID_LEAF_MODEL, 0, &eax, &ebx, 
+                &ecx, &edx); 
+        printf("cpu family and model value 0x%x\n", eax); 
+
+    }
+#endif 
+
+
+#ifdef CONFIG_ARM_CORTEX_A9  
     /*set up the pmu counter events*/
     sel4bench_set_count_event(0, SEL4BENCH_EVENT_TLB_L1I_MISS); 
-   // sel4bench_set_count_event(0, SEL4BENCH_EVENT_EXECUTE_INSTRUCTION); 
     sel4bench_set_count_event(1, SEL4BENCH_EVENT_TLB_L1D_MISS); 
-    sel4bench_set_count_event(2, SEL4BENCH_EVENT_CACHE_L1I_MISS); 
-    sel4bench_set_count_event(3, SEL4BENCH_EVENT_CACHE_L1D_MISS); 
-    //sel4bench_set_count_event(5, SEL4BENCH_EVENT_EXECUTE_INSTRUCTION); 
-    
+    /*L1 I cache refill*/
+    //sel4bench_set_count_event(2, 0x1); 
+    /*L1 D cache refill*/
+    //sel4bench_set_count_event(3, 0x3); 
+
+    /*L2 cache refill*/ 
+    //sel4bench_set_count_event(4, 0x17);
+   
     /*stall due to instruction micro tlb miss*/ 
-    //sel4bench_set_count_event(2, 0x84); 
-    
+    sel4bench_set_count_event(2, 0x84); 
     /*stall due to data micro tlb miss*/ 
-    //sel4bench_set_count_event(3, 0x85); 
-    /*stall due to main tlb miss*/ 
-    //sel4bench_set_count_event(4, 0x62);
-    sel4bench_start_counters(bit_counter); 
+    sel4bench_set_count_event(3, 0x85); 
+    /*stall due to main tlb miss instruction side*/ 
+    sel4bench_set_count_event(4, 0x82);
+    /*stall due to main tlb miss data side*/
+    sel4bench_set_count_event(5, 0x83);
+#endif 
+
+#ifdef CONFIG_ARM_CORTEXT_A15 
+/*set up the pmu counter events*/
+    sel4bench_set_count_event(0, SEL4BENCH_EVENT_TLB_L1I_MISS); 
+    sel4bench_set_count_event(1, SEL4BENCH_EVENT_TLB_L1D_MISS); 
+    /*L1 I cache refill*/
+    //sel4bench_set_count_event(2, 0x1); 
+    /*L1 D cache refill*/
+    //sel4bench_set_count_event(3, 0x3); 
+
+    /*L2 cache refill*/ 
+    //sel4bench_set_count_event(4, 0x17);
+   
+    /*stall due to instruction micro tlb miss*/ 
+   // sel4bench_set_count_event(2, 0x84); 
+    /*stall due to data micro tlb miss*/ 
+   // sel4bench_set_count_event(3, 0x85); 
+    /*stall due to main tlb miss instruction side*/ 
+   // sel4bench_set_count_event(4, 0x82);
+    /*stall due to main tlb miss data side*/
+    //sel4bench_set_count_event(5, 0x83);
+
+
+
+#endif
+
+#ifdef CONFIG_ARCH_X86
+    //sel4bench_set_count_event(0, SEL4BENCH_EVENT_CACHE_L1I_MISS);
+    //sel4bench_set_count_event(1, SEL4BENCH_EVENT_CACHE_L1D_MISS); 
+#if 1
+    /*dtlb store group*/
+    sel4bench_set_count_event(0, 0x0149); //dtlb store miss, any tlb level, cause a page walk
+    sel4bench_set_count_event(1, 0x1049); // Cycles PMH is busy with this walk
+    sel4bench_set_count_event(2, 0x6049); // store miss the first level tlb but hit the second level
+    sel4bench_set_count_event(3, 0x8049); // store miss that also miss the pde cache
+#endif 
+#if 0
+    /*dtlb load group*/
+    sel4bench_set_count_event(0, 0x0108); //DTLB_LOAD_MISSES.MISS_CAUSEAWALK
+    sel4bench_set_count_event(1, 0x1008); //DTLB_LOAD_MISSES.WALK_DUR
+    sel4bench_set_count_event(2, 0x6008); //DTLB_LOAD_MISSES.STLB_HIT
+    sel4bench_set_count_event(3, 0x8008);// DTLB_LOAD_MISSES.PDE_CACHE_MISS
+#endif 
+#if 0
+    /*itlb group*/ 
+    sel4bench_set_count_event(0, 0x0185); // ITLB_MISSES.MISS_CAUSES_A_WALK
+    sel4bench_set_count_event(1, 0x1085); // ITLB_MISSES.WALK_DURATION
+    sel4bench_set_count_event(2, 0x6085); // ITLB_MISSES.STLB_HIT
+#endif
+
+#if 0
+    /*page walk levels*/ 
+    sel4bench_set_count_event(0, 0x11bc); 
+    sel4bench_set_count_event(1, 0x12bc); 
+    sel4bench_set_count_event(2, 0x14bc); 
+    sel4bench_set_count_event(3, 0x18bc); 
+#endif
+    //sel4bench_set_count_event(2, 0x0185); //itlb miss
+    //sel4bench_set_count_event(2, SEL4BENCH_EVENT_TLB_L1I_MISS); 
+    //sel4bench_set_count_event(3, SEL4BENCH_EVENT_TLB_L1D_MISS); 
+#endif
+
     /*start the pmu counter*/ 
+    sel4bench_start_counters(bit_counter); 
 }
 
 
@@ -378,8 +463,8 @@ int main (void) {
 
     /*switch to a bigger, safer stack with guard page*/ 
 
-    printf("Manager, switching to a safer, bigger stack... "); 
-    fflush(stdout); 
+   // printf("Manager, switching to a safer, bigger stack... "); 
+   // fflush(stdout); 
 
 
     /*starting test, never return from this function*/

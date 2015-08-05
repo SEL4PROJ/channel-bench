@@ -1,6 +1,7 @@
 /*ipc benchmarks*/
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sel4/sel4.h>
 #include "../../bench_common.h"
 #include "ipc_test.h"
@@ -59,6 +60,9 @@ seL4_Word ipc_call_func(seL4_CPtr ep, seL4_CPtr result_ep) {
     uint32_t i; 
     ccnt_t start UNUSED, end UNUSED; 
     seL4_MessageInfo_t tag = seL4_MessageInfo_new(0, 0, 0, 0); 
+#ifdef CONFIG_BENCH_PMU_COUNTER
+    sel4bench_counter_t pmuc[BENCH_PMU_COUNTERS]; 
+#endif 
     dummy_seL4_Call(ep, tag);
     FENCE(); 
     for (i = 0; i < IPC_WARMUPS; i++) { 
@@ -66,10 +70,15 @@ seL4_Word ipc_call_func(seL4_CPtr ep, seL4_CPtr result_ep) {
         DO_REAL_CALL(ep, tag); 
         READ_COUNTER_AFTER(end); 
 #ifdef CONFIG_BENCH_PMU_COUNTER 
-        sel4bench_get_counters(BENCH_PMU_BITS, pmu_v->pmuc[IPC_CALL]); 
+        sel4bench_get_counters(BENCH_PMU_BITS, pmuc);  
 #endif
     } 
     FENCE();
+#ifdef CONFIG_BENCH_PMU_COUNTER
+    memcpy((void *)pmu_v->pmuc[IPC_CALL], (void *)pmuc, 
+            (sizeof (sel4bench_counter_t)) * BENCH_PMU_COUNTERS); 
+#endif 
+
     send_result(result_ep, end); 
     seL4_Send(ep, tag); 
     return 0; 
@@ -83,17 +92,26 @@ seL4_Word ipc_call_func2(seL4_CPtr ep, seL4_CPtr result_ep) {
     uint32_t i; 
     ccnt_t start UNUSED, end UNUSED; 
     seL4_MessageInfo_t tag = seL4_MessageInfo_new(0, 0, 0, 0); 
+#ifdef CONFIG_BENCH_PMU_COUNTER
+    sel4bench_counter_t pmuc[BENCH_PMU_COUNTERS]; 
+#endif 
+
     seL4_Call(ep, tag);
     FENCE(); 
     for (i = 0; i < IPC_WARMUPS; i++) { 
 #ifdef CONFIG_BENCH_PMU_COUNTER 
-        sel4bench_get_counters(BENCH_PMU_BITS, pmu_v->pmuc[IPC_CALL2]); 
+        sel4bench_get_counters(BENCH_PMU_BITS, pmuc);  
 #endif
         READ_COUNTER_BEFORE(start);
         DO_REAL_CALL(ep, tag); 
         READ_COUNTER_AFTER(end);
     } 
     FENCE();
+#ifdef CONFIG_BENCH_PMU_COUNTER
+    memcpy((void *)pmu_v->pmuc[IPC_CALL2], (void *)pmuc, 
+            (sizeof (sel4bench_counter_t)) * BENCH_PMU_COUNTERS); 
+#endif 
+
     send_result(result_ep, start); 
     dummy_seL4_Send(ep, tag); 
     return 0; 
@@ -106,6 +124,9 @@ seL4_Word ipc_call_10_func(seL4_CPtr ep, seL4_CPtr result_ep) {
     uint32_t i; 
     ccnt_t start UNUSED, end UNUSED; 
     seL4_MessageInfo_t tag = seL4_MessageInfo_new(0, 0, 0, 10); 
+#ifdef CONFIG_BENCH_PMU_COUNTER
+    sel4bench_counter_t pmuc[BENCH_PMU_COUNTERS]; 
+#endif 
     dummy_seL4_Call(ep, tag);
     FENCE(); 
     for (i = 0; i < IPC_WARMUPS; i++) { 
@@ -113,11 +134,15 @@ seL4_Word ipc_call_10_func(seL4_CPtr ep, seL4_CPtr result_ep) {
         DO_REAL_CALL_10(ep, tag); 
         READ_COUNTER_AFTER(end); 
 #ifdef CONFIG_BENCH_PMU_COUNTER 
-        sel4bench_get_counters(BENCH_PMU_BITS, pmu_v->pmuc[IPC_CALL_10]); 
+        sel4bench_get_counters(BENCH_PMU_BITS, pmuc);  
 #endif
 
     } 
     FENCE(); 
+#ifdef CONFIG_BENCH_PMU_COUNTER
+    memcpy((void *)pmu_v->pmuc[IPC_CALL_10], (void *)pmuc, 
+            (sizeof (sel4bench_counter_t)) * BENCH_PMU_COUNTERS); 
+#endif
     send_result(result_ep, end); 
     seL4_Send(ep, tag); 
     return 0; 
@@ -129,11 +154,14 @@ seL4_Word ipc_call_10_func2(seL4_CPtr ep, seL4_CPtr result_ep) {
     uint32_t i; 
     ccnt_t start UNUSED, end UNUSED; 
     seL4_MessageInfo_t tag = seL4_MessageInfo_new(0, 0, 0, 10); 
+#ifdef CONFIG_BENCH_PMU_COUNTER
+    sel4bench_counter_t pmuc[BENCH_PMU_COUNTERS]; 
+#endif 
     seL4_Call(ep, tag);
     FENCE(); 
     for (i = 0; i < IPC_WARMUPS; i++) {
 #ifdef CONFIG_BENCH_PMU_COUNTER 
-        sel4bench_get_counters(BENCH_PMU_BITS, pmu_v->pmuc[IPC_CALL2_10]); 
+        sel4bench_get_counters(BENCH_PMU_BITS, pmuc);  
 #endif
 
         READ_COUNTER_BEFORE(start); 
@@ -141,6 +169,11 @@ seL4_Word ipc_call_10_func2(seL4_CPtr ep, seL4_CPtr result_ep) {
         READ_COUNTER_AFTER(end); 
     } 
     FENCE(); 
+#ifdef CONFIG_BENCH_PMU_COUNTER
+    memcpy((void *)pmu_v->pmuc[IPC_CALL2_10], (void *)pmuc, 
+            (sizeof (sel4bench_counter_t)) * BENCH_PMU_COUNTERS); 
+#endif 
+
     send_result(result_ep, start); 
     dummy_seL4_Send(ep, tag); 
     return 0; 
@@ -152,18 +185,25 @@ seL4_Word ipc_reply_wait_func(seL4_CPtr ep, seL4_CPtr result_ep) {
     uint32_t i; 
     ccnt_t start UNUSED, end UNUSED; 
     seL4_MessageInfo_t tag = seL4_MessageInfo_new(0, 0, 0, 0); 
+#ifdef CONFIG_BENCH_PMU_COUNTER
+    sel4bench_counter_t pmuc[BENCH_PMU_COUNTERS]; 
+#endif 
     seL4_Wait(ep, NULL); 
     FENCE(); 
     for (i = 0; i < IPC_WARMUPS; i++) { 
 #ifdef CONFIG_BENCH_PMU_COUNTER 
-        sel4bench_get_counters(BENCH_PMU_BITS, 
-                pmu_v->pmuc[IPC_REPLY_WAIT]); 
+        sel4bench_get_counters(BENCH_PMU_BITS, pmuc);  
 #endif
         READ_COUNTER_BEFORE(start); 
         DO_REAL_REPLY_WAIT(ep, tag); 
         READ_COUNTER_AFTER(end); 
     } 
     FENCE(); 
+#ifdef CONFIG_BENCH_PMU_COUNTER
+    memcpy((void *)pmu_v->pmuc[IPC_REPLY_WAIT], (void *)pmuc, 
+            (sizeof (sel4bench_counter_t)) * BENCH_PMU_COUNTERS); 
+#endif 
+
     send_result(result_ep, start); 
     dummy_seL4_Reply(tag); 
     return 0; 
@@ -173,6 +213,9 @@ seL4_Word ipc_reply_wait_func2(seL4_CPtr ep, seL4_CPtr result_ep) {
     uint32_t i; 
     ccnt_t start UNUSED, end UNUSED; 
     seL4_MessageInfo_t tag = seL4_MessageInfo_new(0, 0, 0, 0); 
+#ifdef CONFIG_BENCH_PMU_COUNTER
+    sel4bench_counter_t pmuc[BENCH_PMU_COUNTERS]; 
+#endif 
     seL4_Wait(ep, NULL); 
     FENCE(); 
     for (i = 0; i < IPC_WARMUPS; i++) { 
@@ -180,11 +223,14 @@ seL4_Word ipc_reply_wait_func2(seL4_CPtr ep, seL4_CPtr result_ep) {
         DO_REAL_REPLY_WAIT(ep, tag); 
         READ_COUNTER_AFTER(end); 
 #ifdef CONFIG_BENCH_PMU_COUNTER 
-        sel4bench_get_counters(BENCH_PMU_BITS, 
-                pmu_v->pmuc[IPC_REPLY_WAIT2]); 
+        sel4bench_get_counters(BENCH_PMU_BITS, pmuc);  
 #endif
     } 
-    FENCE(); 
+    FENCE();
+#ifdef CONFIG_BENCH_PMU_COUNTER
+    memcpy((void *)pmu_v->pmuc[IPC_REPLY_WAIT2], (void *)pmuc, 
+            (sizeof (sel4bench_counter_t)) * BENCH_PMU_COUNTERS); 
+#endif 
     send_result(result_ep, end); 
     seL4_Reply(tag); 
     return 0; 

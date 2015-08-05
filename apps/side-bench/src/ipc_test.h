@@ -16,7 +16,7 @@ typedef uint64_t ccnt_t;
 #else
 #define CCNT32BIT
 typedef uint32_t ccnt_t;
-#define CCNT_FORMAT "%d"
+#define CCNT_FORMAT "%u"
 #endif
 
 struct bench_results {
@@ -449,7 +449,7 @@ struct bench_results {
 #define DO_NOP_SEND(ep, tag) DO_SEND_ARM(ep, tag, "nop")
 #define DO_REAL_WAIT(ep) DO_WAIT_ARM(ep, "swi %[swi_num]")
 #define DO_NOP_WAIT(ep) DO_WAIT_ARM(ep, "nop")
-#elif defined(CONFIG_ARCH_IA32)
+#elif defined(CONFIG_ARCH_X86)
 
 #ifdef CONFIG_X86_64
 #define DO_REAL_CALL(ep, tag) DO_CALL_X64(ep, tag, "sysenter")

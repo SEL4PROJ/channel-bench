@@ -116,6 +116,11 @@
 #ifdef CONFIG_PLAT_EXYNOS4
 #define CC_DIV             8
 #endif
+#ifdef CONFIG_PLAT_EXYNOS54XX
+#define CC_DIV             8
+#endif
+
+
 
 
 #if 0
@@ -191,13 +196,23 @@ struct ipc_results {
 
 };
 #endif 
+
 #ifdef CONFIG_ARCH_X86 
-#define BENCH_PMU_BITS 0xf 
+#define BENCH_PMU_BITS 0xf
 #define BENCH_PMU_COUNTERS 4 
-#else 
-#define BENCH_PMU_BITS 0x1f 
-#define BENCH_PMU_COUNTERS 5 
 #endif 
+
+#ifdef CONFIG_ARM_CORTEX_A9
+#define BENCH_PMU_BITS 0x3f 
+#define BENCH_PMU_COUNTERS 6 
+#endif 
+
+#ifdef CONFIG_ARM_CORTEX_A15
+#define BENCH_PMU_BITS 0x3
+#define BENCH_PMU_COUNTERS 2 
+#endif 
+
+
 #define BENCH_PMU_PAGES    1
 
 /*pmu counter result structure*/

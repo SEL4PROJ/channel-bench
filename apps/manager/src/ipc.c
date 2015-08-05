@@ -177,6 +177,7 @@ void create_benchmark_process(bench_env_t *t) {
             
     assert(error == 0); 
 
+
     vka_cspace_make_path(t->ipc_vka, t->ep.cptr, &src);  
     ep_arg = sel4utils_copy_cap_to_process(process, src);
     assert(ep_arg); 
@@ -234,7 +235,9 @@ void ipc_alloc_eps(vka_t *vka) {
     /*create 2 end points: ep and reply ep*/
     error = vka_alloc_endpoint(vka, &ipc_ep);
     assert(error == 0); 
-    
+
+    printf("ipc alloc eps: ep paddr 0x%x\n", vka_object_paddr(vka, &ipc_ep)); 
+
     error = vka_alloc_endpoint(vka, &ipc_reply_ep);
     assert(error == 0); 
 
@@ -438,10 +441,10 @@ void ipc_benchmark (bench_env_t *thread1, bench_env_t *thread2) {
 #ifdef IPC_BENCH_PRINTOUT
         printf("\tDoing iteration %d\n",i);
 #endif  
+
 #ifdef CONFIG_MANAGER_PMU_COUNTER 
         memset(pmu_v, 0, BENCH_PMU_PAGES * BIT(PAGE_BITS_4K)); 
         sel4bench_reset_counters(BENCH_PMU_BITS); 
-
 #endif
         /*one way IPC, reply -> call */
 #ifdef IPC_BENCH_PRINTOUT
@@ -459,6 +462,7 @@ void ipc_benchmark (bench_env_t *thread1, bench_env_t *thread2) {
                 pmu_results.call_time_inter[i]); 
         results.call_time_inter[i] = result - results.call_reply_wait_overhead;
 
+#if 0
 #ifdef IPC_BENCH_PRINTOUT 
         printf("Running Send test\n");
 #endif 
@@ -476,7 +480,6 @@ void ipc_benchmark (bench_env_t *thread1, bench_env_t *thread2) {
 #endif 
         ipc_call_10_time_inter(thread1, thread2, &result); 
         results.call_10_time_inter[i] = result - results.call_reply_wait_10_overhead;
-#if 0
 #ifdef IPC_BENCH_PRINTOUT
         printf("Running Call+ReplyWait Different prio test 1\n");
 #endif 
