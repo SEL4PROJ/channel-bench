@@ -28,8 +28,15 @@ menu   "Timing Channel Benchmarks"
         default n 
         depends on APP_SIDE_BENCH 
         help 
-             the indirect cost of flushing caches 
-       
+             the indirect cost of flushing caches with write operations 
+        
+        config BENCH_CACHE_FLUSH_READ
+        bool "cost of flushing caches with read operations"
+        default n 
+        depends on APP_SIDE_BENCH 
+        help 
+             the indirect cost of flushing caches with reading operations 
+      
         choice 
                prompt "Flushing Range"
                

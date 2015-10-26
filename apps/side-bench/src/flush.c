@@ -24,9 +24,10 @@
 
 #ifdef CONFIG_BENCH_CACHE_FLUSH 
 
-static char flush_buf[CONFIG_BENCH_CACHE_BUFFER]; 
+static volatile char flush_buf[CONFIG_BENCH_CACHE_BUFFER] __attribute__((aligned (CONFIG_BENCH_CACHE_LINE_SIZE)));
 static uint32_t probe_size = CONFIG_BENCH_FLUSH_START;
 static sel4bench_counter_t measure_overhead[OVERHEAD_RUNS];
+static volatile char read_c; 
 
 static inline int overhead_stable(sel4bench_counter_t *array) {
     for (int i = 1; i < OVERHEAD_RUNS; i++) {
@@ -62,17 +63,21 @@ static inline void overhead(void) {
 static inline sel4bench_counter_t walk_buffer(void) {
 
     sel4bench_counter_t start, end; 
-
+   
     start = sel4bench_get_cycle_count(); 
 
     for (int i = 0; i < probe_size; i += 
             CONFIG_BENCH_CACHE_LINE_SIZE) {
+#ifdef CONFIG_BENCH_CACHE_FLUSH_READ 
+        read_c = flush_buf[i];
+#else 
 
         flush_buf[i] ^= 0xff; 
+#endif
     }
     end = sel4bench_get_cycle_count(); 
     
-
+   
     return end - start;
 }
 
