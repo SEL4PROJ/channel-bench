@@ -1,4 +1,3 @@
-#define _GNU_SOURCE
 
 #include <stdio.h>
 #include <stdint.h>
@@ -92,6 +91,7 @@ typedef union setindex *setindex_t;
 
 typedef char setindexmap[SETINDEX_LINES];
 
+/*receving msg, probing buf*/
 static struct probeinfo {
   uint64_t ebsetindices;
   setindex_t eb;
@@ -157,6 +157,7 @@ int probe_time(volatile void *p) {
   return rv;
 }
 
+/*probling a list then return time*/
 int __attribute__ ((noinline)) probe_silist(volatile void *p) {
   volatile int rv;
   asm __volatile__ (
@@ -191,7 +192,8 @@ void probe_wait(int time) {
 }
 
 int probe_sitime(ts_t ts, int si, int count) {
-  
+ 
+    /*probing and record time, the first 10 rounds is warming up*/
   for (int i = count <= 1 ? 0 : -10; i < count; i++)  {
     int t = probe_silist(probeinfo.indexlist[si]);
     if (ts != NULL && i >= 0)  {
@@ -448,21 +450,27 @@ void probe_init(uint64_t ebsetindices) {
  *
  * For Intel processors with 2, 4 or 8 cores, when using large pages, a stride of 128K should work.
  */
+/*building the probe buffer, the stride parameter is not used.*/
 void probe_init_simple(uint64_t bufsize, int stride) {
   pageset_t ps = ps_new();
   for (int i = 0; i < NWAYS*NCORES; i++)
     ps_push(ps, i);
   ps_randomise(ps);
 
+  /*FIXME: backup a large contiguous memory for probing*/
   probeinfo.ebsetindices = bufsize/SETINDEX_SIZE;
-  probeinfo.eb = (setindex_t) mmap64(NULL, probeinfo.ebsetindices * SETINDEX_SIZE, PROT_READ|PROT_WRITE, 
-      						MAP_LARGEPAGES|MAP_ANON|MAP_PRIVATE, -1, 0);
+  probeinfo.eb = (setindex_t) mmap64(NULL, 
+          probeinfo.ebsetindices * SETINDEX_SIZE,
+          PROT_READ|PROT_WRITE, 
+          MAP_LARGEPAGES|MAP_ANON|MAP_PRIVATE, -1, 0);
+
   if (probeinfo.eb == MAP_FAILED) {
     perror("probe_init_simple: eb: mmap");
     exit(1);
   }
 
-    
+   /*linking the cache lines for a cache set, currently only known the 
+    offset within a page*/ 
   for (int i = 0; i < PAGE_SIZE/CLSIZE; i++) {
     cacheline_t cl = NULL;
     for (int j = ps_size(ps); j--; ) {

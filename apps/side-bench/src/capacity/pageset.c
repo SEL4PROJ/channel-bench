@@ -4,6 +4,8 @@
 
 #define PS_INITSIZE	64
 
+/*FIXME: malloc expending heap for page set
+ realloc need to be implemented*/
 
 
 pageset_t ps_new() {
@@ -36,7 +38,9 @@ void ps_move(pageset_t from, pageset_t to) {
 
 
 void ps_delete(pageset_t ps) {
-  if (ps) {
+
+    /*FIXME: handling the free */
+    if (ps) {
     if (ps->data)
       free(ps->data);
     free(ps);

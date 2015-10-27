@@ -121,7 +121,9 @@
 #endif
 
 
-
+/*running the capacity benchmark*/ 
+#define BENCH_CAP_SINGLE  1  /*running the benchmark on single core*/
+#define BENCH_CAP_SLAVE 1
 
 #if 0
 #define IPC_BENCH_CALL_START 0 

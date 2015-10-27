@@ -11,6 +11,7 @@ struct ts {
 };
 
 ts_t ts_alloc() {
+    /*FIXME: timestatistic*/
   ts_t rv = (ts_t)malloc(sizeof(struct ts));
   ts_clear(rv);
   return rv;
@@ -24,6 +25,7 @@ void ts_clear(ts_t ts) {
   bzero(ts, sizeof(struct ts));
 }
 
+/*data is indexed by the time tick value*/
 void ts_add(ts_t ts, int tm) {
   assert(tm > 0);
   if (tm < TIME_MAX)
