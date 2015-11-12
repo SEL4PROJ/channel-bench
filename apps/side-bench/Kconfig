@@ -100,6 +100,12 @@ menu   "Timing Channel Benchmarks"
         help 
               enable pmu counters 
 
+       config BENCH_COVERT_SINGLE 
+       bool "covert benchmark on single core"
+       default n 
+       depends on APP_SIDE_BENCH 
+       help 
+             a simple P+P attack on single core, one cache set on LLC
 
 endmenu 
 

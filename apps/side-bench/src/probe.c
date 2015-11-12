@@ -16,11 +16,10 @@
 #undef PAGE_SIZE
 #endif
 
-#include "../../../covert.h"
+#include "../../covert.h"
 #include "pageset.h"
 #include "timestats.h"
 
-static int debug = 0;
 
 
 union cacheline {
@@ -89,8 +88,25 @@ int probe_pagesize() {
   return SETINDEX_SIZE;
 }
 
-
-
+/*rewrite for the 32bit x86*/
+int probe_time(volatile void *p) {
+  volatile int rv;
+  asm __volatile__ (
+      "xorl %%eax, %%eax\n"
+      "cpuid\n"
+      "rdtsc\n"
+      "mov %%eax, %%esi\n"
+      "mov (%%edi), %%edi\n"
+      "rdtscp\n"
+      "sub %%eax, %%esi\n"
+      "xorl %%eax, %%eax\n"
+      "cpuid\n"
+      "xorl %%eax, %%eax\n"
+      "subl %%esi, %%eax\n"
+      : "=a" (rv) : "D" (p) : "%ebx", "%ecx", "%edx", "%esi");
+  return rv;
+}
+#if 0
 int probe_time(volatile void *p) {
   volatile int rv;
   asm __volatile__ (
@@ -108,8 +124,30 @@ int probe_time(volatile void *p) {
       : "=a" (rv) : "D" (p) : "%rbx", "%rcx", "%rdx", "%rsi");
   return rv;
 }
+#endif
 
 /*probling a list then return time*/
+int __attribute__ ((noinline)) probe_silist(volatile void *p) {
+  volatile int rv;
+  asm __volatile__ (
+      "xorl %%eax, %%eax\n"
+      "cpuid\n"
+      "rdtsc\n"
+      "mov %%eax, %%esi\n"
+      "1:\n"
+      "mov (%%edi), %%edi\n"
+      "cmpl $0, %%edi\n"
+      "jne 1b\n"
+      "rdtscp\n"
+      "sub %%eax, %%esi\n"
+      "xorl %%eax, %%eax\n"
+      "cpuid\n"
+      "xorl %%eax, %%eax\n"
+      "subl %%esi, %%eax\n"
+      : "=a" (rv) : "D" (p) : "%ebx", "%ecx", "%edx", "%esi");
+  return rv;
+}
+#if 0
 int __attribute__ ((noinline)) probe_silist(volatile void *p) {
   volatile int rv;
   asm __volatile__ (
@@ -130,7 +168,7 @@ int __attribute__ ((noinline)) probe_silist(volatile void *p) {
       : "=a" (rv) : "D" (p) : "%rbx", "%rcx", "%rdx", "%rsi");
   return rv;
 }
-
+#endif 
 uint32_t rdtsc() {
   volatile uint32_t rv;
   asm __volatile__ ("rdtsc": "=a" (rv) : : "%rcx");
@@ -290,12 +328,14 @@ static void findmap(pageset_t eb, int candidate, char *map, pageset_t *pss, int 
 	    }
 	  new = 1;
 	}
+#if 0
 	if (debug) {
 	  if (!new)
 	    fprintf(stderr, "Unmapped eb %d added to set %d\n", r, psid);
 	  else
 	    fprintf(stderr, "(eb) %d ==> %d\n", r, psid);
 	}
+#endif
 	map[r] = psid;
 	ps_push(pss[psid], r);
       }

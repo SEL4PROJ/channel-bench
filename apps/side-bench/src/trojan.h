@@ -11,7 +11,7 @@ int tr_start(int pagecount, int line, int core) ;
 void tr_stop() ;
 
 int tr_startslave(int line, int core);
-void tr_callslave(int size);
+void tr_callslave(seL4_CPtr ep, int size);
 
 #endif // __TROJAN_H__
 

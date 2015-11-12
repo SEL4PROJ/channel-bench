@@ -1,7 +1,10 @@
 /*a covert channel benchmark 
  setting up two threads: trojan and receiver
  currently only support single core*/ 
-#ifdef CONFIG_MANAGER_COVERT_SINGLE 
+
+/*Kconfig variables*/
+#include <autoconf.h>
+
 #include <stdio.h>
 #include <assert.h>
 #include <stdlib.h>
@@ -11,12 +14,15 @@
 #include <sel4utils/process.h>
 #include <vka/object.h>
 #include <vka/capops.h>
-#include <simple-stable/simple-stable.h>
-#include "manager.h"
+#include <simple/simple.h>
 
-#include "../../bench_common.h"
+#include "manager.h"
 #include "../../covert.h"
 
+
+#ifdef CONFIG_MANAGER_COVERT_SINGLE
+/*start of the elf file*/
+extern char __executable_start;
 
 /*the benchmarking enviornment for two threads*/
 static bench_env_t trojan, spy;
@@ -82,6 +88,7 @@ static void map_init_frames(m_env_t *env, void *vaddr, uint32_t s, bench_env_t *
     sel4utils_process_t *p = &t->process; 
     cspacepath_t src, dest; 
     int ret; 
+    seL4_CPtr frame;
 
     /*using simple*/
     simple_t *simple = &env->simple; 
@@ -89,7 +96,7 @@ static void map_init_frames(m_env_t *env, void *vaddr, uint32_t s, bench_env_t *
 
     /*page aligned*/
     assert(!(s % BENCH_PAGE_SIZE)); 
-    assert(!(vaddr % BENCH_PAGE_SIZE)); 
+    assert(!((uint32_t)vaddr % BENCH_PAGE_SIZE)); 
     assert(simple);
 
     /*reserve an area in vspace*/ 
@@ -108,14 +115,14 @@ static void map_init_frames(m_env_t *env, void *vaddr, uint32_t s, bench_env_t *
 
         /*copy those frame caps*/ 
         vka_cspace_make_path(&env->vka, frame, &src); 
-        ret = vka_cspace_alloc(&env->vka, &t.p_frames[i]); 
+        ret = vka_cspace_alloc(&env->vka, &t->p_frames[i]); 
         assert(ret == 0); 
-        vka_cspace_make_path(&env->vka, t.p_frames[i], &dest); 
+        vka_cspace_make_path(&env->vka, t->p_frames[i], &dest); 
         ret = vka_cnode_copy(&dest, &src, seL4_AllRights); 
         assert(ret == 0); 
     }
     /*map in*/
-    ret = vspace_map_pages_at_vaddr(&p->vspace, t.p_frames, 
+    ret = vspace_map_pages_at_vaddr(&p->vspace, t->p_frames, 
             NULL, t_v, s, PAGE_BITS_4K, v_r);
     assert(ret == 0); 
     /*record*/
@@ -127,13 +134,14 @@ static void map_r_buf(m_env_t *env, uint32_t n_p, bench_env_t *t) {
 
     reservation_t v_r;
     void *t_v;  
-    cspacepath_t src, cspacepath_t dest;
+    cspacepath_t src, dest;
     uint32_t v = (uint32_t)env->record_vaddr; 
     int ret; 
     sel4utils_process_t *p = &t->process; 
     
     /*reserve an area in vspace*/ 
-    v_r = vspace_reserve_range(&p->vspace, s, seL4_AllRights, 1, &t_v);
+    v_r = vspace_reserve_range(&p->vspace, n_p * BENCH_PAGE_SIZE, 
+            seL4_AllRights, 1, &t_v);
     assert(v_r.res != NULL);
 
     for (int i = 0; i < n_p; i++, v+= BENCH_PAGE_SIZE) {
@@ -141,14 +149,14 @@ static void map_r_buf(m_env_t *env, uint32_t n_p, bench_env_t *t) {
         /*copy those frame caps*/ 
         vka_cspace_make_path(&env->vka, vspace_get_cap(&env->vspace, 
                     (void*)v), &src);
-        ret = vka_cspace_alloc(&env->vka, &t.t_frames[i]); 
+        ret = vka_cspace_alloc(&env->vka, &t->t_frames[i]); 
         assert(ret == 0); 
-        vka_cspace_make_path(&env->vka, t.t_frames[i], &dest); 
+        vka_cspace_make_path(&env->vka, t->t_frames[i], &dest); 
         ret = vka_cnode_copy(&dest, &src, seL4_AllRights); 
         assert(ret == 0); 
     }
     /*map in*/
-    ret = vspace_map_pages_at_vaddr(&p->vspace, t.t_frames, 
+    ret = vspace_map_pages_at_vaddr(&p->vspace, t->t_frames, 
             NULL, t_v, n_p, PAGE_BITS_4K, v_r);
     assert(ret == 0); 
 
@@ -234,14 +242,14 @@ static int run_single (ts_t ts) {
                 printf("%d %d\n", size, k);
     }
     
-    print("done the benchmark");
+    printf("done the benchmark");
     return BENCH_SUCCESS; 
 
 }
 
 
 /*entry point of covert channel benchmark*/
-void lanuch_bench_covert(m_env_t *env) {
+void lanuch_bench_covert (m_env_t *env) {
     
     int ret; 
 

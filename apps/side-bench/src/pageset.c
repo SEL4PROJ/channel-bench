@@ -1,11 +1,12 @@
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 #include "pageset.h"
 
 #define PS_INITSIZE	128
 
 /*avoiding malloc by static definition*/
-static pageset p_ps; 
+static struct pageset p_ps; 
 static int p_data[PS_INITSIZE]; 
 
 pageset_t ps_new() {

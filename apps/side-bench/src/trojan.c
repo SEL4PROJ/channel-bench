@@ -7,7 +7,9 @@
 #include <time.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <sel4/sel4.h>
 
+#include "../../bench_common.h"
 
 /*striding page by page */
 typedef int page_t[4096/sizeof(int)];

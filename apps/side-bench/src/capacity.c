@@ -17,11 +17,12 @@
 #include <sys/mman.h>
 #include <sched.h>
 #include <unistd.h>
+#include <sel4/sel4.h>
 
-#include "../../../bench_common.h"
+#include "../../bench_common.h"
+#include "../../covert.h"
 #include "probe.h"
 #include "timestats.h"
-#include "sysinfo.h"
 #include "trojan.h"
 
 #define LINE 4  /*targeting the 4th cache set in a slice */
@@ -47,7 +48,7 @@ opt: single core, multicore
 env: running enviornment 
 record: data collection*/
 static int capacity_single(bench_covert_t *env) {
-    ts_t ts; 
+    ts_t ts = NULL; 
     seL4_MessageInfo_t send = seL4_MessageInfo_new(seL4_NoFault, 0, 0, 1);
     seL4_MessageInfo_t recv;
     
@@ -56,10 +57,10 @@ static int capacity_single(bench_covert_t *env) {
         return trojan_single(env->p_buf, LINE, env->syn_ep); 
 
     /*perpare the probe buffer*/
-    if (opt == BENCH_COVERT_SPY_SINGLE) {
+    if (env->opt == BENCH_COVERT_SPY_SINGLE) {
         probe_init_simple(env->p_buf, EBSIZE); 
         /*ts buffer in env*/
-        ts = evn->ts_buf;
+        ts = env->ts_buf;
     }
 
     /*syn with manager*/ 

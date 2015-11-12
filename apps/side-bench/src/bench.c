@@ -176,7 +176,7 @@ int main (int argc, char **argv) {
 #ifdef CONFIG_BENCH_IPC
     run_bench_ipc(argv); 
 #endif 
-#ifdef CONFIG_BENCH_COVERT 
+#ifdef CONFIG_BENCH_COVERT_SINGLE
     run_bench_covert(argv); 
 #endif 
 #ifdef CONFIG_BENCH_CACHE_FLUSH 

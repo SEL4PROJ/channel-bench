@@ -1,10 +1,10 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
-#include <strings.h>
+#include <string.h>
 #include <assert.h>
 
-#include "../../../covert.h"
+#include "../../covert.h"
 #include "timestats.h"
 
 ts_t ts_alloc(void *vaddr) {
@@ -14,7 +14,7 @@ ts_t ts_alloc(void *vaddr) {
 }
 
 void ts_clear(ts_t ts) {
-  bzero(ts, sizeof(struct ts));
+    memset(ts, 0, sizeof(struct ts)); 
 }
 
 /*data is indexed by the time tick value*/

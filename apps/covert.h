@@ -30,31 +30,17 @@
 
 
 
-/*porting from capacity/probe.c*/
-#ifdef VM_FLAGS_SUPERPAGE_SIZE_ANY
-#define MAP_LARGEPAGES	VM_FLAGS_SUPERPAGE_SIZE_ANY
-#define MAP_ROUNDSIZE	(2*1024*1024)
-#define SETINDEX_BITS	17
-#endif
 
-#ifdef MAP_HUGETLB
-#define MAP_LARGEPAGES	MAP_HUGETLB
+/*porting from capacity/probe.c*/
+/*backing up contingous mem by manager thread*/
 #define MAP_ROUNDSIZE	(2*1024*1024)
 #define SETINDEX_BITS	17
-#endif
 
 #define PAGE_BITS	12
 #define PAGE_SIZE	(1 << PAGE_BITS)
 #define PAGE_MASK	(PAGE_SIZE - 1)
 #define PAGE_LBITS	(PAGE_BITS - CLBITS)
 #define PAGE_LINES	(PAGE_SIZE >> CLBITS)
-
-#ifndef SETINDEX_BITS
-#error Expected large pages
-#define MAP_LARGEPAGES	0
-#define MAP_ROUNDSIZE	4096
-#define SETINDEX_BITS	12
-#endif
 
 
 
