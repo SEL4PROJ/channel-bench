@@ -97,7 +97,7 @@ static inline void send_result_to(seL4_CPtr endpoint, seL4_Word w) {
 }
 
 
- void run_bench_single (char **argv) {
+void run_bench_single (char **argv) {
     
     void *record_vaddr; 
     seL4_Word result UNUSED; 
@@ -165,6 +165,7 @@ void run_bench_ipc(char **argv) {
 
 }
 #endif 
+
 int main (int argc, char **argv) {
 
 
@@ -174,7 +175,11 @@ int main (int argc, char **argv) {
 
 #ifdef CONFIG_BENCH_IPC
     run_bench_ipc(argv); 
-#else 
+#endif 
+#ifdef CONFIG_BENCH_COVERT 
+    run_bench_covert(argv); 
+#endif 
+#ifdef CONFIG_BENCH_CACHE_FLUSH 
     run_bench_single(argv);
 #endif 
         

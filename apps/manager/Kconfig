@@ -51,6 +51,14 @@ menu    "Manager task for benchmarking tests"
         depends on APP_MANAGER 
         help 
             see timing channel benchmarks
+        
+        config MANAGER_COVERT_SINGLE
+        bool "covert channel benchmark on single core" 
+        default n 
+        depends on APP_MANAGER 
+        help  
+             a simple P+P attack on a cache set of LLC 
+
 endmenu
 
 

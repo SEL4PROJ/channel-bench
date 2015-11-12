@@ -48,10 +48,8 @@ vka_object_t ipc_reply_ep;
 vka_object_t ipc_null_ep; 
 vka_t *ipc_vka; 
 
-/*two kernel objects used by ipc benchmarking*/
-seL4_CPtr kernel1, kernel2;
 /*the benchmarking enviornment for two ipc threads*/
-bench_env_t thread1, thread2; 
+static bench_env_t thread1, thread2; 
 
 struct bench_results results;
 ipc_test_pmu_t pmu_results; 

@@ -4,21 +4,13 @@
 #include <strings.h>
 #include <assert.h>
 
+#include "../../../covert.h"
 #include "timestats.h"
 
-struct ts {
-  uint32_t data[TIME_MAX];
-};
-
-ts_t ts_alloc() {
-    /*FIXME: timestatistic*/
-  ts_t rv = (ts_t)malloc(sizeof(struct ts));
+ts_t ts_alloc(void *vaddr) {
+  ts_t rv = (ts_t)vaddr;
   ts_clear(rv);
   return rv;
-}
-
-void ts_free(ts_t ts) {
-  free(ts);
 }
 
 void ts_clear(ts_t ts) {
@@ -32,11 +24,6 @@ void ts_add(ts_t ts, int tm) {
     ts->data[tm]++;
   else
     ts->data[0]++;
-}
-
-uint32_t ts_get(ts_t ts, int tm) {
-  assert(tm > 0);
-  return tm < TIME_MAX ? ts->data[tm] : 0;
 }
 
 uint32_t ts_outliers(ts_t ts) {

@@ -49,10 +49,10 @@ ipc_bench_func ipc_bench_reply_wait[4] = {ipc_reply_wait_func, ipc_reply_wait_fu
 void print_pmu_results(sel4bench_counter_t *r) {
 
 
-        for (int j = 0; j < BENCH_PMU_COUNTERS; j++) 
-            printf("\t"CCNT_FORMAT, r[j]);
+    for (int j = 0; j < BENCH_PMU_COUNTERS; j++) 
+        printf("\t"CCNT_FORMAT, r[j]);
 
-        printf("\n"); 
+    printf("\n"); 
 }
 
 seL4_Word ipc_call_func(seL4_CPtr ep, seL4_CPtr result_ep) {

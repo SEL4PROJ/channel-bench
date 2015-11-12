@@ -9,7 +9,7 @@ int probe_setindex(void *p);
 void probe_evict(int si);
 int probe_time(void *p);
 void probe_init(uint64_t ebsize);
-void probe_init_simple(uint64_t ebsize, int stride);
+void probe_init_simple(void *buf, uint64_t ebsize);
 
 int probe_sitime(ts_t ts, int si, int count);
 

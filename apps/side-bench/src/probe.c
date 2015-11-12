@@ -16,60 +16,12 @@
 #undef PAGE_SIZE
 #endif
 
+#include "../../../covert.h"
 #include "pageset.h"
 #include "timestats.h"
-#include "sysinfo.h"
-
-#ifdef VM_FLAGS_SUPERPAGE_SIZE_ANY
-#define MAP_LARGEPAGES	VM_FLAGS_SUPERPAGE_SIZE_ANY
-#define MAP_ROUNDSIZE	(2*1024*1024)
-#define SETINDEX_BITS	17
-#endif
-
-#ifdef MAP_HUGETLB
-#define MAP_LARGEPAGES	MAP_HUGETLB
-#define MAP_ROUNDSIZE	(2*1024*1024)
-#define SETINDEX_BITS	17
-#endif
-
-#define PAGE_BITS	12
-#define PAGE_SIZE	(1 << PAGE_BITS)
-#define PAGE_MASK	(PAGE_SIZE - 1)
-#define PAGE_LBITS	(PAGE_BITS - CLBITS)
-#define PAGE_LINES	(PAGE_SIZE >> CLBITS)
-
-#ifndef SETINDEX_BITS
-#error Expected large pages
-#define MAP_LARGEPAGES	0
-#define MAP_ROUNDSIZE	4096
-#define SETINDEX_BITS	12
-#endif
-
-
-
-#define CLBITS	6
-#define CLSIZE (1 << CLBITS)
-
-
-#define SETINDEX_SIZE	(1 << SETINDEX_BITS)
-#define SETINDEX_MASK	(SETINDEX_SIZE - 1)
-#define SETINDEX_LBITS	(SETINDEX_BITS - CLBITS)
-#define SETINDEX_LINES	(SETINDEX_SIZE >> CLBITS)
-
-
-// Number of probes to find the set index of a virtual address
-#define SETINDEX_NPROBE	64
-
-#define MAX_SLICES 32
-
-#define L3THRESHOLD 120
-#define L3REPEATS 32
-#define SPLIT_MEASURE_EVICT_COUNT 32
-
 
 static int debug = 0;
 
-#define SETINDEXLINK 0
 
 union cacheline {
   union cacheline *next;
@@ -203,6 +155,37 @@ int probe_sitime(ts_t ts, int si, int count) {
   return 0;
 }
 
+
+/*building the probe buffer, buf is the vaddr given by manager*/
+void probe_init_simple(void *buf, uint64_t bufsize) {
+
+    pageset_t ps = ps_new();
+    for (int i = 0; i < NWAYS*NCORES; i++)
+        ps_push(ps, i);
+    ps_randomise(ps);
+
+    probeinfo.ebsetindices = bufsize/SETINDEX_SIZE;
+    probeinfo.eb = (setindex_t)buf; 
+
+    /*linking the cache lines for a cache set, currently only known the 
+      offset within a page*/ 
+    for (int i = 0; i < PAGE_SIZE/CLSIZE; i++) {
+        cacheline_t cl = NULL;
+        
+        for (int j = ps_size(ps); j--; ) {
+            int n = ps_get(ps, j);
+            probeinfo.eb[n].cachelines[i].cl_links[SETINDEXLINK] = cl;
+            cl = &probeinfo.eb[n].cachelines[i];
+        }
+        
+        probeinfo.indexlist[i] = cl;
+    }
+    ps_delete(ps);
+}
+
+
+
+#if 0
 int probe_setindex(void *p) {
   int page = ((uint32_t)(intptr_t)p & PAGE_MASK) / PAGE_LINES;
   if (PAGE_SIZE == SETINDEX_SIZE)
@@ -441,48 +424,6 @@ void probe_init(uint64_t ebsetindices) {
 
 }
 
-/*
- * bufsize - size of the buffer
- * stride - cache stride within the buffer
- *
- * Need bufsize >= (NWAYS*NCORES)stride
- * Assumes that positions x+i*stride for 0<=i<NWAYS*NCORES completely cover some cache sets.
- *
- * For Intel processors with 2, 4 or 8 cores, when using large pages, a stride of 128K should work.
- */
-/*building the probe buffer, the stride parameter is not used.*/
-void probe_init_simple(uint64_t bufsize, int stride) {
-  pageset_t ps = ps_new();
-  for (int i = 0; i < NWAYS*NCORES; i++)
-    ps_push(ps, i);
-  ps_randomise(ps);
-
-  /*FIXME: backup a large contiguous memory for probing*/
-  probeinfo.ebsetindices = bufsize/SETINDEX_SIZE;
-  probeinfo.eb = (setindex_t) mmap64(NULL, 
-          probeinfo.ebsetindices * SETINDEX_SIZE,
-          PROT_READ|PROT_WRITE, 
-          MAP_LARGEPAGES|MAP_ANON|MAP_PRIVATE, -1, 0);
-
-  if (probeinfo.eb == MAP_FAILED) {
-    perror("probe_init_simple: eb: mmap");
-    exit(1);
-  }
-
-   /*linking the cache lines for a cache set, currently only known the 
-    offset within a page*/ 
-  for (int i = 0; i < PAGE_SIZE/CLSIZE; i++) {
-    cacheline_t cl = NULL;
-    for (int j = ps_size(ps); j--; ) {
-      int n = ps_get(ps, j);
-      probeinfo.eb[n].cachelines[i].cl_links[SETINDEXLINK] = cl;
-      cl = &probeinfo.eb[n].cachelines[i];
-    }
-    probeinfo.indexlist[i] = cl;
-  }
-  ps_delete(ps);
-}
-
-
+#endif
 
 

@@ -2,19 +2,17 @@
 #include <string.h>
 #include "pageset.h"
 
-#define PS_INITSIZE	64
+#define PS_INITSIZE	128
 
-/*FIXME: malloc expending heap for page set
- realloc need to be implemented*/
-
+/*avoiding malloc by static definition*/
+static pageset p_ps; 
+static int p_data[PS_INITSIZE]; 
 
 pageset_t ps_new() {
-  pageset_t rv = malloc(sizeof(struct pageset));
-
-  rv->datasize = PS_INITSIZE;
-  rv->data = malloc(sizeof(int) * rv->datasize);
-  rv->npages = 0;
-  return rv;
+    p_ps.datasize = PS_INITSIZE;
+    p_ps.data = p_data; 
+    p_ps.npages = 0;
+  return &p_ps;
 }
 
 
@@ -39,20 +37,12 @@ void ps_move(pageset_t from, pageset_t to) {
 
 void ps_delete(pageset_t ps) {
 
-    /*FIXME: handling the free */
-    if (ps) {
-    if (ps->data)
-      free(ps->data);
-    free(ps);
-  }
 }
 
 void ps_push(pageset_t ps, int page) {
-  if (ps->npages == ps->datasize) {
-    ps->datasize *=2;
-    ps->data = realloc(ps->data, sizeof(int) * ps->datasize);
-  }
-  ps->data[ps->npages++] = page;
+    /*does not support reallocate*/
+    assert(ps->npages < ps->datasize);
+    ps->data[ps->npages++] = page;
 }
 
 int ps_pop(pageset_t ps) {

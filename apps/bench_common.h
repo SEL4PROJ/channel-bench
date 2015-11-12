@@ -216,6 +216,8 @@ struct ipc_results {
 
 
 #define BENCH_PMU_PAGES    1
+#define BENCH_COVERT_TIME_PAGES 20  /*ts structure defined in timestats.c*/
+#define BENCH_COVERT_BUF_PAGES  4096 /*trojan/probe buffers*/
 
 /*pmu counter result structure*/
 typedef struct {
@@ -246,8 +248,23 @@ typedef struct {
     uint64_t t[N_PT_B][N_L1D_SETS];
 } d_time_t; 
 
+/*running enviorment for bench covert 
+ capacity*/
+typedef struct bench_covert {
+    void *p_buf; /*private, contiguous buffer, spy/trojan buffers*/
+    void *ts_buf;    /*time statistic, ts_alloc*/
+    seL4_CPtr syn_ep; /*comm trojan and receiver, tr_start_slave*/ 
+    seL4_CPtr r_ep; /*comm between receiver and manager*/
+    int opt;        /*running option, trojan, probe, etc*/
+}bench_covert_t; 
 
-/****************************************************/
+
+/*opt for running covert channel bench*/
+#define BENCH_COVERT_TROJAN_SINGLE  1 
+#define BENCH_COVERT_SPY_SINGLE   2
+#define BENCH_COVERT_MSG_LEN  2 /*msg len for init env*/
+
+#define BENCH_PAGE_SIZE    4096  /*page size */
 
 #endif 
 

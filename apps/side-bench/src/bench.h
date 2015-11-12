@@ -27,7 +27,8 @@ void crypto_aes_en(uint8_t *in, uint8_t *out);
 seL4_Word dcache_attack(void *record_vaddr); 
 /*cache flushing benchmark*/
 seL4_Word bench_flush(void *record_vaddr);
-
+/*covert channel benchmark*/ 
+int run_bench_covert(char **argv);
 /*ipc benchmark*/ 
 seL4_Word ipc_bench(seL4_CPtr result_ep, seL4_CPtr test_ep, int test_n,
         void *record_vaddr);

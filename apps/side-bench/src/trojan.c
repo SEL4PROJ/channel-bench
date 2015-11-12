@@ -8,83 +8,61 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "affinity.h"
-#include "trojan.h"
-
-static int childpid = 0;
 
 /*striding page by page */
 typedef int page_t[4096/sizeof(int)];
 
 static volatile int sum;
 
-static void *buf;  /*polluting the cache, sending msg */
-int toslave = -1;
-int fromslave = -1;
 
-static void trojan(int pagecount, int line) {
-  register int s = 0;
-  do {
-      /*polluting the cache for page count*/
-      register page_t *p = (page_t *)((intptr_t)buf + line * 64);
-    for (int j = 0; j < pagecount; j++) {
-      s+= *p[0];
-      p++;
-    }
-  } while (s == 0);
-  // unreached
-  sum = s;
-}
-
-static void slave(int line, int readfd, int writefd) {
-  page_t *page = (page_t *)((intptr_t)buf + line * 64);
-  register int s = 0;
-
-  do {
+/*The trojan loop for single core*/
+/*spy and trojan communicate on syn_ep*/
+int trojan_single(char *t_buf, int line, seL4_CPtr syn_ep) {
+    
+    page_t *page = (page_t *)((intptr_t)t_buf + line * 64);
+    register int s = 0;
     int size;
-    /*waiting on signal from receiver*/
-    switch (read(readfd, &size, sizeof(int))) {
-    case 0:
-    case -1:
-    default:
-      exit(1);
-    case sizeof(int): 
-      {
-          /*polluting the cache, page by page
-           size is defined by receiver*/
-	register page_t *p = page;
-	for (int j = 0; j < size; j++) {
-	  s+= *p[0];
-	  p++;
-	}
-        /*done*/
-	write(writefd, &size, sizeof(int));
-      }
-    }
+    seL4_MessageInfo_t send = seL4_MessageInfo_new(seL4_NoFault, 0, 0, 1);
+    seL4_MessageInfo_t recv;
 
-  } while (s == 0);
-  // unreached
-  sum = s;
+    recv = seL4_Wait(syn_ep, NULL); 
+    if (seL4_MessageInfo_get_label(recv) != seL4_NoFault)
+        return BENCH_FAILURE; 
+
+    do {
+        /*waiting on signal from receiver*/
+        if (seL4_MessageInfo_get_length(recv) != 1)
+            return BENCH_FAILURE; 
+        
+        /*polluting the cache, page by page
+          size is defined by receiver*/
+        size = seL4_GetMR(0); 
+        register page_t *p = page;
+        for (int j = 0; j < size; j++) {
+            s+= *p[0];
+            p++;
+        }
+        seL4_SetMR(0, size);
+        recv = seL4_ReplyWait(syn_ep, send, NULL); 
+    } while (s == 0);
+    // unreached
+    sum = s;
+    return BENCH_SUCCESS;
 }
 
-void tr_callslave(int size) {
-    /*sending signal to slave, id for this run*/
-  write(toslave, &size, sizeof(int));
-  read(fromslave, &size, sizeof(int));
+void tr_callslave(seL4_CPtr syn_ep, int size) {
+
+    /*calling torjan, the size of this run*/
+    seL4_MessageInfo_t send = seL4_MessageInfo_new(seL4_NoFault, 0, 0, 1);
+
+    seL4_SetMR(0,size); 
+    seL4_Call(syn_ep, send);
 }
 
 
 
-void tr_init(uint64_t size) {
-    /*FIXME: mmap for a buffer shared between processes*/
-    buf = mmap(NULL, size, 
-            PROT_READ|PROT_WRITE, MAP_ANON|MAP_SHARED, -1, 0);
-    if (buf == MAP_FAILED) {
-        perror("allocate");
-        exit(1);
-    }
-}
 
+#if 0
 
 int tr_startslave(int line, int core) {
   
@@ -123,6 +101,19 @@ int tr_startslave(int line, int core) {
   return 0;
 }
 
+static void trojan(int pagecount, int line) {
+  register int s = 0;
+  do {
+      /*polluting the cache for page count*/
+      register page_t *p = (page_t *)((intptr_t)buf + line * 64);
+    for (int j = 0; j < pagecount; j++) {
+      s+= *p[0];
+      p++;
+    }
+  } while (s == 0);
+  // unreached
+  sum = s;
+}
 
 int tr_start(int pagecount, int line, int core) {
   if (childpid != 0)
@@ -181,5 +172,5 @@ void tr_stop() {
 }
 
 
-    
+#endif     
 

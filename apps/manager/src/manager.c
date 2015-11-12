@@ -403,7 +403,7 @@ static void init_pmu_counters(void) {
 #endif 
 static void *main_continued (void* arg) {
 
-       /*init the benchmakring functions*/
+    /*init the benchmakring functions*/
     sel4bench_init(); 
 #ifdef CONFIG_MANAGER_PMU_COUNTER 
     init_pmu_counters(); 
@@ -414,7 +414,11 @@ static void *main_continued (void* arg) {
 #endif 
 #ifdef CONFIG_MANAGER_CACHE_FLUSH 
     lanuch_bench_single(arg);
+#endif
+#ifdef CONFIG_MANAGER_COVERT_SINGLE
+    lanuch_bench_covert(&env); 
 #endif 
+
     /*halt cpu*/
     printf("Finished benchmark, now halting...\n"); 
 
