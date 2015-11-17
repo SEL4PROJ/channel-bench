@@ -53,8 +53,9 @@ static int capacity_single(bench_covert_t *env) {
     seL4_MessageInfo_t recv;
     
     /*run torjan never return*/
-    if (env->opt == BENCH_COVERT_TROJAN_SINGLE) 
+    if (env->opt == BENCH_COVERT_TROJAN_SINGLE) {
         return trojan_single(env->p_buf, LINE, env->syn_ep); 
+    }
 
     /*perpare the probe buffer*/
     if (env->opt == BENCH_COVERT_SPY_SINGLE) {
@@ -63,18 +64,20 @@ static int capacity_single(bench_covert_t *env) {
         ts = env->ts_buf;
     }
 
-    /*syn with manager*/ 
-    recv = seL4_Wait(env->r_ep, NULL); 
-    if (seL4_MessageInfo_get_label(recv) != seL4_NoFault) {
-        reply_error(env->r_ep);
-        return BENCH_FAILURE; 
-    }
     /*span over 0-1023 pages, using mask and shift to aviod 
-      repeating patterns, 100 repeats for each size.*/
+      repeating patterns, 100 repeats for each size.
+     currently covering maximum 4M of the trojan buffer*/
     for (int mask =0; mask < 32; mask++) 
         for (int shift = 0; shift < 10; shift++) {
 
             for (int i = 0; i < 1024; i++) {
+                /*syn with manager*/ 
+                recv = seL4_Wait(env->r_ep, NULL); 
+
+                if (seL4_MessageInfo_get_label(recv) != seL4_NoFault) {
+                    reply_error(env->r_ep);
+                    return BENCH_FAILURE; 
+                } 
 
                 /*working set size, the secret msg*/
                 int size = i ^ mask <<5 ^ mask;
@@ -95,7 +98,7 @@ static int capacity_single(bench_covert_t *env) {
                 /*tell the manager that we have 
                   data ready*/
                 seL4_SetMR(0, size); 
-                recv = seL4_ReplyWait(env->r_ep, send, NULL);
+                seL4_Send(env->r_ep, send); 
 
                 // Force LRU eviction
                 for (int j = 0; j < 2048; j+=64) {
@@ -109,7 +112,7 @@ static int capacity_single(bench_covert_t *env) {
     /*never return, manager does not reply, 0 msg len, the end of test*/
     send = seL4_MessageInfo_new(seL4_NoFault, 0, 0, 0);
     recv = seL4_ReplyWait (env->r_ep, send, NULL); 
-
+    assert(1);
     return BENCH_SUCCESS; 
 }
 

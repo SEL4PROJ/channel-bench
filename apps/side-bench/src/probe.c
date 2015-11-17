@@ -197,6 +197,8 @@ int probe_sitime(ts_t ts, int si, int count) {
 /*building the probe buffer, buf is the vaddr given by manager*/
 void probe_init_simple(void *buf, uint64_t bufsize) {
 
+    /*regarding the nways * ncores as number of 
+     ways for a cache set, slice does not matter*/
     pageset_t ps = ps_new();
     for (int i = 0; i < NWAYS*NCORES; i++)
         ps_push(ps, i);
@@ -209,7 +211,8 @@ void probe_init_simple(void *buf, uint64_t bufsize) {
       offset within a page*/ 
     for (int i = 0; i < PAGE_SIZE/CLSIZE; i++) {
         cacheline_t cl = NULL;
-        
+       /*linking the cache lines for a cache set together, 
+        cache slice does not matter*/ 
         for (int j = ps_size(ps); j--; ) {
             int n = ps_get(ps, j);
             probeinfo.eb[n].cachelines[i].cl_links[SETINDEXLINK] = cl;

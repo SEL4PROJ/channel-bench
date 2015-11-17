@@ -216,7 +216,7 @@ struct ipc_results {
 
 
 #define BENCH_PMU_PAGES    1
-#define BENCH_COVERT_TIME_PAGES 20  /*ts structure defined in timestats.c*/
+#define BENCH_COVERT_TIME_PAGES 21  /*ts structure defined in timestats.c*/
 #define BENCH_COVERT_BUF_PAGES  4096 /*trojan/probe buffers*/
 
 /*pmu counter result structure*/

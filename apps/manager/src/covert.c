@@ -92,7 +92,7 @@ static void map_init_frames(m_env_t *env, void *vaddr, uint32_t s, bench_env_t *
 
     /*using simple*/
     simple_t *simple = &env->simple; 
-    uint32_t offset =(uint32_t) (vaddr - __executable_start); 
+    uint32_t offset =(uint32_t) vaddr - (uint32_t)&__executable_start; 
 
     /*page aligned*/
     assert(!(s % BENCH_PAGE_SIZE)); 
@@ -112,7 +112,6 @@ static void map_init_frames(m_env_t *env, void *vaddr, uint32_t s, bench_env_t *
     
         /*find the frame caps for the p_buf and t_buf*/ 
         frame = simple->nth_userimage(simple->data, offset); 
-
         /*copy those frame caps*/ 
         vka_cspace_make_path(&env->vka, frame, &src); 
         ret = vka_cspace_alloc(&env->vka, &t->p_frames[i]); 
@@ -127,6 +126,7 @@ static void map_init_frames(m_env_t *env, void *vaddr, uint32_t s, bench_env_t *
     assert(ret == 0); 
     /*record*/
     t->p_vaddr = t_v;
+
 }
 
 /*map the record buffer to thread*/
@@ -161,7 +161,6 @@ static void map_r_buf(m_env_t *env, uint32_t n_p, bench_env_t *t) {
     assert(ret == 0); 
 
     t->t_vaddr = t_v;
-
 }
 
 /*init covert bench for single core*/
@@ -186,7 +185,8 @@ static void init_single(m_env_t *env) {
     spy.test_num = BENCH_COVERT_SPY_SINGLE;
     trojan.test_num = BENCH_COVERT_TROJAN_SINGLE; 
     trojan.ipc_vka = spy.ipc_vka = &env->vka; 
-    trojan.prio = spy.prio = CONFIG_BENCH_PRIORITY;
+    trojan.prio = 100;
+    spy.prio = 102;
 
     /*one trojan, one spy thread*/ 
     create_thread(&trojan); 
@@ -218,12 +218,13 @@ static int run_single (ts_t ts) {
     seL4_MessageInfo_t info; 
     seL4_MessageInfo_t tag = seL4_MessageInfo_new(seL4_NoFault, 0, 0, 0); 
     int size; 
-
+    printf("start covert benchmark\n"); 
 
     while (1) {    
    
         /*spy can now start*/
-        info = seL4_Call(s_ep.cptr, tag);
+        seL4_Send(s_ep.cptr, tag);
+        info = seL4_Wait(s_ep.cptr, NULL); 
         if (seL4_MessageInfo_get_label(info) != seL4_NoFault)
             return BENCH_FAILURE; 
 
@@ -234,7 +235,7 @@ static int run_single (ts_t ts) {
             size = seL4_GetMR(0); 
         else 
             return BENCH_FAILURE; 
-        
+
         /*collecting data for size N */
         /*data format: secret time*/
         for (int k = 1; k < TIME_MAX; k++)
@@ -242,7 +243,7 @@ static int run_single (ts_t ts) {
                 printf("%d %d\n", size, k);
     }
     
-    printf("done the benchmark");
+    printf("done covert benchmark\n");
     return BENCH_SUCCESS; 
 
 }
@@ -275,7 +276,7 @@ void lanuch_bench_covert (m_env_t *env) {
     env->record_vaddr = vspace_new_pages(&env->vspace, seL4_AllRights, 
             BENCH_COVERT_TIME_PAGES, PAGE_BITS_4K); 
     assert(env->record_vaddr != NULL);
-    
+
     map_r_buf(env, BENCH_COVERT_TIME_PAGES, &spy);
 
     /*send running environment*/

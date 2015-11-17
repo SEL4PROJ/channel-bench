@@ -12,7 +12,7 @@
 
 /*FIXME: configurable for different machine models*/
 #define NCORES 4
-#define NWAYS 12
+#define NWAYS 16
 #define NSETS 2048ULL 
 #define LINE_SIZE 64
 #define WAY_SIZE ( 2048 * 64)
