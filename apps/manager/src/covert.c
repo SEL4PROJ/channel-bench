@@ -27,9 +27,12 @@ extern char __executable_start;
 /*the benchmarking enviornment for two threads*/
 static bench_env_t trojan, spy;
 
+/*using the cache colouring allocator for the probe/trojan buffers*/
+#ifndef CONFIG_CACHE_COLOURING 
 /*buffers for probing and trojan processes*/ 
 static char p_buf[EBSIZE] __attribute__((aligned (BENCH_PAGE_SIZE)));
 static char t_buf[CACHESIZE] __attribute__((aligned (BENCH_PAGE_SIZE))); 
+#endif 
 /*ep for syn and reply*/
 static vka_object_t syn_ep, t_ep, s_ep; 
 
@@ -79,6 +82,7 @@ static void create_thread(bench_env_t *t) {
    
 }
 
+#ifndef CONFIG_CACHE_COLOURING
 /*mapping a buffer from env to the thread t, 
 vaddr in vspace of env, s size in bytes*/
 static void map_init_frames(m_env_t *env, void *vaddr, uint32_t s, bench_env_t *t) {
@@ -128,26 +132,48 @@ static void map_init_frames(m_env_t *env, void *vaddr, uint32_t s, bench_env_t *
     t->p_vaddr = t_v;
 
 }
+#endif 
+#ifdef CONFIG_CACHE_COLOURING 
+/*map a probing buffer to thread*/
+static void map_p_buf(bench_env_t *t, uint32_t size) {
+    sel4utils_process_t *p = &t->process; 
+    uint32_t n_p = size / PAGE_SIZE;
+ 
+    /*pages for probing buffer*/
+    t->p_vaddr = vspace_new_pages(&p->vspace, seL4_AllRights, 
+            n_p, PAGE_BITS_4K);
+    assert(t->p_vaddr != NULL); 
+
+}
+#endif 
 
 /*map the record buffer to thread*/
 static void map_r_buf(m_env_t *env, uint32_t n_p, bench_env_t *t) {
 
     reservation_t v_r;
-    void *t_v;  
+    void  *e_v;  
     cspacepath_t src, dest;
-    uint32_t v = (uint32_t)env->record_vaddr; 
     int ret; 
     sel4utils_process_t *p = &t->process; 
     
-    /*reserve an area in vspace*/ 
-    v_r = vspace_reserve_range(&p->vspace, n_p * BENCH_PAGE_SIZE, 
-            seL4_AllRights, 1, &t_v);
+    /*pages for spy record, ts structure*/
+    t->t_vaddr = vspace_new_pages(&p->vspace, seL4_AllRights, 
+            n_p, PAGE_BITS_4K);
+    assert(t->t_vaddr != NULL); 
+
+    uint32_t v = (uint32_t)t->t_vaddr; 
+
+    /*reserve an area in vspace of the manager*/ 
+    v_r = vspace_reserve_range(&env->vspace, n_p * BENCH_PAGE_SIZE, 
+            seL4_AllRights, 1, &e_v);
     assert(v_r.res != NULL);
+
+    env->record_vaddr = e_v; 
 
     for (int i = 0; i < n_p; i++, v+= BENCH_PAGE_SIZE) {
 
         /*copy those frame caps*/ 
-        vka_cspace_make_path(&env->vka, vspace_get_cap(&env->vspace, 
+        vka_cspace_make_path(t->vka, vspace_get_cap(&p->vspace, 
                     (void*)v), &src);
         ret = vka_cspace_alloc(&env->vka, &t->t_frames[i]); 
         assert(ret == 0); 
@@ -156,11 +182,10 @@ static void map_r_buf(m_env_t *env, uint32_t n_p, bench_env_t *t) {
         assert(ret == 0); 
     }
     /*map in*/
-    ret = vspace_map_pages_at_vaddr(&p->vspace, t->t_frames, 
-            NULL, t_v, n_p, PAGE_BITS_4K, v_r);
+    ret = vspace_map_pages_at_vaddr(&env->vspace, t->t_frames, 
+            NULL, e_v, n_p, PAGE_BITS_4K, v_r);
     assert(ret == 0); 
 
-    t->t_vaddr = t_v;
 }
 
 /*init covert bench for single core*/
@@ -169,13 +194,13 @@ static void init_single(m_env_t *env) {
     int ret;
 
     /*ep for communicate*/
-    ret = vka_alloc_endpoint(&env->vka, &syn_ep);
+    ret = vka_alloc_endpoint(env->ipc_vka, &syn_ep);
     assert(ret == 0);
     /*ep for spy to manager*/
-    ret = vka_alloc_endpoint(&env->vka, &s_ep); 
+    ret = vka_alloc_endpoint(env->ipc_vka, &s_ep); 
     assert(ret == 0);
     /*ep for trojan to manager*/
-    ret = vka_alloc_endpoint(&env->vka, &t_ep);
+    ret = vka_alloc_endpoint(env->ipc_vka, &t_ep);
     assert(ret == 0);
 
 
@@ -184,7 +209,7 @@ static void init_single(m_env_t *env) {
     trojan.reply_ep = t_ep; 
     spy.test_num = BENCH_COVERT_SPY_SINGLE;
     trojan.test_num = BENCH_COVERT_TROJAN_SINGLE; 
-    trojan.ipc_vka = spy.ipc_vka = &env->vka; 
+    trojan.ipc_vka = spy.ipc_vka = env->ipc_vka; 
     trojan.prio = 100;
     spy.prio = 102;
 
@@ -238,9 +263,11 @@ static int run_single (ts_t ts) {
 
         /*collecting data for size N */
         /*data format: secret time*/
-        for (int k = 1; k < TIME_MAX; k++)
-            for (int n = ts_get(ts, k); n--; ) 
-                printf("%d %d\n", size, k);
+        for (int k = 1; k < TIME_MAX; k++) {
+            int n = ts_get(ts, k);
+            if (n)
+                printf("%d %d %d\n", n, size, k);
+        }
     }
     
     printf("done covert benchmark\n");
@@ -262,21 +289,20 @@ void lanuch_bench_covert (m_env_t *env) {
     spy.kernel = env->kernel_colour[1].image.cptr;
     trojan.vka = &env->vka_colour[0]; 
     spy.vka = &env->vka_colour[1]; 
- 
+    env->ipc_vka = &env->vka_colour[0];
 #else 
     spy.vka = trojan.vka = &env->vka; 
+    env->ipc_vka = &env->vka;
 #endif
     init_single(env); 
-
+#ifdef CONFIG_CACHE_COLOURING 
+    map_p_buf(&trojan, CACHESIZE);
+    map_p_buf(&spy, EBSIZE);
+#else
     /*map the buffers into spy and trojan threads*/ 
     map_init_frames(env, (void *)t_buf, CACHESIZE, &trojan);
     map_init_frames(env, (void *)p_buf, EBSIZE, &spy); 
- 
-    /*pages for spy record, ts structure*/
-    env->record_vaddr = vspace_new_pages(&env->vspace, seL4_AllRights, 
-            BENCH_COVERT_TIME_PAGES, PAGE_BITS_4K); 
-    assert(env->record_vaddr != NULL);
-
+#endif 
     map_r_buf(env, BENCH_COVERT_TIME_PAGES, &spy);
 
     /*send running environment*/

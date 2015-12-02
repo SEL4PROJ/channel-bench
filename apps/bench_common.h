@@ -107,8 +107,12 @@
 
 /*dividing cache colours into security domains*/
 #define CC_NUM_DOMAINS     2
-#ifdef CONFIG_ARCH_X86
+#ifdef CONFIG_ARCH_X86 
+#ifdef CONFIG_MANAGER_COVERT_SINGLE 
+#define CC_DIV             4    /*spliting the L2 caches, 8 colours in total*/
+#else
 #define CC_DIV             16
+#endif 
 #endif 
 #ifdef CONFIG_PLAT_IMX6
 #define CC_DIV             8

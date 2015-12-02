@@ -24,9 +24,7 @@
 #include "probe.h"
 #include "timestats.h"
 #include "trojan.h"
-
-#define LINE 4  /*targeting the 4th cache set in a slice */
-#define REPS 100
+#include "pageset.h"
 
 
 bench_covert_t covert_env; 
@@ -51,7 +49,9 @@ static int capacity_single(bench_covert_t *env) {
     ts_t ts = NULL; 
     seL4_MessageInfo_t send = seL4_MessageInfo_new(seL4_NoFault, 0, 0, 1);
     seL4_MessageInfo_t recv;
-    
+    pageset_t ps = NULL;
+    int size = 0;
+
     /*run torjan never return*/
     if (env->opt == BENCH_COVERT_TROJAN_SINGLE) {
         return trojan_single(env->p_buf, LINE, env->syn_ep); 
@@ -65,8 +65,64 @@ static int capacity_single(bench_covert_t *env) {
     }
 
     /*span over 0-1023 pages, using mask and shift to aviod 
-      repeating patterns, 100 repeats for each size.
+      repeating patterns, N repeats for each size.
      currently covering maximum 4M of the trojan buffer*/
+    ps = ps_new(); 
+    ps_clear(ps);
+    for (int s = 0; s < WORKING_SET_PAGES; s++) 
+        ps_push(ps, s); 
+
+    for (int l = 0; l < NUM_COVERT_RUNS; l++) { 
+
+        /*generating a randomized list from 0 to max number 
+         of pages*/
+        ps_randomise(ps); 
+
+        for (int s = 0; s < WORKING_SET_PAGES; s++) {
+            
+            size = ps_get(ps, s);
+            /*syn with manager*/ 
+            recv = seL4_Wait(env->r_ep, NULL); 
+
+            if (seL4_MessageInfo_get_label(recv) != seL4_NoFault) {
+                reply_error(env->r_ep);
+                return BENCH_FAILURE; 
+            } 
+
+            ts_clear(ts);
+
+            /*single core: prime, trojan, probe*/
+            /*prime*/
+            probe_sitime(NULL, LINE, 10);
+            /*do probe and record time*/
+            for (int k = 0; k < REPS; k++) {
+                /*singal*/
+                tr_callslave(env->syn_ep, size);
+                /*probe*/
+                probe_sitime(ts, LINE, 1);
+            }
+            /*tell the manager that we have 
+              data ready*/
+            seL4_SetMR(0, size); 
+            seL4_Send(env->r_ep, send); 
+
+            // Force LRU eviction
+            /*probing on any possible cache set that 
+              trojan may touched, exclude the target set.*/
+            /*advance j by 64, which is already covered 
+              by pervious page 64 * 64 per cache line. 
+              trojan stepping on pages, 
+              whereas probe stepping on cache sets.*/
+            for (int j = 0; j < NSETS_LRU; j += CACHE_LINES_PER_PAGE) {
+                probe_sitime(ts, (LINE^j) & NSETS_MASK, 100);
+                probe_sitime(ts, (LINE^j) & NSETS_MASK, 100);
+                probe_sitime(ts, (LINE^j) & NSETS_MASK, 100);
+            }
+        }
+    }
+    ps_delete(ps); 
+
+#if 0
     for (int mask =0; mask < 32; mask++) 
         for (int shift = 0; shift < 10; shift++) {
 
@@ -101,17 +157,26 @@ static int capacity_single(bench_covert_t *env) {
                 seL4_Send(env->r_ep, send); 
 
                 // Force LRU eviction
-                for (int j = 0; j < 2048; j+=64) {
-                    probe_sitime(ts, (LINE^j)&0x3f, 100);
-                    probe_sitime(ts, (LINE^j)&0x3f, 100);
-                    probe_sitime(ts, (LINE^j)&0x3f, 100);
+                /*probing on any possible cache set that 
+                 trojan may touched, exclude the target set.*/
+                /*advance j by 64, which is already covered 
+                 by pervious page 64 * 64 per cache line. 
+                 trojan stepping on pages, 
+                 whereas probe stepping on cache sets.*/
+                for (int j = 0; j < NSETS_LRU; j += CACHE_LINES_PER_PAGE) {
+                    probe_sitime(ts, (LINE^j) & NSETS_MASK, 100);
+                    probe_sitime(ts, (LINE^j) & NSETS_MASK, 100);
+                    probe_sitime(ts, (LINE^j) & NSETS_MASK, 100);
                 }
             }
         }
-    
+#endif 
     /*never return, manager does not reply, 0 msg len, the end of test*/
+
+    recv = seL4_Wait(env->r_ep, NULL);
     send = seL4_MessageInfo_new(seL4_NoFault, 0, 0, 0);
-    recv = seL4_ReplyWait (env->r_ep, send, NULL); 
+    seL4_Send(env->r_ep, send); 
+    recv = seL4_Wait(env->r_ep, NULL);
     assert(1);
     return BENCH_SUCCESS; 
 }

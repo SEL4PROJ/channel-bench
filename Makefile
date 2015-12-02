@@ -35,7 +35,7 @@ simulate-ia32:
 
                 
 copy-image:
-	scp images/* saison:benchmark/ 
+	scp images/* saison:benchmark-debug/ 
 
 	
 #running images in machine queue

@@ -1,9 +1,12 @@
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
 #include <assert.h>
+
+#include "../../covert.h"
 #include "pageset.h"
 
-#define PS_INITSIZE	128
+#define PS_INITSIZE  WORKING_SET_PAGES 	
 
 /*avoiding malloc by static definition*/
 static struct pageset p_ps; 
@@ -37,7 +40,7 @@ void ps_move(pageset_t from, pageset_t to) {
 
 
 void ps_delete(pageset_t ps) {
-
+    ps_clear(ps); 
 }
 
 void ps_push(pageset_t ps, int page) {
@@ -105,6 +108,7 @@ void ps_randomise(pageset_t ps) {
 
 void ps_clear(pageset_t ps) {
   ps->npages = 0;
+  memset((void *)ps->data, 0, (sizeof(int)) * ps->datasize); 
 }
 
 static int intcmp(const void *v1, const void *v2) {

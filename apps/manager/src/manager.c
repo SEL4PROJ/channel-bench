@@ -457,7 +457,6 @@ int main (void) {
 #ifdef CONFIG_CACHE_COLOURING
     /*allocator, vka, and vspace*/
     init_env_colour(&env);
-    create_kernel_pd(info, &env); 
 #else 
     init_env(&env); 
 #endif
@@ -465,10 +464,16 @@ int main (void) {
     /*enable serial driver*/
     platsupport_serial_setup_simple(NULL, &env.simple, &env.vka); 
 
+    printf("manager app start\n");
+
+#ifdef CONFIG_CACHE_COLOURING
+    create_kernel_pd(info, &env); 
+#endif
+
     /*switch to a bigger, safer stack with guard page*/ 
 
-   // printf("Manager, switching to a safer, bigger stack... "); 
-   // fflush(stdout); 
+    printf("Manager, switching to a safer, bigger stack... "); 
+    fflush(stdout); 
 
 
     /*starting test, never return from this function*/

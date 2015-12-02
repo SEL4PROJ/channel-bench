@@ -33,6 +33,7 @@
 typedef struct {
 
     vka_t vka;    
+    vka_t *ipc_vka;    /*pointer for ep allocator*/
     vspace_t vspace; 
 #ifdef CONFIG_CACHE_COLOURING  
     vka_t vka_colour[CC_NUM_DOMAINS]; 

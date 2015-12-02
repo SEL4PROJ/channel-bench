@@ -207,9 +207,8 @@ void probe_init_simple(void *buf, uint64_t bufsize) {
     probeinfo.ebsetindices = bufsize/SETINDEX_SIZE;
     probeinfo.eb = (setindex_t)buf; 
 
-    /*linking the cache lines for a cache set, currently only known the 
-      offset within a page*/ 
-    for (int i = 0; i < PAGE_SIZE/CLSIZE; i++) {
+    /*linking the cache lines for a cache set*/
+    for (int i = 0; i < SETINDEX_SIZE/CLSIZE; i++) {
         cacheline_t cl = NULL;
        /*linking the cache lines for a cache set together, 
         cache slice does not matter*/ 
