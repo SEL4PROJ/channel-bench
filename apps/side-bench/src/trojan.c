@@ -1,3 +1,4 @@
+#ifdef CONFIG_COVERT_SINGLE 
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <sys/mman.h>
@@ -21,8 +22,8 @@ static volatile int sum;
 /*spy and trojan communicate on syn_ep*/
 int trojan_single(char *t_buf, int line, seL4_CPtr syn_ep) {
     
-    page_t *page = (page_t *)((intptr_t)t_buf + line * 64);
-    register int s = 0;
+    volatile page_t *page = (volatile page_t *)((intptr_t)t_buf + line * 64);
+    register int s = 0xff; //s = 0; read from this cache line
     int size;
     seL4_MessageInfo_t send = seL4_MessageInfo_new(seL4_NoFault, 0, 0, 1);
     seL4_MessageInfo_t recv;
@@ -37,18 +38,19 @@ int trojan_single(char *t_buf, int line, seL4_CPtr syn_ep) {
         if (seL4_MessageInfo_get_length(recv) != 1)
             return BENCH_FAILURE; 
         
-        /*polluting the cache, page by page
+        /*polluting the cache with writes, page by page
           size is defined by receiver*/
         size = seL4_GetMR(0); 
-        register page_t *p = page;
+        register volatile page_t *p = page;
         for (int j = 0; j < size; j++) {
-            s+= *p[0];
+           *p[0] ^= s; /*write to this line*/
+           //s+= *p[0]; /*read from this cache line*/
             p++;
         }
         seL4_SetMR(0, size);
         seL4_Send(syn_ep, send);
        // recv = seL4_ReplyWait(syn_ep, send, NULL); 
-    } while (s == 0);
+    } while (1); //while(s == 0) read from this cache line 
     // unreached
     sum = s;
     assert(1);
@@ -181,4 +183,4 @@ void tr_stop() {
 
 
 #endif     
-
+#endif 

@@ -1,3 +1,4 @@
+#ifdef CONFIG_COVERT_SINGLE 
 /* 
    the original usage of capacity should be:
    /capacity [-1] [-o <outputfile>]
@@ -212,4 +213,4 @@ int run_bench_covert(char **argv) {
     return capacity_single(&covert_env); 
 
 }
-
+#endif 

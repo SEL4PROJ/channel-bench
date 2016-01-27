@@ -48,7 +48,7 @@
 #define LLC_NSETS_MASK       0x7ff
 #define LLC_NSETS_LRU        2048
 
-#define NUM_COVERT_RUNS   50 /*number of attemps in capacity bench*/
+#define NUM_COVERT_RUNS   30 /*number of attemps in capacity bench*/
 
 
 /*porting from capacity/probe.c*/
@@ -119,7 +119,7 @@
 
 
 #define LINE 2  /*targeting this cache set in a slice */
-#define REPS 100  /*the number of repeats for each run*/
+#define REPS 200  /*the number of repeats for each run*/
 
 
 /*time statistics timestat.h*/

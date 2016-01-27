@@ -1,4 +1,4 @@
-
+#ifdef CONFIG_BENCH_COVERT_SINGLE 
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -135,7 +135,8 @@ int __attribute__ ((noinline)) probe_silist(volatile void *p) {
       "rdtsc\n"
       "mov %%eax, %%esi\n"
       "1:\n"
-      "mov (%%edi), %%edi\n"
+      "xorl %%edi, 8(%%edi)\n" /*write on this cache line*/
+      "mov (%%edi), %%edi\n"   /*this line touches the cache line, read*/
       "cmpl $0, %%edi\n"
       "jne 1b\n"
       "rdtscp\n"
@@ -468,4 +469,4 @@ void probe_init(uint64_t ebsetindices) {
 
 #endif
 
-
+#endif 
