@@ -67,8 +67,8 @@ typedef struct {
 
     /*endpoint that root thread is waiting on*/ 
     seL4_CPtr bench_ep;
-
-} m_env_t;  /*environment used by the manager*/  
+    
+} m_env_t;  /*environnt used by the manager*/  
 
 
 /*parameters for setting up a benchmark process*/ 
@@ -94,6 +94,9 @@ typedef struct bench_env {
     void *p_vaddr;
     void *t_vaddr;  /*vaddr for above buffers in bench thread vspace*/ 
 #endif 
+ /*the affinity of this thread*/ 
+    uint32_t affinity; 
+
 } bench_env_t; 
 
 

@@ -193,11 +193,19 @@ void create_benchmark_process(bench_env_t *t) {
             process->pd.cptr, process->thread.tcb.cptr);
 #endif
 
-   /*start process*/ 
+   /*create a  process*/ 
     error = sel4utils_spawn_process_v(process, t->vka, 
-            t->vspace, argc, argv, 1);
+            t->vspace, argc, argv, 0);
     assert(error == 0);
    
+    /*assign the affinity*/ 
+    error = seL4_TCB_SetAffinity(process->thread.tcb.cptr, t->affinity);
+    assert(error == 0); 
+
+    /*resume the thread*/ 
+    error = seL4_TCB_Resume(process->thread.tcb.cptr); 
+    assert(error == 0); 
+
     /*a never returned ep*/
     vka_cspace_make_path(t->ipc_vka, t->null_ep.cptr, &src);  
     null_ep = sel4utils_copy_cap_to_process(process, src);
@@ -421,16 +429,17 @@ void ipc_send_time_inter(bench_env_t *t1, bench_env_t *t2,
 }
 
 
-void ipc_benchmark (bench_env_t *thread1, bench_env_t *thread2) {
+static void ipc_benchmark (bench_env_t *thread1, bench_env_t *thread2) {
 
 
     /*set up one thread to measure the overhead*/
     uint32_t i;
     ccnt_t result;
-
+ 
 #ifdef IPC_BENCH_PRINTOUT
     printf("Doing benchmarks...\n\n");
-#endif 
+#endif
+    
     ipc_overhead(thread1); 
 #ifdef IPC_BENCH_PRINTOUT 
     print_overhead(); 
@@ -517,6 +526,33 @@ void ipc_benchmark (bench_env_t *thread1, bench_env_t *thread2) {
 #endif 
 }
 
+/*lanuching the ipc bench on various cores*/
+static void multi_bench_ipc(bench_env_t *t1, bench_env_t *t2) {
+
+    /*t1 and t2 on the same core*/
+    for (int i = 0; i < CONFIG_MAX_NUM_NODES; i++) {
+
+        printf("assign T1 to core %d T2 to core %d\n", i, i); 
+        printf("=========================================\n"); 
+        t1->affinity = t2->affinity = i; 
+        ipc_benchmark(t1, t2); 
+    }
+ 
+    /*t1 and t2 on different core, except only one core aviliable*/
+    if (CONFIG_MAX_NUM_NODES == 1) 
+        return; 
+
+    for (int i = 0; i < CONFIG_MAX_NUM_NODES - 1; i++) {
+
+        printf("assign T1 to core %d T2 to core %d\n", i, i + 1); 
+        printf("=========================================\n"); 
+        t1->affinity = i; 
+        t2->affinity = i + 1; 
+        ipc_benchmark(t1, t2); 
+    }
+
+}
+
 /*entry point for ipc benchmarks */
 void lanuch_bench_ipc(m_env_t *env) {
 
@@ -570,14 +606,15 @@ void lanuch_bench_ipc(m_env_t *env) {
     printf("\n"); 
     printf("ipc inter colour benchmarks\n");
     printf("========================\n");
-    ipc_benchmark(&thread1, &thread2); 
+    
+    multi_bench_ipc(&thread1, &thread2); 
 
     printf("\n"); 
     printf("ipc intra colour benchmarks\n");
     printf("========================\n");
     thread2.kernel = thread1.kernel = env->kernel_colour[0].image.cptr; 
     thread2.vka = thread1.vka = &env->vka_colour[0]; 
-    ipc_benchmark(&thread1, &thread2); 
+    multi_bench_ipc(&thread1, &thread2); 
 
     printf("\n"); 
     printf("ipc no colour benchmarks\n");
@@ -591,7 +628,7 @@ void lanuch_bench_ipc(m_env_t *env) {
 
     thread2.kernel = thread1.kernel = env->kernel;
     thread2.vka = thread1.vka = &env->vka; 
-    ipc_benchmark(&thread1, &thread2); 
+    multi_bench_ipc(&thread1, &thread2); 
 
 #else
     thread1.vka = &env->vka; 
@@ -607,7 +644,7 @@ void lanuch_bench_ipc(m_env_t *env) {
     printf("\n"); 
     printf("ipc original kernel benchmarks\n");
     printf("========================\n");
-    ipc_benchmark(&thread1, &thread2); 
+    multi_bench_ipc(&thread1, &thread2); 
 
 
 

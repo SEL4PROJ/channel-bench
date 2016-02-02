@@ -448,6 +448,7 @@ int main (void) {
 
     seL4_BootInfo *info = seL4_GetBootInfo(); 
     
+
 #ifdef CONFIG_KERNEL_STABLE 
     simple_stable_init_bootinfo(&env.simple, info); 
 #else 
