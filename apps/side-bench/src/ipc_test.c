@@ -28,6 +28,8 @@ static void send_result(seL4_CPtr ep, ccnt_t result) {
 #ifdef CONFIG_BENCH_PMU_COUNTER
 static ipc_pmu_t *pmu_v; 
 #endif 
+static ipc_rt_result_t *rt_v;
+
 /*list of functions*/
 ipc_bench_func ipc_funs[IPC_ALL] = {
 
@@ -36,6 +38,8 @@ ipc_call_func, ipc_call_func2, ipc_call_10_func, ipc_call_10_func2,
 ipc_reply_wait_func, ipc_reply_wait_func2, ipc_reply_wait_10_func, ipc_reply_wait_10_func2, 
 ipc_wait_func, 
 ipc_send_func, 
+ipc_rt_call_func, 
+ipc_rt_reply_wait_func,
 NULL};
 
 struct bench_results results; 
@@ -111,8 +115,8 @@ seL4_Word ipc_call_func2(seL4_CPtr ep, seL4_CPtr result_ep) {
     memcpy((void *)pmu_v->pmuc[IPC_CALL2], (void *)pmuc, 
             (sizeof (sel4bench_counter_t)) * BENCH_PMU_COUNTERS); 
 #endif 
-
     send_result(result_ep, start); 
+
     dummy_seL4_Send(ep, tag); 
     return 0; 
 
@@ -232,7 +236,9 @@ seL4_Word ipc_reply_wait_func2(seL4_CPtr ep, seL4_CPtr result_ep) {
             (sizeof (sel4bench_counter_t)) * BENCH_PMU_COUNTERS); 
 #endif 
     send_result(result_ep, end); 
+ 
     seL4_Reply(tag); 
+
     return 0; 
 }
 
@@ -423,12 +429,14 @@ static int check_overhead(struct bench_results *results) {
 }
 
 void ipc_measure_overhead(seL4_CPtr reply_ep, struct bench_results *results) {
+ 
     MEASURE_OVERHEAD(DO_NOP_CALL(0, tag),
                      results->call_overhead,
                      seL4_MessageInfo_t tag = seL4_MessageInfo_new(0, 0, 0, 0));
     MEASURE_OVERHEAD(DO_NOP_REPLY_WAIT(0, tag),
                      results->reply_wait_overhead,
                      seL4_MessageInfo_t tag = seL4_MessageInfo_new(0, 0, 0, 0));
+#if 0
     MEASURE_OVERHEAD(DO_NOP_SEND(0, tag),
                      results->send_overhead,
                      seL4_MessageInfo_t tag = seL4_MessageInfo_new(0, 0, 0, 0));
@@ -441,17 +449,80 @@ void ipc_measure_overhead(seL4_CPtr reply_ep, struct bench_results *results) {
     MEASURE_OVERHEAD(DO_NOP_REPLY_WAIT_10(0, tag10),
                      results->reply_wait_10_overhead,
                      seL4_MessageInfo_t tag10 = seL4_MessageInfo_new(0, 0, 0, 10));
+#endif  
     if (check_overhead(results)) {
-
-        send_result(reply_ep,  results->call_reply_wait_overhead);
-        send_result(reply_ep, results->send_wait_overhead );
-        send_result(reply_ep, results->call_reply_wait_10_overhead);
+        COMPILER_BARRIER; 
+        rt_v->call_reply_wait_overhead = results->call_reply_wait_overhead;
+        COMPILER_BARRIER;
     }
 
 }
+
+/*round trip ipc performance testing, only report at the client side
+ (call)*/
+seL4_Word ipc_rt_call_func(seL4_CPtr ep, seL4_CPtr result_ep) {
+
+    ccnt_t start UNUSED, end UNUSED; 
+    seL4_MessageInfo_t tag = seL4_MessageInfo_new(0, 0, 0, 0); 
+#ifdef CONFIG_BENCH_PMU_COUNTER
+    sel4bench_counter_t pmuc[BENCH_PMU_COUNTERS]; 
+#endif 
+    FENCE(); 
+    for (int i  = 0; i < IPC_RUNS; i++) {
+        
+        for (int j = 0; j < IPC_WARMUPS; j++) { 
+            READ_COUNTER_BEFORE(start); 
+            DO_REAL_CALL(ep, tag); 
+            READ_COUNTER_AFTER(end); 
+        } 
+
+        DO_REAL_SEND(ep, tag); 
+        COMPILER_BARRIER; 
+        rt_v->call_rt_time[i] = end - start; 
+        COMPILER_BARRIER; 
+    }
+    FENCE();
+#ifdef CONFIG_BENCH_PMU_COUNTER
+    memcpy((void *)pmu_v->pmuc[IPC_CALL], (void *)pmuc, 
+            (sizeof (sel4bench_counter_t)) * BENCH_PMU_COUNTERS); 
+#endif 
+    //seL4_Send(ep, tag); 
+    return 0; 
+
+}
+
+/*round trip ipc performance testing*/
+seL4_Word ipc_rt_reply_wait_func(seL4_CPtr ep, seL4_CPtr result_ep) { 
+    
+    seL4_MessageInfo_t tag = seL4_MessageInfo_new(0, 0, 0, 0); 
+#ifdef CONFIG_BENCH_PMU_COUNTER
+    sel4bench_counter_t pmuc[BENCH_PMU_COUNTERS]; 
+#endif 
+    FENCE();
+    
+    for (int i = 0; i < IPC_RUNS; i++) {
+    
+        seL4_Wait(ep, NULL); 
+        for (int j = 0; j < IPC_WARMUPS; j++) { 
+#ifdef CONFIG_BENCH_PMU_COUNTER 
+            sel4bench_get_counters(BENCH_PMU_BITS, pmuc);  
+#endif
+            DO_REAL_REPLY_WAIT(ep, tag); 
+        } 
+    }
+    FENCE(); 
+#ifdef CONFIG_BENCH_PMU_COUNTER
+    memcpy((void *)pmu_v->pmuc[IPC_REPLY_WAIT], (void *)pmuc, 
+            (sizeof (sel4bench_counter_t)) * BENCH_PMU_COUNTERS); 
+#endif 
+    return 0; 
+}
+
+
 seL4_Word ipc_bench(seL4_CPtr result_ep, seL4_CPtr test_ep, int test_n,
         void *record_vaddr) {
-
+    
+    rt_v = (ipc_rt_result_t *)record_vaddr; 
 
     if (test_n == IPC_OVERHEAD) {
         ipc_measure_overhead(result_ep, &results); 

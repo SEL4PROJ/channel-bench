@@ -49,7 +49,7 @@ static m_env_t env;
 #define ALLOCATOR_VIRTUAL_POOL_SIZE ((1 << seL4_PageBits) * 100)
 
 /* static memory for the allocator to bootstrap with */
-#define ALLOCATOR_STATIC_POOL_SIZE ((1 << seL4_PageBits) * 50)
+#define ALLOCATOR_STATIC_POOL_SIZE ((1 << seL4_PageBits) * 100)
 static char allocator_mem_pool[ALLOCATOR_STATIC_POOL_SIZE];
 
 /*static memory for virtual memory bootstrapping*/
@@ -125,9 +125,9 @@ void init_env (m_env_t *env) {
     allocman = bootstrap_use_current_simple(&env->simple, ALLOCATOR_STATIC_POOL_SIZE, allocator_mem_pool); 
     assert(allocman != NULL);
 
+
     /*connect virtual interface with allocator*/
     allocman_make_vka(&env->vka, allocman); 
-
 
     /*create a vspace*/
     error = sel4utils_bootstrap_vspace_with_bootinfo_leaky(&env->vspace, &vdata, simple_get_pd(&env->simple), &env->vka, seL4_GetBootInfo()); 
@@ -454,6 +454,12 @@ int main (void) {
 #else 
     simple_default_init_bootinfo(&env.simple, info); 
 #endif
+    
+    /*enable serial driver*/
+    platsupport_serial_setup_simple(NULL, &env.simple, &env.vka); 
+
+    printf("manager app start\n");
+
 
 #ifdef CONFIG_CACHE_COLOURING
     /*allocator, vka, and vspace*/
@@ -462,11 +468,7 @@ int main (void) {
     init_env(&env); 
 #endif
 
-    /*enable serial driver*/
-    platsupport_serial_setup_simple(NULL, &env.simple, &env.vka); 
-
-    printf("manager app start\n");
-
+    
 #ifdef CONFIG_CACHE_COLOURING
     create_kernel_pd(info, &env); 
 #endif

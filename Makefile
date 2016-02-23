@@ -38,6 +38,9 @@ copy-image:
 	scp images/* saison:benchmark-debug/ 
 	scp build/kernel/kernel.elf saison:benchmark-debug/kernel.elf
 	scp stage/x86/pc99/bin/manager saison:benchmark-debug/manager.elf
+	scp stage/x86/pc99/bin/side-bench saison:benchmark-debug/side-bench.elf
+
+
 
 
 

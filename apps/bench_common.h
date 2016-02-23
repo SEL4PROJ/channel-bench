@@ -92,7 +92,7 @@
 #define OVERHEAD_RETRIES 4
 
 /*ipc benchmark, same as sel4bench*/
-#define IPC_RUNS    16 
+#define IPC_RUNS    16
 #define IPC_WARMUPS 16
 #define IPC_OVERHEAD_RETRIES  4 
 
@@ -151,6 +151,8 @@ enum ipc_funs{
     IPC_REPLY_WAIT2_10, 
     IPC_WAIT, 
     IPC_SEND, 
+    IPC_RT_CALL, 
+    IPC_RT_REPLY_WAIT,
     IPC_OVERHEAD, 
     IPC_ALL
 };
@@ -243,6 +245,15 @@ typedef struct {
     sel4bench_counter_t reply_wait_10_time_inter[IPC_RUNS][BENCH_PMU_COUNTERS];
 } ipc_test_pmu_t; 
 
+typedef struct {
+    /* Raw results from benchmarking. rt only */
+   volatile sel4bench_counter_t call_rt_time[IPC_RUNS];
+   volatile sel4bench_counter_t call_reply_wait_overhead; 
+} ipc_rt_result_t; 
+           
+
+
+
 
 /*data maxtix for probing result (x,y) = (Plain text 
   value, set number)*/
@@ -269,6 +280,9 @@ typedef struct bench_covert {
 #define BENCH_COVERT_MSG_LEN  2 /*msg len for init env*/
 
 #define BENCH_PAGE_SIZE    4096  /*page size */
+
+#define COMPILER_BARRIER do { asm volatile ("" ::: "memory"); } while(0);
+
 
 #endif 
 

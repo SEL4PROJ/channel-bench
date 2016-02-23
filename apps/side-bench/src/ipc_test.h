@@ -564,6 +564,9 @@ seL4_Word ipc_reply_wait_10_func(seL4_CPtr ep, seL4_CPtr result_ep);
 
 seL4_Word ipc_reply_wait_10_func2(seL4_CPtr ep, seL4_CPtr result_ep); 
 
+seL4_Word ipc_rt_reply_wait_func(seL4_CPtr ep, seL4_CPtr result_ep); 
+seL4_Word ipc_rt_call_func(seL4_CPtr ep, seL4_CPtr result_ep); 
+
 /*interfaces*/
 void ipc_measure_overhead(seL4_CPtr reply_ep, struct bench_results *results); 
 uint32_t ipc_wait_func(seL4_CPtr ep, seL4_CPtr result_ep); 

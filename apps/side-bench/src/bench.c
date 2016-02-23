@@ -148,20 +148,16 @@ void run_bench_ipc(char **argv) {
     /*get the test number*/
     test_num = atol(argv[0]); 
     ep = (seL4_CPtr)atol(argv[1]);
-    result_ep = (seL4_CPtr)atol(argv[2]);
+    record_vaddr = (void *)atol(argv[2]);
 
-    null_ep = wait_ep_from(result_ep); 
-
-#ifdef CONFIG_BENCH_PMU_COUNTER 
-    /*waiting for virtual address given by root task*/
-    record_vaddr = wait_vaddr_from(result_ep); 
     assert(record_vaddr != NULL); 
+//    null_ep = wait_ep_from(result_ep); 
 
-#endif 
-    ipc_bench(result_ep, ep, test_num, record_vaddr);
+    ipc_bench(0, ep, test_num, record_vaddr);
 
     /*waiting on a endpoit which will never return*/
-    wait_init_msg_from(null_ep); 
+    wait_init_msg_from(ep);
+    
 
 }
 #endif 
