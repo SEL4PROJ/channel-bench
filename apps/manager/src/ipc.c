@@ -193,7 +193,6 @@ void create_benchmark_process(bench_env_t *t) {
 #endif
     void *vaddr = vspace_map_pages(&process->vspace, t->record_frames, 
             NULL, seL4_AllRights, BENCH_PMU_PAGES, PAGE_BITS_4K, 1);
-    printf("vaddr record %p\n", vaddr);
     assert(vaddr); 
  
     sprintf(arg_str0, "%d", t->test_num); 
@@ -300,7 +299,7 @@ void ipc_overhead (bench_env_t *thread) {
     while (rt_v->call_reply_wait_overhead == 0); 
     COMPILER_BARRIER; 
     
-    printf("call reply wait overhead"CCNT_FORMAT"\n", rt_v->call_reply_wait_overhead); 
+    printf("call reply wait overhead "CCNT_FORMAT"\n", rt_v->call_reply_wait_overhead); 
 
     error = seL4_TCB_Suspend(process->thread.tcb.cptr); 
     assert(error == 0); 
