@@ -108,10 +108,10 @@ void bench_process_data(m_env_t *env, seL4_Word result);
 
 /*interface in ipc.c*/
 /*lanuch ipc benchmarking threads*/ 
-void lanuch_bench_ipc(m_env_t *);
+void launch_bench_ipc(m_env_t *);
 /*interface in covert.c*/
 /*entry point of covert channel benchmark*/
-void lanuch_bench_covert(m_env_t *env);
-  
+void launch_bench_covert(m_env_t *env);
+
 #endif
 

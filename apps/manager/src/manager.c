@@ -193,7 +193,7 @@ static void init_env_colour (m_env_t *env) {
 #endif 
 
 #ifdef CONFIG_MANAGER_CACHE_FLUSH
-static void lanuch_bench_single (void *arg) {
+static void launch_bench_single (void *arg) {
 
     /*lanuch single benchmark application*/
 
@@ -410,14 +410,16 @@ static void *main_continued (void* arg) {
 #endif 
     
 #ifdef CONFIG_MANAGER_IPC
-    lanuch_bench_ipc(&env); 
+    launch_bench_ipc(&env); 
 #endif 
 #ifdef CONFIG_MANAGER_CACHE_FLUSH 
-    lanuch_bench_single(arg);
+    launch_bench_single(arg);
 #endif
 #ifdef CONFIG_MANAGER_COVERT_SINGLE
-    lanuch_bench_covert(&env); 
+    launch_bench_covert(&env); 
 #endif 
+
+
 
     /*halt cpu*/
     printf("Finished benchmark, now halting...\n"); 

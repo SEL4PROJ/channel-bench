@@ -91,6 +91,9 @@
 #define OVERHEAD_RUNS 10
 #define OVERHEAD_RETRIES 4
 
+#define NLATENCY  16 
+
+
 /*ipc benchmark, same as sel4bench*/
 #define IPC_RUNS    16
 #define IPC_WARMUPS 16
@@ -153,6 +156,8 @@ enum ipc_funs{
     IPC_SEND, 
     IPC_RT_CALL, 
     IPC_RT_REPLY_WAIT,
+    IPC_LATENCY_CALL, 
+    IPC_LATENCY_REPLY_WAIT,
     IPC_OVERHEAD, 
     IPC_ALL
 };
@@ -248,7 +253,9 @@ typedef struct {
 typedef struct {
     /* Raw results from benchmarking. rt only */
    volatile sel4bench_counter_t call_rt_time[IPC_RUNS];
-   volatile sel4bench_counter_t call_reply_wait_overhead; 
+   volatile sel4bench_counter_t call_reply_wait_overhead;
+   volatile sel4bench_counter_t call_time[IPC_RUNS]; 
+   volatile sel4bench_counter_t reply_wait_time[IPC_RUNS];
 } ipc_rt_result_t; 
            
 

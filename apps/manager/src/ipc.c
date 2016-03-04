@@ -210,7 +210,6 @@ void create_benchmark_process(bench_env_t *t) {
             t->vspace, argc, argv, 0);
     assert(error == 0);
 
-
     /*assign the affinity*/ 
     error = seL4_TCB_SetAffinity(process->thread.tcb.cptr, t->affinity);
     assert(error == 0); 
@@ -406,6 +405,73 @@ void ipc_call_time_inter(bench_env_t *t1, bench_env_t *t2,
     //ipc_delete_eps(vka0); 
 }
 
+/*latency of kernel switching*/
+void ipc_kernel_latency_inter(bench_env_t *t1, bench_env_t *t2) {
+
+    sel4utils_process_t *process = NULL; 
+    int error;
+    cspacepath_t src, dest; 
+    int ret; 
+
+    for (int i = 0; i < IPC_RUNS; i++ ) {
+        rt_v->call_time[i] = rt_v->reply_wait_time[i] = 0; 
+    }
+
+    /*copy the caps to map into the remote process*/
+    vka_cspace_make_path(&ipc_env->vka, vspace_get_cap(&ipc_env->vspace, 
+                ipc_env->record_vaddr), &src);
+
+
+    ret = vka_cspace_alloc(&ipc_env->vka, &t1->record_frames[0]); 
+    assert(ret == 0); 
+
+    vka_cspace_make_path(&ipc_env->vka, t1->record_frames[0], &dest); 
+    ret = vka_cnode_copy(&dest, &src, seL4_AllRights); 
+    assert(ret == 0); 
+
+ 
+    ret = vka_cspace_alloc(&ipc_env->vka, &t2->record_frames[0]); 
+    assert(ret == 0); 
+
+    vka_cspace_make_path(&ipc_env->vka, t2->record_frames[0], &dest); 
+    ret = vka_cnode_copy(&dest, &src, seL4_AllRights); 
+    assert(ret == 0);    
+
+
+    //ipc_alloc_eps(vka0); 
+    t1->test_num = IPC_LATENCY_CALL; 
+    t2->test_num = IPC_LATENCY_REPLY_WAIT; 
+    /*t1 has the sensitive attribute, with holdTime configured*/
+    create_benchmark_process(t1);
+    create_benchmark_process(t2);
+
+    printf("kernel switching latency observed at user-level:\n");
+    /*resume the thread*/ 
+    process = &t2->process;
+    error = seL4_TCB_Resume(process->thread.tcb.cptr); 
+    assert(error == 0); 
+    process = &t1->process;
+    error = seL4_TCB_Resume(process->thread.tcb.cptr); 
+    assert(error == 0); 
+
+
+    for (int i = 0; i < IPC_RUNS; i++ ) {
+        COMPILER_BARRIER; 
+        while (rt_v->reply_wait_time[i] == 0); 
+        COMPILER_BARRIER; 
+        printf(" "CCNT_FORMAT"  ", rt_v->reply_wait_time[i] - rt_v->call_time[i]); 
+    }
+    printf("\n"); 
+    process = &t2->process;
+    error = seL4_TCB_Suspend(process->thread.tcb.cptr); 
+    assert(error == 0); 
+    process = &t1->process;
+    error = seL4_TCB_Suspend(process->thread.tcb.cptr);    
+ 
+
+}
+
+
 /*round trip call performance*/
 void ipc_rt_call_time_inter(bench_env_t *t1, bench_env_t *t2, 
         ccnt_t *result, 
@@ -477,7 +543,7 @@ void ipc_rt_call_time_inter(bench_env_t *t1, bench_env_t *t2,
     assert(error == 0); 
     process = &t1->process;
     error = seL4_TCB_Suspend(process->thread.tcb.cptr);    
-    ipc_destroy_process(t1, t2);
+    //ipc_destroy_process(t1, t2);
     //ipc_delete_eps(vka0); 
 }
 
@@ -547,6 +613,7 @@ static void ipc_benchmark (bench_env_t *thread1, bench_env_t *thread2) {
     /*round trip ipc performance*/
     ipc_rt_call_time_inter(thread1, thread2, &result,
             pmu_results.reply_wait_time_inter[0]);
+
 
 #if 0
     for (i = 0; i < IPC_RUNS; i++) {
@@ -642,6 +709,8 @@ static void multi_bench_ipc(bench_env_t *t1, bench_env_t *t2) {
         printf("assign T1 to core %d T2 to core %d\n", i, i); 
         printf("=========================================\n"); 
         t1->affinity = t2->affinity = i; 
+
+        seL4_KernelImage_Sensitive(t1->kernel);
         ipc_benchmark(t1, t2); 
     }
 #if 0
@@ -661,8 +730,35 @@ static void multi_bench_ipc(bench_env_t *t1, bench_env_t *t2) {
 #endif
 }
 
+
+static void multi_bench_kernel_latency(bench_env_t *t1, bench_env_t *t2) {
+
+    uint32_t low = 0 , high = 0; 
+
+    printf("Test the kernel switching latency\n");
+    printf("assign T1 (high) to core 1 T2 (low) to core 1 \n"); 
+    printf("=========================================\n"); 
+    t1->affinity = t2->affinity = 1;
+
+    seL4_KernelImage_Sensitive(t1->kernel);
+
+    for (int i = 0; i < NLATENCY; i++) {
+
+        /*set the latency*/ 
+        printf("set the caller kernel latency to %d\n", low);
+        seL4_KernelImage_HoldTime(t1->kernel, low, high);
+
+        ipc_kernel_latency_inter(t1, t2); 
+
+        low += 10000; 
+    }
+    
+    
+
+}
+
 /*entry point for ipc benchmarks */
-void lanuch_bench_ipc(m_env_t *env) {
+void launch_bench_ipc(m_env_t *env) {
 
     thread2.image = thread1.image = CONFIG_BENCH_THREAD_NAME;
     thread2.vspace = thread1.vspace = &env->vspace;
@@ -696,6 +792,8 @@ void lanuch_bench_ipc(m_env_t *env) {
     printf("========================\n");
     
     multi_bench_ipc(&thread1, &thread2); 
+
+    multi_bench_kernel_latency(&thread1, &thread2);
 
     printf("\n"); 
     printf("ipc intra colour benchmarks\n");

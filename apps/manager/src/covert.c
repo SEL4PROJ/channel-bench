@@ -277,7 +277,7 @@ static int run_single (ts_t ts) {
 
 
 /*entry point of covert channel benchmark*/
-void lanuch_bench_covert (m_env_t *env) {
+void launch_bench_covert (m_env_t *env) {
     
     int ret; 
 

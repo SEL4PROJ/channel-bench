@@ -40,6 +40,8 @@ ipc_wait_func,
 ipc_send_func, 
 ipc_rt_call_func, 
 ipc_rt_reply_wait_func,
+ipc_latency_call_func, 
+ipc_latency_reply_wait_func,
 NULL};
 
 struct bench_results results; 
@@ -515,6 +517,59 @@ seL4_Word ipc_rt_reply_wait_func(seL4_CPtr ep, seL4_CPtr result_ep) {
     memcpy((void *)pmu_v->pmuc[IPC_REPLY_WAIT], (void *)pmuc, 
             (sizeof (sel4bench_counter_t)) * BENCH_PMU_COUNTERS); 
 #endif 
+    return 0; 
+}
+
+/*latency of kernel switches, call (high, t1) -> reply wait (low, t2)
+  t2 - t1 >= holdTime configured in kernel code objcet*/
+seL4_Word ipc_latency_call_func(seL4_CPtr ep, seL4_CPtr result_ep) {
+
+    ccnt_t start UNUSED, end UNUSED; 
+    seL4_MessageInfo_t tag = seL4_MessageInfo_new(0, 0, 0, 0); 
+#ifdef CONFIG_BENCH_PMU_COUNTER
+    sel4bench_counter_t pmuc[BENCH_PMU_COUNTERS]; 
+#endif 
+    for (int i  = 0; i < IPC_RUNS; i++) {
+        
+        FENCE(); 
+        for (int j = 0; j < IPC_WARMUPS; j++) { 
+            READ_COUNTER_BEFORE(start); 
+            DO_REAL_CALL(ep, tag); 
+        } 
+
+        rt_v->call_time[i] = start; 
+        
+        FENCE();
+    }
+#ifdef CONFIG_BENCH_PMU_COUNTER
+    memcpy((void *)pmu_v->pmuc[IPC_CALL], (void *)pmuc, 
+            (sizeof (sel4bench_counter_t)) * BENCH_PMU_COUNTERS); 
+#endif 
+    //seL4_Send(ep, tag); 
+    return 0; 
+
+}
+/*latency of kernel switches*/
+seL4_Word ipc_latency_reply_wait_func(seL4_CPtr ep, seL4_CPtr result_ep) { 
+    
+    ccnt_t  end UNUSED; 
+    
+    seL4_MessageInfo_t tag = seL4_MessageInfo_new(0, 0, 0, 0); 
+    
+    for (int i = 0; i < IPC_RUNS; i++) {
+    
+        FENCE();
+        seL4_Wait(ep, NULL); 
+        for (int j = 0; j < IPC_WARMUPS - 1; j++) { 
+            DO_REAL_REPLY_WAIT(ep, tag); 
+            READ_COUNTER_AFTER(end); 
+        } 
+ 
+        seL4_Reply(tag); 
+        rt_v->reply_wait_time[i] = end; 
+   
+        FENCE(); 
+    }
     return 0; 
 }
 
