@@ -280,13 +280,12 @@ typedef struct bench_covert {
     int opt;        /*running option, trojan, probe, etc*/
 }bench_covert_t; 
 
+#define BENCH_PAGE_SIZE  4096
 
 /*opt for running covert channel bench*/
 #define BENCH_COVERT_TROJAN_SINGLE  1 
 #define BENCH_COVERT_SPY_SINGLE   2
 #define BENCH_COVERT_MSG_LEN  2 /*msg len for init env*/
-
-#define BENCH_PAGE_SIZE    4096  /*page size */
 
 #define COMPILER_BARRIER do { asm volatile ("" ::: "memory"); } while(0);
 

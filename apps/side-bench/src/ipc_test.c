@@ -194,7 +194,7 @@ seL4_Word ipc_reply_wait_func(seL4_CPtr ep, seL4_CPtr result_ep) {
 #ifdef CONFIG_BENCH_PMU_COUNTER
     sel4bench_counter_t pmuc[BENCH_PMU_COUNTERS]; 
 #endif 
-    seL4_Wait(ep, NULL); 
+    seL4_Recv(ep, NULL); 
     FENCE(); 
     for (i = 0; i < IPC_WARMUPS; i++) { 
 #ifdef CONFIG_BENCH_PMU_COUNTER 
@@ -222,7 +222,7 @@ seL4_Word ipc_reply_wait_func2(seL4_CPtr ep, seL4_CPtr result_ep) {
 #ifdef CONFIG_BENCH_PMU_COUNTER
     sel4bench_counter_t pmuc[BENCH_PMU_COUNTERS]; 
 #endif 
-    seL4_Wait(ep, NULL); 
+    seL4_Recv(ep, NULL); 
     FENCE(); 
     for (i = 0; i < IPC_WARMUPS; i++) { 
         READ_COUNTER_BEFORE(start);
@@ -249,7 +249,7 @@ seL4_Word ipc_reply_wait_10_func(seL4_CPtr ep, seL4_CPtr result_ep) {
     uint32_t i; 
     ccnt_t start UNUSED, end UNUSED; 
     seL4_MessageInfo_t tag = seL4_MessageInfo_new(0, 0, 0, 10); 
-    seL4_Wait(ep, NULL); 
+    seL4_Recv(ep, NULL); 
     FENCE(); 
     for (i = 0; i < IPC_WARMUPS; i++) { 
         READ_COUNTER_BEFORE(start); 
@@ -266,7 +266,7 @@ seL4_Word ipc_reply_wait_10_func2(seL4_CPtr ep, seL4_CPtr result_ep) {
     uint32_t i; 
     ccnt_t start UNUSED, end UNUSED; 
     seL4_MessageInfo_t tag = seL4_MessageInfo_new(0, 0, 0, 10); 
-    seL4_Wait(ep, NULL); 
+    seL4_Recv(ep, NULL); 
     FENCE(); 
     for (i = 0; i < IPC_WARMUPS; i++) { 
         READ_COUNTER_BEFORE(start); 
@@ -504,7 +504,7 @@ seL4_Word ipc_rt_reply_wait_func(seL4_CPtr ep, seL4_CPtr result_ep) {
     
     for (int i = 0; i < IPC_RUNS; i++) {
     
-        seL4_Wait(ep, NULL); 
+        seL4_Recv(ep, NULL); 
         for (int j = 0; j < IPC_WARMUPS; j++) { 
 #ifdef CONFIG_BENCH_PMU_COUNTER 
             sel4bench_get_counters(BENCH_PMU_BITS, pmuc);  
@@ -559,7 +559,7 @@ seL4_Word ipc_latency_reply_wait_func(seL4_CPtr ep, seL4_CPtr result_ep) {
     for (int i = 0; i < IPC_RUNS; i++) {
     
         FENCE();
-        seL4_Wait(ep, NULL); 
+        seL4_Recv(ep, NULL); 
         for (int j = 0; j < IPC_WARMUPS - 1; j++) { 
             DO_REAL_REPLY_WAIT(ep, tag); 
             READ_COUNTER_AFTER(end); 

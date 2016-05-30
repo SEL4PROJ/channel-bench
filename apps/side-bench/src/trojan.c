@@ -1,4 +1,3 @@
-#ifdef CONFIG_COVERT_SINGLE 
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <sys/mman.h>
@@ -30,7 +29,7 @@ int trojan_single(char *t_buf, int line, seL4_CPtr syn_ep) {
 
     do {
     
-        recv = seL4_Wait(syn_ep, NULL); 
+        recv = seL4_Recv(syn_ep, NULL); 
         if (seL4_MessageInfo_get_label(recv) != seL4_NoFault)
             return BENCH_FAILURE; 
 
@@ -61,10 +60,9 @@ void tr_callslave(seL4_CPtr syn_ep, int size) {
 
     /*calling torjan, the size of this run*/
     seL4_MessageInfo_t send = seL4_MessageInfo_new(seL4_NoFault, 0, 0, 1);
-    seL4_MessageInfo_t recv; 
     seL4_SetMR(0,size); 
     seL4_Send(syn_ep, send);
-    recv = seL4_Wait(syn_ep, NULL);
+    seL4_MessageInfo_t recv = seL4_Recv(syn_ep, NULL);
    // seL4_Call(syn_ep, send);
 
 }
@@ -183,4 +181,3 @@ void tr_stop() {
 
 
 #endif     
-#endif 

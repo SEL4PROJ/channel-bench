@@ -134,7 +134,7 @@ struct bench_results {
          "+S" (tag), \
          "+b" (ep_copy) \
         : \
-         "a" (seL4_SysReplyWait) \
+         "a" (seL4_SysReplyRecv) \
         : \
          "ecx", \
          "edx" \
@@ -153,7 +153,7 @@ struct bench_results {
          "+S" (tag), \
          "+b" (ep_copy) \
         : \
-         "a" (seL4_SysReplyWait) \
+         "a" (seL4_SysReplyRecv) \
         : \
          "ecx", \
          "edx", \
@@ -208,20 +208,20 @@ struct bench_results {
 #define DO_REPLY_WAIT_10_ARM(ep, tag, swi) do { \
     register seL4_Word src asm("r0") = (seL4_Word)ep; \
     register seL4_MessageInfo_t info asm("r1") = tag; \
-    register seL4_Word scno asm("r7") = seL4_SysReplyWait; \
+    register seL4_Word scno asm("r7") = seL4_SysReplyRecv; \
     asm volatile(NOPS swi NOPS \
         : "+r"(src), "+r"(info) \
-        : [swi_num] "i" __SWINUM(seL4_SysReplyWait), "r"(scno) \
+        : [swi_num] "i" __SWINUM(seL4_SysReplyRecv), "r"(scno) \
         : "r2", "r3", "r4", "r5" \
     ); \
 } while(0)
 #define DO_REPLY_WAIT_ARM(ep, tag, swi) do { \
     register seL4_Word src asm("r0") = (seL4_Word)ep; \
     register seL4_MessageInfo_t info asm("r1") = tag; \
-    register seL4_Word scno asm("r7") = seL4_SysReplyWait; \
+    register seL4_Word scno asm("r7") = seL4_SysReplyRecv; \
     asm volatile(NOPS swi NOPS \
         : "+r"(src), "+r"(info) \
-        : [swi_num] "i" __SWINUM(seL4_SysReplyWait), "r"(scno) \
+        : [swi_num] "i" __SWINUM(seL4_SysReplyRecv), "r"(scno) \
     ); \
 } while(0)
 #define DO_WAIT_ARM(ep, swi) do { \
@@ -314,7 +314,7 @@ struct bench_results {
             "+S" (tag), \
             "+b" (ep_copy) \
             : \
-            "a"(seL4_SysReplyWait) \
+            "a"(seL4_SysReplyRecv) \
             : \
             "rcx", "rdx" \
             ); \
@@ -349,7 +349,7 @@ struct bench_results {
             "+r" (mr6), "+r" (mr7), "+r" (mr8), \
             "+r" (mr9)                          \
             :                                   \
-            "a" (seL4_SysReplyWait)             \
+            "a" (seL4_SysReplyRecv)             \
             :                                   \
             "rdx"                               \
             );                                  \

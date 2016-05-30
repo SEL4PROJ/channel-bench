@@ -33,13 +33,9 @@ simulate-ia32:
 		-m 512 -nographic -s -S -kernel images/kernel-ia32-pc99 \
 		-initrd images/manager-image-ia32-pc99
 
-                
+vmimage: manager-harddisk-image                
 copy-image:
-	scp images/* saison:benchmark-debug/ 
-	scp build/kernel/kernel.elf saison:benchmark-debug/kernel.elf
-	scp stage/x86/pc99/bin/manager saison:benchmark-debug/manager.elf
-	scp stage/x86/pc99/bin/side-bench saison:benchmark-debug/side-bench.elf
-
+	scp images/kernel-ia32-pc99 images/manager-image-ia32-pc99 saison:benchmark-debug/ 
 
 
 

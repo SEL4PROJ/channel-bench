@@ -103,40 +103,40 @@ int process_results(struct bench_results *results) {
     results->call_cycles_intra = process_result(results->call_time_intra,
                                              "Intra-AS Call cycles are not stable");
     results->reply_wait_cycles_intra = process_result(results->reply_wait_time_intra,
-                                             "Intra-AS ReplyWait cycles are not stable");
+                                             "Intra-AS ReplyRecv cycles are not stable");
     results->call_cycles_inter = process_result(results->call_time_inter,
                                              "Inter-AS Call cycles are not stable");
     results->reply_wait_cycles_inter = process_result(results->reply_wait_time_inter,
-                                             "Inter-AS ReplyWait cycles are not stable");
+                                             "Inter-AS ReplyRecv cycles are not stable");
     results->call_cycles_inter_low = process_result(results->call_time_inter_low,
                                              "Inter-AS Call (Low to High) cycles are not stable");
     results->call_cycles_inter_high = process_result(results->call_time_inter_high,
                                              "Inter-AS Call (High to Call) cycles are not stable");
     results->reply_wait_cycles_inter_low = process_result(results->reply_wait_time_inter_low,
-                                             "Inter-AS ReplyWait (Low to High) cycles are not stable");
+                                             "Inter-AS ReplyRecv (Low to High) cycles are not stable");
     results->reply_wait_cycles_inter_high = process_result(results->reply_wait_time_inter_high,
-                                             "Inter-AS ReplyWait (High to Call) cycles are not stable");
+                                             "Inter-AS ReplyRecv (High to Call) cycles are not stable");
     results->send_cycles_inter = process_result(results->send_time_inter,
                                              "Inter-AS Send cycles are not stable");
     results->call_10_cycles_inter = process_result(results->call_10_time_inter,
                                              "Inter-AS Call(10) cycles are not stable");
     results->reply_wait_10_cycles_inter = process_result(results->reply_wait_10_time_inter,
-                                             "Inter-AS ReplyWait(10) cycles are not stable");
+                                             "Inter-AS ReplyRecv(10) cycles are not stable");
     return 1;
 }
 
 void print_results(struct bench_results *results) {
     printf("\t<result name = \"Intra-AS Call\">"CCNT_FORMAT"</result>\n",results->call_cycles_intra);
-    printf("\t<result name = \"Intra-AS ReplyWait\">"CCNT_FORMAT"</result>\n",results->reply_wait_cycles_intra);
+    printf("\t<result name = \"Intra-AS ReplyRecv\">"CCNT_FORMAT"</result>\n",results->reply_wait_cycles_intra);
     printf("\t<result name = \"Inter-AS Call\">"CCNT_FORMAT"</result>\n",results->call_cycles_inter);
-    printf("\t<result name = \"Inter-AS ReplyWait\">"CCNT_FORMAT"</result>\n",results->reply_wait_cycles_inter);
+    printf("\t<result name = \"Inter-AS ReplyRecv\">"CCNT_FORMAT"</result>\n",results->reply_wait_cycles_inter);
     printf("\t<result name = \"Inter-AS Call (Low to High)\">"CCNT_FORMAT"</result>\n",results->call_cycles_inter_low);
-    printf("\t<result name = \"Inter-AS ReplyWait (High to Low)\">"CCNT_FORMAT"</result>\n",results->reply_wait_cycles_inter_high);
+    printf("\t<result name = \"Inter-AS ReplyRecv (High to Low)\">"CCNT_FORMAT"</result>\n",results->reply_wait_cycles_inter_high);
     printf("\t<result name = \"Inter-AS Call (High to Low)\">"CCNT_FORMAT"</result>\n",results->call_cycles_inter_high);
-    printf("\t<result name = \"Inter-AS ReplyWait (Low to High)\">"CCNT_FORMAT"</result>\n",results->reply_wait_cycles_inter_low);
+    printf("\t<result name = \"Inter-AS ReplyRecv (Low to High)\">"CCNT_FORMAT"</result>\n",results->reply_wait_cycles_inter_low);
     printf("\t<result name = \"Inter-AS Send\">"CCNT_FORMAT"</result>\n",results->send_cycles_inter);
     printf("\t<result name = \"Inter-AS Call(10)\">"CCNT_FORMAT"</result>\n",results->call_10_cycles_inter);
-    printf("\t<result name = \"Inter-AS ReplyWait(10)\">"CCNT_FORMAT"</result>\n",results->reply_wait_10_cycles_inter);
+    printf("\t<result name = \"Inter-AS ReplyRecv(10)\">"CCNT_FORMAT"</result>\n",results->reply_wait_10_cycles_inter);
 }
 
 void print_pmu_results(sel4bench_counter_t r[][BENCH_PMU_COUNTERS]) {
@@ -627,7 +627,7 @@ static void ipc_benchmark (bench_env_t *thread1, bench_env_t *thread2) {
 #endif
 
 #ifdef IPC_BENCH_PRINTOUT
-        printf("Running Call+ReplyWait Inter-AS test 1\n");
+        printf("Running Call+ReplyRecv Inter-AS test 1\n");
 #endif 
         thread1->prio = thread2->prio = IPC_PROCESS_PRIO; 
         ipc_reply_wait_time_inter(thread1, thread2, &result, 
@@ -635,7 +635,7 @@ static void ipc_benchmark (bench_env_t *thread1, bench_env_t *thread2) {
         results.reply_wait_time_inter[i] = result - results.call_reply_wait_overhead;
 
 #ifdef IPC_BENCH_PRINTOUT
-        printf("Running Call+ReplyWait Inter-AS test 2\n");
+        printf("Running Call+ReplyRecv Inter-AS test 2\n");
 #endif
         ipc_call_time_inter(thread1, thread2, &result, 
                 pmu_results.call_time_inter[i]); 
@@ -648,18 +648,18 @@ static void ipc_benchmark (bench_env_t *thread1, bench_env_t *thread2) {
         results.send_time_inter[i] = result - results.send_wait_overhead;
 
 #ifdef IPC_BENCH_PRINTOUT
-        printf("Running Call+ReplyWait long message test 1\n");
+        printf("Running Call+ReplyRecv long message test 1\n");
 #endif 
         ipc_reply_wait_10_time_inter(thread1, thread2, &result);
         results.reply_wait_10_time_inter[i] = result - results.call_reply_wait_10_overhead;
 
 #ifdef IPC_BENCH_PRINTOUT
-        printf("Running Call+ReplyWait long message test 2\n");
+        printf("Running Call+ReplyRecv long message test 2\n");
 #endif 
         ipc_call_10_time_inter(thread1, thread2, &result); 
         results.call_10_time_inter[i] = result - results.call_reply_wait_10_overhead;
 #ifdef IPC_BENCH_PRINTOUT
-        printf("Running Call+ReplyWait Different prio test 1\n");
+        printf("Running Call+ReplyRecv Different prio test 1\n");
 #endif 
         thread1->prio = IPC_PROCESS_PRIO_LOW; 
         thread2->prio = IPC_PROCESS_PRIO_HIGH; 
@@ -668,13 +668,13 @@ static void ipc_benchmark (bench_env_t *thread1, bench_env_t *thread2) {
         results.reply_wait_time_inter_high[i] = result - results.call_reply_wait_overhead;
         
 #ifdef IPC_BENCH_PRINTOUT 
-        printf("Running Call+ReplyWait Different prio test 2\n");
+        printf("Running Call+ReplyRecv Different prio test 2\n");
 #endif 
         ipc_call_time_inter(thread1, thread2, &result,
                 pmu_results.call_time_inter_low[i]); 
         results.call_time_inter_low[i] = result -  results.call_reply_wait_overhead;
 #ifdef IPC_BENCH_PRINTOUT
-        printf("Running Call+ReplyWait Different prio test 3\n");
+        printf("Running Call+ReplyRecv Different prio test 3\n");
 #endif 
         thread1->prio = IPC_PROCESS_PRIO_HIGH; 
         thread2->prio = IPC_PROCESS_PRIO_LOW; 
@@ -683,7 +683,7 @@ static void ipc_benchmark (bench_env_t *thread1, bench_env_t *thread2) {
         results.reply_wait_time_inter_low[i] = result - results.call_reply_wait_overhead;
 
 #ifdef IPC_BENCH_PRINTOUT
-        printf("Running Call+ReplyWait Different prio test 4\n");
+        printf("Running Call+ReplyRecv Different prio test 4\n");
 #endif  
         ipc_call_time_inter(thread1, thread2, &result,
                 pmu_results.call_time_inter_high[i]); 

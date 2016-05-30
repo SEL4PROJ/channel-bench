@@ -12,9 +12,9 @@ apps-$(CONFIG_APP_MANAGER)        += manager
 # list of libraries the app needs to build                                 
 manager-y = common libsel4 libmuslc libsel4vka libcpio libelf \
                                              libsel4allocman \
-        libplatsupport libsel4platsupport libsel4muslcsys libsel4test \
+        libplatsupport libsel4platsupport libsel4muslcsys  \
          libsel4simple libsel4vspace libsel4utils libutils \
-         libsel4cachecolor libsel4bench
+         libsel4cachecolour libsel4bench
 
 # set up correct simple lib for our kernel
 ifdef CONFIG_KERNEL_STABLE                                                 

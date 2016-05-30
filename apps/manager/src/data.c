@@ -11,7 +11,7 @@
 
 #include <autoconf.h>
 #include <stdio.h>
-#include <sel4/benchmark.h>
+#include <sel4/sel4.h>
 #include <sel4bench/sel4bench.h>
 #include "manager.h"
 

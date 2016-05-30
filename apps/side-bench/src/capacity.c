@@ -1,4 +1,3 @@
-#ifdef CONFIG_COVERT_SINGLE 
 /* 
    the original usage of capacity should be:
    /capacity [-1] [-o <outputfile>]
@@ -83,7 +82,7 @@ static int capacity_single(bench_covert_t *env) {
             
             size = ps_get(ps, s);
             /*syn with manager*/ 
-            recv = seL4_Wait(env->r_ep, NULL); 
+            recv = seL4_Recv(env->r_ep, NULL); 
 
             if (seL4_MessageInfo_get_label(recv) != seL4_NoFault) {
                 reply_error(env->r_ep);
@@ -129,7 +128,7 @@ static int capacity_single(bench_covert_t *env) {
 
             for (int i = 0; i < 1024; i++) {
                 /*syn with manager*/ 
-                recv = seL4_Wait(env->r_ep, NULL); 
+                recv = seL4_Recv(env->r_ep, NULL); 
 
                 if (seL4_MessageInfo_get_label(recv) != seL4_NoFault) {
                     reply_error(env->r_ep);
@@ -174,10 +173,10 @@ static int capacity_single(bench_covert_t *env) {
 #endif 
     /*never return, manager does not reply, 0 msg len, the end of test*/
 
-    recv = seL4_Wait(env->r_ep, NULL);
+    recv = seL4_Recv(env->r_ep, NULL);
     send = seL4_MessageInfo_new(seL4_NoFault, 0, 0, 0);
     seL4_Send(env->r_ep, send); 
-    recv = seL4_Wait(env->r_ep, NULL);
+    recv = seL4_Recv(env->r_ep, NULL);
     assert(1);
     return BENCH_SUCCESS; 
 }
@@ -187,7 +186,7 @@ static int wait_env_from(bench_covert_t *env, seL4_CPtr ep) {
     seL4_Word badge; 
     seL4_MessageInfo_t info; 
     
-    info = seL4_Wait(ep, &badge); 
+    info = seL4_Recv(ep, &badge); 
 
     if (seL4_MessageInfo_get_label(info) != seL4_NoFault)
         return BENCH_FAILURE; 
@@ -213,4 +212,3 @@ int run_bench_covert(char **argv) {
     return capacity_single(&covert_env); 
 
 }
-#endif 

@@ -60,9 +60,10 @@
 #define CLBITS	6
 #define CLSIZE (1 << CLBITS)
 
-
-#define PAGE_BITS	12
-#define PAGE_SIZE	(1 << PAGE_BITS)
+#define PAGE_BITS       12 
+#ifndef PAGE_SIZE 
+#define PAGE_SIZE       (1 << PAGE_BITS)
+#endif 
 #define PAGE_MASK	(PAGE_SIZE - 1)
 #define PAGE_LBITS	(PAGE_BITS - CLBITS)
 #define PAGE_LINES	(PAGE_SIZE >> CLBITS)

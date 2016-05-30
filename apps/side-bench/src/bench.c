@@ -43,7 +43,7 @@ int wait_init_msg_from(seL4_CPtr endpoint) {
     seL4_Word badge; 
     seL4_MessageInfo_t info; 
     
-    info = seL4_Wait(endpoint, &badge); 
+    info = seL4_Recv(endpoint, &badge); 
 
     assert(seL4_MessageInfo_get_label(info) == seL4_NoFault); 
     assert(seL4_MessageInfo_get_length(info) == 1); 
@@ -62,7 +62,7 @@ static inline void *wait_vaddr_from(seL4_CPtr endpoint)
     seL4_Word badge;
     seL4_MessageInfo_t info;
 
-    info = seL4_Wait(endpoint, &badge);
+    info = seL4_Recv(endpoint, &badge);
 
     /* check the label and length*/
     assert(seL4_MessageInfo_get_label(info) == seL4_NoFault);
@@ -78,7 +78,7 @@ static inline seL4_CPtr wait_ep_from(seL4_CPtr endpoint)
     seL4_Word badge;
     seL4_MessageInfo_t info;
 
-    info = seL4_Wait(endpoint, &badge);
+    info = seL4_Recv(endpoint, &badge);
 
     /* check the label and length*/
     assert(seL4_MessageInfo_get_label(info) == seL4_NoFault);

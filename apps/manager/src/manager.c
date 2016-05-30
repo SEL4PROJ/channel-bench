@@ -46,15 +46,17 @@ static m_env_t env;
 
 
 /* dimensions of virtual memory for the allocator to use */
-#define ALLOCATOR_VIRTUAL_POOL_SIZE ((1 << seL4_PageBits) * 100)
+#define ALLOCATOR_VIRTUAL_POOL_SIZE ((1 << seL4_PageBits) * 1024)
 
 /* static memory for the allocator to bootstrap with */
-#define ALLOCATOR_STATIC_POOL_SIZE ((1 << seL4_PageBits) * 100)
+#define ALLOCATOR_STATIC_POOL_SIZE ((1 << seL4_PageBits) * 200)
 static char allocator_mem_pool[ALLOCATOR_STATIC_POOL_SIZE];
 
 /*static memory for virtual memory bootstrapping*/
 static sel4utils_alloc_data_t vdata; 
 
+char m_arg_0[10] = {0}; 
+void *m_args = m_arg_0; 
 
 /*copy a cap to a thread, returning the cptr in its cspace*/
 static inline 
@@ -102,7 +104,7 @@ static inline
 seL4_Word wait_msg_from(seL4_CPtr ep) {
 
     seL4_Word badge;
-    seL4_MessageInfo_t info = seL4_Wait(ep, &badge);
+    seL4_MessageInfo_t info = seL4_Recv(ep, &badge);
     int result = seL4_GetMR(0);
 
     if (seL4_MessageInfo_get_label(info) != seL4_NoFault) {
@@ -403,6 +405,8 @@ static void init_pmu_counters(void) {
 #endif 
 static void *main_continued (void* arg) {
 
+    printf("Done\n"); 
+
     /*init the benchmakring functions*/
     sel4bench_init(); 
 #ifdef CONFIG_MANAGER_PMU_COUNTER 
@@ -482,7 +486,7 @@ int main (void) {
 
 
     /*starting test, never return from this function*/
-    sel4utils_run_on_stack(&env.vspace, main_continued, NULL);
+    sel4utils_run_on_stack(&env.vspace, main_continued, m_args, NULL);
 
     return 0;
 

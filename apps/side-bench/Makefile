@@ -21,8 +21,8 @@ CFILES :=  $(patsubst $(SOURCE_DIR)/%,%,$(wildcard $(SOURCE_DIR)/src/aes/*.c))
 CFILES +=  $(patsubst $(SOURCE_DIR)/%,%,$(wildcard $(SOURCE_DIR)/src/*.c))
 # Libraries
 LIBS = c sel4 cpio elf sel4muslcsys sel4vka sel4allocman \
-platsupport sel4platsupport sel4test sel4vspace \
-sel4utils sel4simple utils sel4cachecolor sel4bench           
+platsupport sel4platsupport  sel4vspace \
+sel4utils sel4simple utils  sel4bench           
 
 ifdef CONFIG_KERNEL_STABLE 
 LIBS += sel4simple-stable 

@@ -1,4 +1,3 @@
-#ifdef CONFIG_BENCH_COVERT_SINGLE 
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -469,4 +468,3 @@ void probe_init(uint64_t ebsetindices) {
 
 #endif
 
-#endif 

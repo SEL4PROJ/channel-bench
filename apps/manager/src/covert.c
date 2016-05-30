@@ -50,6 +50,7 @@ static void create_thread(bench_env_t *t) {
     
     int error __attribute__((unused)); 
 
+    printf("creating benchmarking thread\n");
     /*configure process*/ 
     error = sel4utils_configure_process(process, 
             t->vka, t->vspace, t->prio, 
@@ -71,10 +72,12 @@ static void create_thread(bench_env_t *t) {
     sprintf(arg_str2, "%d", reply_ep_arg); 
 #if CONFIG_CACHE_COLOURING
     /*configure kernel image*/
+    printf("bind kernel image \n");
     bind_kernel_image(t->kernel,
             process->pd.cptr, process->thread.tcb.cptr);
 #endif
 
+    printf("spawn process\n");
    /*start process*/ 
     error = sel4utils_spawn_process_v(process, t->vka, 
             t->vspace, argc, argv, 1);
@@ -196,13 +199,14 @@ static void init_single(m_env_t *env) {
     /*ep for communicate*/
     ret = vka_alloc_endpoint(env->ipc_vka, &syn_ep);
     assert(ret == 0);
+ 
     /*ep for spy to manager*/
     ret = vka_alloc_endpoint(env->ipc_vka, &s_ep); 
     assert(ret == 0);
+ 
     /*ep for trojan to manager*/
     ret = vka_alloc_endpoint(env->ipc_vka, &t_ep);
     assert(ret == 0);
-
 
     spy.ep = trojan.ep = syn_ep; 
     spy.reply_ep = s_ep;
@@ -249,7 +253,7 @@ static int run_single (ts_t ts) {
    
         /*spy can now start*/
         seL4_Send(s_ep.cptr, tag);
-        info = seL4_Wait(s_ep.cptr, NULL); 
+        info = seL4_Recv(s_ep.cptr, NULL); 
         if (seL4_MessageInfo_get_label(info) != seL4_NoFault)
             return BENCH_FAILURE; 
 
