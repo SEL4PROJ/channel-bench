@@ -289,6 +289,12 @@ typedef struct bench_covert {
 
 #define COMPILER_BARRIER do { asm volatile ("" ::: "memory"); } while(0);
 
+/*opt for the mastik attack*/ 
+#define BENCH_MASTIK_TEST    1
+#define BENCH_MASTIK_VICTIM  2
+#define BENCH_MPI_VICTIM     3
+#define BENCH_MASTIK_SPY     4
+
 
 #endif 
 

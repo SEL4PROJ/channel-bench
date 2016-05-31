@@ -731,7 +731,7 @@ static void multi_bench_ipc(bench_env_t *t1, bench_env_t *t2) {
 }
 
 
-static void multi_bench_kernel_latency(bench_env_t *t1, bench_env_t *t2) {
+void multi_bench_kernel_latency(bench_env_t *t1, bench_env_t *t2) {
 
     uint32_t low = 0 , high = 0; 
 

@@ -46,7 +46,7 @@ static m_env_t env;
 
 
 /* dimensions of virtual memory for the allocator to use */
-#define ALLOCATOR_VIRTUAL_POOL_SIZE ((1 << seL4_PageBits) * 1024)
+#define ALLOCATOR_VIRTUAL_POOL_SIZE ((1 << seL4_PageBits) * 4096)
 
 /* static memory for the allocator to bootstrap with */
 #define ALLOCATOR_STATIC_POOL_SIZE ((1 << seL4_PageBits) * 200)
@@ -55,8 +55,6 @@ static char allocator_mem_pool[ALLOCATOR_STATIC_POOL_SIZE];
 /*static memory for virtual memory bootstrapping*/
 static sel4utils_alloc_data_t vdata; 
 
-char m_arg_0[10] = {0}; 
-void *m_args = m_arg_0; 
 
 /*copy a cap to a thread, returning the cptr in its cspace*/
 static inline 
@@ -412,18 +410,16 @@ static void *main_continued (void* arg) {
 #ifdef CONFIG_MANAGER_PMU_COUNTER 
     init_pmu_counters(); 
 #endif 
-    
+
 #ifdef CONFIG_MANAGER_IPC
     launch_bench_ipc(&env); 
 #endif 
 #ifdef CONFIG_MANAGER_CACHE_FLUSH 
     launch_bench_single(arg);
 #endif
-#ifdef CONFIG_MANAGER_COVERT_SINGLE
+#ifdef CONFIG_MANAGER_COVERT_BENCH
     launch_bench_covert(&env); 
 #endif 
-
-
 
     /*halt cpu*/
     printf("Finished benchmark, now halting...\n"); 
@@ -486,7 +482,7 @@ int main (void) {
 
 
     /*starting test, never return from this function*/
-    sel4utils_run_on_stack(&env.vspace, main_continued, m_args, NULL);
+    sel4utils_run_on_stack(&env.vspace, main_continued, NULL, NULL);
 
     return 0;
 

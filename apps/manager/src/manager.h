@@ -88,12 +88,10 @@ typedef struct bench_env {
     /*extra caps to the record data frames for mapping into 
      the benchmark vspace*/ 
     seL4_CPtr record_frames[BENCH_PMU_PAGES]; 
-#ifdef CONFIG_MANAGER_COVERT_SINGLE
     seL4_CPtr t_frames[BENCH_COVERT_TIME_PAGES];
     seL4_CPtr p_frames[BENCH_COVERT_BUF_PAGES]; /*shared frame caps for prime/trojan buffers*/
     void *p_vaddr;
     void *t_vaddr;  /*vaddr for above buffers in bench thread vspace*/ 
-#endif 
  /*the affinity of this thread*/ 
     uint32_t affinity; 
 

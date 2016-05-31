@@ -33,6 +33,11 @@ int run_bench_covert(char **argv);
 seL4_Word ipc_bench(seL4_CPtr result_ep, seL4_CPtr test_ep, int test_n,
         void *record_vaddr);
 
+int mastik_test(int ac, char **av);
+int mastik_victim(int ac, char **av);
+void mpi_victim(void);
+int mastik_spy(seL4_CPtr ep, char** av); 
+
 #endif 
 
 

@@ -116,5 +116,20 @@ menu   "Timing Channel Benchmarks"
                bool "LLC"
       endchoice 
 
+      config MASTIK_ATTACK
+      bool "multicore cache-based timing attack"
+      default n 
+      depends on APP_SIDE_BENCH 
+      help 
+           attack used as data61+ demo extened as multicore benchmark
+
+       choice 
+             prompt "attack format" 
+             config MASTIK_ATTACK_COVERT 
+             bool "covert" 
+             config MASTIK_ATTACK_SIDE 
+             bool "side"
+       endchoice
+
 endmenu 
 

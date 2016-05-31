@@ -26,6 +26,7 @@
 #include <stdio.h>
 #include <sel4/sel4.h>
 #include <utils/attribute.h>
+#include <sel4platsupport/platsupport.h>
 #include "../../bench_common.h"
 #include "bench.h"
 
@@ -162,6 +163,38 @@ void run_bench_ipc(char **argv) {
 }
 #endif 
 
+void run_bench_mastik(char **argv) {
+
+    unsigned int test_num; 
+    seL4_CPtr ep, reply_ep; 
+    /*get the test number*/
+    test_num = atol(argv[0]); 
+    ep = (seL4_CPtr)atol(argv[1]);
+    reply_ep = (seL4_CPtr)atol(argv[2]);
+
+    /*enable serial driver*/
+    platsupport_serial_setup_simple(NULL, NULL, NULL); 
+
+   /*the covert channel multicore*/
+    if (test_num == BENCH_MASTIK_TEST) 
+        mastik_test(0, NULL); 
+   
+    if (test_num == BENCH_MASTIK_VICTIM) 
+        mastik_victim(0, NULL); 
+
+    /*the side channel multicore*/ 
+    if(test_num == BENCH_MPI_VICTIM) 
+        mpi_victim();
+
+    if (test_num == BENCH_MASTIK_SPY) 
+        mastik_spy(reply_ep, NULL); 
+
+    /*waiting on a endpoit which will never return*/
+    wait_init_msg_from(ep);
+
+}
+
+
 int main (int argc, char **argv) {
 
 
@@ -178,7 +211,10 @@ int main (int argc, char **argv) {
 #ifdef CONFIG_BENCH_CACHE_FLUSH 
     run_bench_single(argv);
 #endif 
-        
+#ifdef CONFIG_MASTIK_ATTACK 
+    run_bench_mastik(argv);
+#endif 
+
     /*finished testing, halt*/
     while(1);
 

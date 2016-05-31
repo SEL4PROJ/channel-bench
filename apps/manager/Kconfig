@@ -45,19 +45,35 @@ menu    "Manager task for benchmarking tests"
         help 
               not flushing cache during sel4_yeild
 
+        config MANAGER_COVERT_BENCH 
+        bool "covert channel benchmarks" 
+        default n 
+        depends on APP_MANAGER 
+        help 
+            enable covert channel benchmarks 
+
         config MANAGER_DCACHE_ATTACK 
         bool "L1 dcache attack" 
         default n 
-        depends on APP_MANAGER 
+        depends on MANAGER_COVERT_BENCH  
         help 
             see timing channel benchmarks
   
         config MANAGER_COVERT_SINGLE 
         bool "covert channel benchmark on single core" 
         default n 
-        depends on APP_MANAGER 
+        depends on MANAGER_COVERT_BENCH 
         help  
              a simple P+P attack on single core 
+
+       config MANAGER_COVERT_MULTI
+       bool "covert channel benchmark on multicore"
+       default n 
+       depends on MANAGER_COVERT_BENCH
+       help 
+            attack used as data61+ demo, then extened as the multicore benchmark
+
+
 
 endmenu
 
