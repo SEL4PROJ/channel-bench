@@ -20,13 +20,17 @@ ASMFILES :=  $(patsubst $(SOURCE_DIR)/%,%,$(wildcard $(SOURCE_DIR)/src/*.S))
 CFILES :=  $(patsubst $(SOURCE_DIR)/%,%,$(wildcard $(SOURCE_DIR)/src/aes/*.c))
 CFILES +=  $(patsubst $(SOURCE_DIR)/%,%,$(wildcard $(SOURCE_DIR)/src/*.c))
 
-ifdef CONFIG_MASTIK_ATTACK 
+
 CFILES +=  $(patsubst $(SOURCE_DIR)/%,%,$(wildcard $(SOURCE_DIR)/src/mastik/*.c))
 CFILES +=  $(patsubst $(SOURCE_DIR)/%,%,$(wildcard $(SOURCE_DIR)/src/MPI/*.c))
+#CFILES +=  $(patsubst $(SOURCE_DIR)/%,%,$(wildcard $(SOURCE_DIR)/src/capacity/*.c))
+
+
 
 #flags defined for MPI attack
-CFLAGS += -DDBG_MEMORY=0 
-endif 
+#header files in the mastik
+CFLAGS += -DDBG_MEMORY=0 -I $(SOURCE_DIR)/src/mastik/ -I $(SOURCE_DIR)/../ 
+
 
 # Libraries
 LIBS = c sel4 cpio elf sel4muslcsys sel4vka sel4allocman \

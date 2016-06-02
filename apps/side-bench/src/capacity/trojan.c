@@ -9,8 +9,8 @@
 #include <stdio.h>
 #include <sel4/sel4.h>
 
-#include "../../bench_common.h"
-#include "../../covert.h"
+#include "../../../bench_common.h"
+#include "../../../covert.h"
 /*striding page by page */
 typedef int page_t[PAGE_SIZE / sizeof(int)];
 

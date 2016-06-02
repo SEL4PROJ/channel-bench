@@ -23,7 +23,7 @@ static int timedwalk(void *list, register void *candidate) {
     return 0;
   if (LNEXT(list) == NULL)
     return 0;
-  ts_t ts = ts_alloc();
+  ts_t ts = ts_alloc(NULL);
   void *c2 = (void *)((uintptr_t)candidate ^ 0x200);
   LNEXT(c2) = candidate;
   clflush(c2);
@@ -91,6 +91,7 @@ cachemap_t cm_linelist(vlist_t lines) {
 
   printf("%d lines\n", vl_len(lines));
   cachemap_t cm = (cachemap_t)malloc(sizeof(struct cachemap));
+  assert(cm != NULL); 
   vlist_t sets = vl_new();
   vlist_t es = vl_new();
   int fail = 0;

@@ -27,17 +27,29 @@ void crypto_aes_en(uint8_t *in, uint8_t *out);
 seL4_Word dcache_attack(void *record_vaddr); 
 /*cache flushing benchmark*/
 seL4_Word bench_flush(void *record_vaddr);
-/*covert channel benchmark*/ 
-int run_bench_covert(char **argv);
 /*ipc benchmark*/ 
 seL4_Word ipc_bench(seL4_CPtr result_ep, seL4_CPtr test_ep, int test_n,
         void *record_vaddr);
 
-int mastik_test(int ac, char **av);
+/*the covert benchmarking interfaces*/
+int mastik_test(int ac, char **av); 
+ 
 int mastik_victim(int ac, char **av);
 void mpi_victim(void);
 int mastik_spy(seL4_CPtr ep, char** av); 
 
+int l1_trojan(bench_covert_t *env); 
+int l1_spy(bench_covert_t *env); 
+int l1i_trojan(bench_covert_t *env); 
+int l1i_spy(bench_covert_t *env);
+int l3_trojan(bench_covert_t *env); 
+int l3_spy(bench_covert_t *env); 
+
+
+
+
+ 
+ 
 #endif 
 
 

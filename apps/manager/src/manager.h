@@ -75,8 +75,9 @@ typedef struct {
 typedef struct bench_env {
 
     seL4_CPtr kernel;       /*kernel image*/
-    vka_object_t ep; 
-    vka_object_t reply_ep;
+    vka_object_t ep;               /*communication between trojan & spy*/ 
+    vka_object_t reply_ep;         /*reply manager*/
+    vka_object_t notification_ep;  /*using for seL4_Poll*/       
     vka_object_t null_ep;    /*never returned ep*/
     vka_t *vka;              /*kernel object allocator*/
     vka_t *ipc_vka;          /*used for endpoint*/

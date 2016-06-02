@@ -107,14 +107,28 @@ menu   "Timing Channel Benchmarks"
        help 
              a simple P+P attack on single core
       choice 
-               prompt "cache level" 
+               prompt "cache level"
+               depends on BENCH_COVERT_SINGLE
+               config BENCH_COVERT_L1D 
+               bool "L1 data cache" 
+               
+               config BENCH_COVERT_L1I 
+               bool "L1 instruction cache"
 
                config BENCH_COVERT_L2 
                bool "L2"
 
                config BENCH_COVERT_LLC 
-               bool "LLC"
-      endchoice 
+               bool "LLC user-level p+p attack"
+
+               config BENCH_COVERT_LLC_KERNEL_SCHEDULE 
+               bool "determinisitc kernel switching with LLC buffer"
+
+               config BENCH_COVERT_LLC_KERNEL 
+               bool "LLC through shared kernel"
+
+      endchoice
+
 
       config MASTIK_ATTACK
       bool "multicore cache-based timing attack"
@@ -125,6 +139,7 @@ menu   "Timing Channel Benchmarks"
 
        choice 
              prompt "attack format" 
+             depends on MASTIK_ATTACK
              config MASTIK_ATTACK_COVERT 
              bool "covert" 
              config MASTIK_ATTACK_SIDE 

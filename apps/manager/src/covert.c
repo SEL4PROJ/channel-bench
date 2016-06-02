@@ -26,7 +26,7 @@ extern char __executable_start;
 /*the benchmarking enviornment for two threads*/
 static bench_env_t trojan, spy;
 
-#ifdef CONFIG_MANAGER_COVERT_SINGLE
+#ifdef CONFIG_BENCH_COVERT_SINGLE
 /*using the cache colouring allocator for the probe/trojan buffers*/
 #ifndef CONFIG_CACHE_COLOURING 
 /*buffers for probing and trojan processes*/ 
@@ -108,6 +108,9 @@ void map_init_frames(m_env_t *env, void *vaddr, uint32_t s, bench_env_t *t) {
     simple_t *simple = &env->simple; 
     uint32_t offset =(uint32_t) vaddr - (uint32_t)&__executable_start; 
 
+    if (!s)
+        return; 
+
     /*page aligned*/
     assert(!(s % BENCH_PAGE_SIZE)); 
     assert(!((uint32_t)vaddr % BENCH_PAGE_SIZE)); 
@@ -144,6 +147,10 @@ void map_init_frames(m_env_t *env, void *vaddr, uint32_t s, bench_env_t *t) {
 }
 /*map a probing buffer to thread*/
 void map_p_buf(bench_env_t *t, uint32_t size) {
+
+    if (!size)
+        return; 
+
     sel4utils_process_t *p = &t->process; 
     uint32_t n_p = size / PAGE_SIZE;
  
@@ -163,6 +170,9 @@ void map_r_buf(m_env_t *env, uint32_t n_p, bench_env_t *t) {
     int ret; 
     sel4utils_process_t *p = &t->process; 
     
+    if (!n_p)
+        return; 
+
     /*pages for spy record, ts structure*/
     t->t_vaddr = vspace_new_pages(&p->vspace, seL4_AllRights, 
             n_p, PAGE_BITS_4K);
@@ -198,27 +208,9 @@ void map_r_buf(m_env_t *env, uint32_t n_p, bench_env_t *t) {
 /*init covert bench for single core*/
 void init_single(m_env_t *env) {
     
-    int ret;
 
-    /*ep for communicate*/
-    ret = vka_alloc_endpoint(env->ipc_vka, &syn_ep);
-    assert(ret == 0);
-    /*ep for spy to manager*/
-    ret = vka_alloc_endpoint(env->ipc_vka, &s_ep); 
-    assert(ret == 0);
-    /*ep for trojan to manager*/
-    ret = vka_alloc_endpoint(env->ipc_vka, &t_ep);
-    assert(ret == 0);
-
-
-    spy.ep = trojan.ep = syn_ep; 
-    spy.reply_ep = s_ep;
-    trojan.reply_ep = t_ep; 
-    spy.test_num = BENCH_COVERT_SPY_SINGLE;
-    trojan.test_num = BENCH_COVERT_TROJAN_SINGLE; 
-    trojan.ipc_vka = spy.ipc_vka = env->ipc_vka; 
-    trojan.prio = 100;
-    spy.prio = 102;
+    /*single core*/
+    trojan.affinity = spy.affinity = 0; 
 
     /*one trojan, one spy thread*/ 
     create_thread(&trojan); 
@@ -228,31 +220,16 @@ void init_single(m_env_t *env) {
 }
 
 
-void send_env(m_env_t *env) {
 
-    seL4_MessageInfo_t info = seL4_MessageInfo_new(seL4_NoFault, 0, 0, 
-            BENCH_COVERT_MSG_LEN);
+int run_single_l2(void *ts) {
 
-    /*trojan*/
-    seL4_SetMR(0,(seL4_Word)trojan.p_vaddr); 
-    seL4_SetMR(1, 0);
-    seL4_Send(t_ep.cptr, info);
-
-    /*spy*/
-    seL4_SetMR(0, (seL4_Word)spy.p_vaddr); 
-    seL4_SetMR(1, (seL4_Word)spy.t_vaddr);
-    seL4_Send(s_ep.cptr, info);
-}
-
-
-/*running the single core attack*/ 
-int run_single (ts_t ts) {
-
+#if 0  
     seL4_MessageInfo_t info; 
     seL4_MessageInfo_t tag = seL4_MessageInfo_new(seL4_NoFault, 0, 0, 0); 
-    int size; 
-    printf("start covert benchmark\n"); 
+    int size;
 
+    assert(ts); 
+    printf("start covert benchmark, single core, l2 cache\n"); 
     while (1) {    
    
         /*spy can now start*/
@@ -277,9 +254,93 @@ int run_single (ts_t ts) {
                 printf("%d %d %d\n", n, size, k);
         }
     }
-    
+
+#endif 
+    assert(0);
     printf("done covert benchmark\n");
     return BENCH_SUCCESS; 
+}
+
+int run_single_l1(void *data) {
+
+    seL4_MessageInfo_t info; 
+    seL4_MessageInfo_t tag = seL4_MessageInfo_new(seL4_NoFault, 0, 0, 0); 
+    printf("start covert benchmark, single core, L1 data/instruction cache\n"); 
+
+    seL4_Send(s_ep.cptr, tag);
+
+    info = seL4_Recv(s_ep.cptr, NULL);
+    if (seL4_MessageInfo_get_label(info) != seL4_NoFault)
+        return BENCH_FAILURE;
+
+    seL4_Send(s_ep.cptr, tag);
+
+    info = seL4_Recv(s_ep.cptr, NULL);
+    if (seL4_MessageInfo_get_label(info) != seL4_NoFault)
+        return BENCH_FAILURE; 
+
+    printf("done covert benchmark\n");
+    return BENCH_SUCCESS; 
+}
+
+
+int run_single_llc_kernel(void *data) {
+
+    seL4_MessageInfo_t info; 
+    seL4_MessageInfo_t tag = seL4_MessageInfo_new(seL4_NoFault, 0, 0, 0); 
+    printf("start covert benchmark, single core, LLC through a shared kernel with seL4_Poll\n"); 
+
+
+    printf("Starting L3 spy setup\n");
+    seL4_Send(s_ep.cptr, tag);
+    info = seL4_Recv(s_ep.cptr, NULL);
+    if (seL4_MessageInfo_get_label(info) != seL4_NoFault)
+        return BENCH_FAILURE;
+
+    printf("Starting L3 Trojan setup\n");
+    seL4_Send(t_ep.cptr, tag);
+
+    info = seL4_Recv(t_ep.cptr, NULL);
+    if (seL4_MessageInfo_get_label(info) != seL4_NoFault)
+        return BENCH_FAILURE;
+
+    printf("Starting test 1\n");
+    seL4_Send(s_ep.cptr, tag);
+    seL4_Send(t_ep.cptr, tag);
+    info = seL4_Recv(s_ep.cptr, NULL);
+    if (seL4_MessageInfo_get_label(info) != seL4_NoFault)
+        return BENCH_FAILURE;
+    info = seL4_Recv(t_ep.cptr, NULL);
+    if (seL4_MessageInfo_get_label(info) != seL4_NoFault)
+        return BENCH_FAILURE;
+
+    printf("Starting test 2\n");
+    seL4_Send(s_ep.cptr, tag);
+    seL4_Send(t_ep.cptr, tag);
+    info = seL4_Recv(s_ep.cptr, NULL);
+    if (seL4_MessageInfo_get_label(info) != seL4_NoFault)
+        return BENCH_FAILURE;
+    info = seL4_Recv(t_ep.cptr, NULL);
+    if (seL4_MessageInfo_get_label(info) != seL4_NoFault)
+        return BENCH_FAILURE;
+
+    printf("done covert benchmark\n");
+    return BENCH_SUCCESS; 
+}
+
+/*running the single core attack*/ 
+int run_single (void *data) {
+
+
+#ifdef CONFIG_BENCH_COVERT_L2
+    return run_single_l2(data); 
+#endif     
+#if defined (CONFIG_BENCH_COVERT_L1D) || defined (CONFIG_BENCH_COVERT_L1I)  
+    return run_single_l1(data);
+#endif 
+#ifdef CONFIG_BENCH_COVERT_LLC_KERNEL 
+    return run_single_llc_kernel(data); 
+#endif 
 
 }
 
@@ -343,39 +404,53 @@ int run_multi(m_env_t *env) {
 
 }
 
+/*prepare the running enviroment for benchmarking on single core*/
+void prepare_single(m_env_t *env) {
+
+    seL4_MessageInfo_t info = seL4_MessageInfo_new(seL4_NoFault, 0, 0, 
+            BENCH_COVERT_MSG_LEN);
+    cspacepath_t src;
+    seL4_CPtr n_ep; 
+
+#ifdef CONFIG_CACHE_COLOURING 
+    map_p_buf(&trojan, CACHESIZE);
+    map_p_buf(&spy, EBSIZE);
+#else
+    /*map the buffers into spy and trojan threads*/ 
+    map_init_frames(env, (void *)t_buf, CACHESIZE, &trojan);
+    map_init_frames(env, (void *)p_buf, EBSIZE, &spy); 
+#endif 
+    /*recording buffer, outcome from spy*/
+    map_r_buf(env, BENCH_COVERT_TIME_PAGES, &spy);
+
+   /*copy the notification cap*/ 
+    vka_cspace_make_path(trojan.vka, trojan.notification_ep.cptr, &src);  
+    n_ep = sel4utils_copy_cap_to_process(&trojan.process, src);
+    assert(n_ep); 
+    
+    /*trojan, probming buffer, 0, notification ep*/
+    seL4_SetMR(0,(seL4_Word)trojan.p_vaddr); 
+    seL4_SetMR(1, 0);
+    seL4_SetMR(2, n_ep);
+ 
+    seL4_Send(t_ep.cptr, info);
+
+    vka_cspace_make_path(spy.vka, spy.notification_ep.cptr, &src);  
+    n_ep = sel4utils_copy_cap_to_process(&spy.process, src);
+    assert(n_ep); 
+
+    /*spy, probming buffer, recording buffer, notification ep*/
+    seL4_SetMR(0, (seL4_Word)spy.p_vaddr); 
+    seL4_SetMR(1, (seL4_Word)spy.t_vaddr);
+    seL4_SetMR(2, n_ep);
+    seL4_Send(s_ep.cptr, info);
+
+}
 
 /*init the covert benchmark for multicore attack*/
 void init_multi(m_env_t *env) {
 
-    int ret;
-   
-    /*ep for communicate*/
-    ret = vka_alloc_endpoint(env->ipc_vka, &syn_ep);
-    assert(ret == 0);
-    /*ep for spy to manager*/
-    ret = vka_alloc_endpoint(env->ipc_vka, &s_ep); 
-    assert(ret == 0);
-    
-    /*ep for trojan to manager*/
-    ret = vka_alloc_endpoint(env->ipc_vka, &t_ep);
-    assert(ret == 0);
 
-
-    spy.ep  = trojan.ep = syn_ep; 
-    spy.reply_ep = s_ep;
-    trojan.reply_ep = t_ep; 
-#ifdef CONFIG_MASTIK_ATTACK_COVERT
-    spy.test_num = BENCH_MASTIK_TEST;
-    trojan.test_num = BENCH_MASTIK_VICTIM; 
-#endif
-    /*the demo*/
-#ifdef CONFIG_MASTIK_ATTACK_SIDE 
-    spy.test_num = BENCH_MASTIK_SPY;
-    trojan.test_num = BENCH_MPI_VICTIM; 
-#endif 
-    trojan.ipc_vka = spy.ipc_vka = env->ipc_vka; 
-    spy.prio  = 102;
-    trojan.prio = 100;
     spy.affinity  = 0;
     trojan.affinity = 1; 
 
@@ -392,39 +467,76 @@ void init_multi(m_env_t *env) {
 
 /*entry point of covert channel benchmark*/
 void launch_bench_covert (m_env_t *env) {
-    
+
+    int ret; 
+
     trojan.image = spy.image = CONFIG_BENCH_THREAD_NAME;
     trojan.vspace = spy.vspace = &env->vspace;
 
 #ifdef CONFIG_CACHE_COLOURING
+    /*by default the kernel is shared*/
+    trojan.kernel = spy.kernel = env->kernel;
+ 
+#ifdef CONFIG_MANAGER_COVERT_MITIGATION 
+    /*using sperate kernels*/
     trojan.kernel = env->kernel_colour[0].image.cptr; 
     spy.kernel = env->kernel_colour[1].image.cptr;
+#endif 
     trojan.vka = &env->vka_colour[0]; 
     spy.vka = &env->vka_colour[1]; 
     env->ipc_vka = &env->vka_colour[0];
-#else 
+    /*setting the kernel sensitivity*/
+#ifdef CONFIG_COVERT_TROJAN_SENSITIVE 
+    seL4_KernelImage_Sensitive(trojan.kernel); 
+    seL4_KernelImage_HoldTime(trojan.kernel, CONFIG_COVERT_TROJAN_HOLD_TIME, 0);
+#endif 
+#ifdef CONFIG_COVERT_SPY_SENSITIVE 
+
+    seL4_KernelImage_Sensitive(spy.kernel);                                    
+    seL4_KernelImage_HoldTime(spy.kernel, CONFIG_COVERT_SPY_HOLD_TIME, 0); 
+#endif 
+
+#else /*CONFIG_CACHE_COLOURING*/ 
     spy.vka = trojan.vka = &env->vka; 
     env->ipc_vka = &env->vka;
 #endif
 
-#ifdef CONFIG_MANAGER_COVERT_SINGLE
+    /*ep for communicate*/
+    ret = vka_alloc_endpoint(env->ipc_vka, &syn_ep);
+    assert(ret == 0);
+    /*ep for spy to manager*/
+    ret = vka_alloc_endpoint(env->ipc_vka, &s_ep); 
+    assert(ret == 0);
+    /*ep for trojan to manager*/
+    ret = vka_alloc_endpoint(env->ipc_vka, &t_ep);
+    assert(ret == 0);
 
-    init_single(env); 
-#ifdef CONFIG_CACHE_COLOURING 
-    map_p_buf(&trojan, CACHESIZE);
-    map_p_buf(&spy, EBSIZE);
-#else
-    /*map the buffers into spy and trojan threads*/ 
-    map_init_frames(env, (void *)t_buf, CACHESIZE, &trojan);
-    map_init_frames(env, (void *)p_buf, EBSIZE, &spy); 
-#endif 
-    map_r_buf(env, BENCH_COVERT_TIME_PAGES, &spy);
+    trojan.ipc_vka = spy.ipc_vka = env->ipc_vka; 
+    spy.ep  = trojan.ep = syn_ep; 
+    spy.reply_ep = s_ep;
+    trojan.reply_ep = t_ep; 
 
-    /*send running environment*/
-    send_env(env); 
+    /*create a notification endpoint, used only within a domain*/
+    ret = vka_alloc_notification(trojan.vka, &trojan.notification_ep); 
+    assert(ret == 0); 
+    
+    ret = vka_alloc_notification(spy.vka, &spy.notification_ep); 
+    assert(ret == 0); 
+ 
+    spy.prio  = 100;
+    trojan.prio = 100;
+    
+    /*set the actual testing num in bench_common.h*/
+    spy.test_num = BENCH_COVERT_SPY;
+    trojan.test_num = BENCH_COVERT_TROJAN; 
 
+
+#ifdef CONFIG_BENCH_COVERT_SINGLE
+
+    init_single(env);
+    prepare_single(env); 
     /*run bench*/
-    int ret = run_single((ts_t)env->record_vaddr);
+    ret = run_single(env->record_vaddr);
     assert(ret == BENCH_SUCCESS);
 #endif /*covert single*/ 
 

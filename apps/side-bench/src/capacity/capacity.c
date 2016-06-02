@@ -19,15 +19,14 @@
 #include <unistd.h>
 #include <sel4/sel4.h>
 
-#include "../../bench_common.h"
-#include "../../covert.h"
+#include "../../../bench_common.h"
+#include "../../../covert.h"
 #include "probe.h"
 #include "timestats.h"
 #include "trojan.h"
 #include "pageset.h"
 
 
-bench_covert_t covert_env; 
 
 /*reply error message to manager thread*/
 static void reply_error(seL4_CPtr r_ep) {
@@ -45,7 +44,7 @@ static void reply_error(seL4_CPtr r_ep) {
 opt: single core, multicore 
 env: running enviornment 
 record: data collection*/
-static int capacity_single(bench_covert_t *env) {
+int capacity_single(bench_covert_t *env) {
     ts_t ts = NULL; 
     seL4_MessageInfo_t send = seL4_MessageInfo_new(seL4_NoFault, 0, 0, 1);
     seL4_MessageInfo_t recv;
@@ -53,12 +52,12 @@ static int capacity_single(bench_covert_t *env) {
     int size = 0;
 
     /*run torjan never return*/
-    if (env->opt == BENCH_COVERT_TROJAN_SINGLE) {
+    if (env->opt == BENCH_COVERT_L2_TROJAN) {
         return trojan_single(env->p_buf, LINE, env->syn_ep); 
     }
 
     /*perpare the probe buffer*/
-    if (env->opt == BENCH_COVERT_SPY_SINGLE) {
+    if (env->opt == BENCH_COVERT_L2_SPY) {
         probe_init_simple(env->p_buf, EBSIZE); 
         /*ts buffer in env*/
         ts = env->ts_buf;
@@ -181,34 +180,5 @@ static int capacity_single(bench_covert_t *env) {
     return BENCH_SUCCESS; 
 }
 
-static int wait_env_from(bench_covert_t *env, seL4_CPtr ep) {
 
-    seL4_Word badge; 
-    seL4_MessageInfo_t info; 
-    
-    info = seL4_Recv(ep, &badge); 
 
-    if (seL4_MessageInfo_get_label(info) != seL4_NoFault)
-        return BENCH_FAILURE; 
-
-    if (seL4_MessageInfo_get_length(info) != BENCH_COVERT_MSG_LEN)
-        return BENCH_FAILURE; 
-    
-    env->p_buf = (void *)seL4_GetMR(0);
-    env->ts_buf = (void *)seL4_GetMR(1); 
-    return BENCH_SUCCESS; 
-
-}
-
-int run_bench_covert(char **argv) {
-
-    covert_env.opt = atol(argv[0]); 
-    covert_env.syn_ep = (seL4_CPtr)atol(argv[1]);
-    covert_env.r_ep = (seL4_CPtr)atol(argv[2]);
-
-    if (wait_env_from(&covert_env, covert_env.r_ep) != BENCH_SUCCESS) 
-        return BENCH_FAILURE; 
-    /*run bench*/
-    return capacity_single(&covert_env); 
-
-}

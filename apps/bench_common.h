@@ -111,7 +111,7 @@
 /*dividing cache colours into security domains*/
 #define CC_NUM_DOMAINS     2
 #ifdef CONFIG_ARCH_X86 
-#ifdef CONFIG_MANAGER_COVERT_SINGLE 
+#ifdef CONFIG_BENCH_COVERT_SINGLE 
 #define CC_DIV             4    /*spliting the L2 caches, 8 colours in total*/
 #else
 #define CC_DIV             16
@@ -277,24 +277,58 @@ typedef struct bench_covert {
     void *ts_buf;    /*time statistic, ts_alloc*/
     seL4_CPtr syn_ep; /*comm trojan and receiver, tr_start_slave*/ 
     seL4_CPtr r_ep; /*comm between receiver and manager*/
+    seL4_CPtr notification_ep; /*notification ep used only within a domain*/ 
     int opt;        /*running option, trojan, probe, etc*/
 }bench_covert_t; 
 
 #define BENCH_PAGE_SIZE  4096
 
 /*opt for running covert channel bench*/
-#define BENCH_COVERT_TROJAN_SINGLE  1 
-#define BENCH_COVERT_SPY_SINGLE   2
-#define BENCH_COVERT_MSG_LEN  2 /*msg len for init env*/
+#define BENCH_COVERT_L2_TROJAN  1 
+#define BENCH_COVERT_L2_SPY   2
+#define BENCH_MASTIK_TEST    3
+#define BENCH_MASTIK_VICTIM  4
+#define BENCH_MPI_VICTIM     5
+#define BENCH_MASTIK_SPY     6
+#define BENCH_COVERT_L1D_TROJAN    7 
+#define BENCH_COVERT_L1D_SPY       8 
+#define BENCH_COVERT_L1I_TROJAN    9 
+#define BENCH_COVERT_L1I_SPY       10
+#define BENCH_COVERT_LLC_KERNEL_TROJAN   11 
+#define BENCH_COVERT_LLC_KERNEL_SPY      12 
+#define BENCH_COVERT_FUNS                13
+
+#define BENCH_COVERT_MSG_LEN  3 /*msg len for init env*/
+/*matching the test number according to the config*/ 
+#ifdef CONFIG_BENCH_COVERT_L1D 
+#define BENCH_COVERT_TROJAN    BENCH_COVERT_L1D_TROJAN 
+#define BENCH_COVERT_SPY       BENCH_COVERT_L1D_SPY 
+#endif 
+#ifdef CONFIG_BENCH_COVERT_L1I
+#define BENCH_COVERT_TROJAN    BENCH_COVERT_L1I_TROJAN 
+#define BENCH_COVERT_SPY       BENCH_COVERT_L1I_SPY 
+#endif 
+#ifdef CONFIG_BENCH_COVERT_L2 
+#define BENCH_COVERT_TROJAN    BENCH_COVERT_L2_TROJAN 
+#define BENCH_COVERT_SPY       BENCH_COVERT_L2_SPY 
+#endif 
+#ifdef CONFIG_BENCH_COVERT_LLC_KERNEL 
+#define BENCH_COVERT_TROJAN    BENCH_COVERT_LLC_KERNEL_TROJAN 
+#define BENCH_COVERT_SPY       BENCH_COVERT_LLC_KERNEL_SPY 
+#endif 
+
+#ifdef CONFIG_MASTIK_ATTACK_COVERT
+#define BENCH_COVERT_SPY       BENCH_MASTIK_TEST
+#define BENCH_COVERT_TROJAN    BENCH_MASTIK_VICTIM 
+#endif
+    /*the demo*/
+#ifdef CONFIG_MASTIK_ATTACK_SIDE 
+#define BENCH_COVERT_SPY       BENCH_MASTIK_SPY
+#define BENCH_COVERT_TROJAN    BENCH_MPI_VICTIM
+#endif 
+
 
 #define COMPILER_BARRIER do { asm volatile ("" ::: "memory"); } while(0);
-
-/*opt for the mastik attack*/ 
-#define BENCH_MASTIK_TEST    1
-#define BENCH_MASTIK_VICTIM  2
-#define BENCH_MPI_VICTIM     3
-#define BENCH_MASTIK_SPY     4
-
 
 #endif 
 

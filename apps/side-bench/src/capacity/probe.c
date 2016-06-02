@@ -15,7 +15,7 @@
 #undef PAGE_SIZE
 #endif
 
-#include "../../covert.h"
+#include "../../../covert.h"
 #include "pageset.h"
 #include "timestats.h"
 

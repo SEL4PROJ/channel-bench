@@ -18,6 +18,16 @@
 
 #define CACHE_LINES_PER_PAGE  64
 
+/*cache details for L1 cache*/
+#define L1_NCORES    1
+#define L1_NWAYS 8 
+#define L1_NSETS 64ULL 
+#define L1_WAY_SIZE  (64 * 64)
+/*32K*/
+#define L1_CACHESIZE (L1_NSETS * L1_NWAYS * LINE_SIZE) 
+
+#define L1_EBSIZE  L1_CACHESIZE
+
 /*cache details for L2 cache*/
 #define L2_NCORES    1
 #define L2_NWAYS 8 
@@ -83,6 +93,9 @@
 
 #define SETINDEXLINK 0
 
+
+
+
 #ifdef CONFIG_BENCH_COVERT_L2 
 #define WORKING_SET_PAGES   L2_WORKING_SET_PAGES 
 #define EBSIZE              L2_EBSIZE 
@@ -105,6 +118,14 @@
 #define NWAYS              LLC_NWAYS 
 #define NCORES             LLC_NCORES
 #define CACHESIZE          LLC_CACHESIZE 
+#endif 
+
+
+#ifndef EBSIZE   
+#define EBSIZE              0
+#endif 
+#ifndef CACHESIZE
+#define CACHESIZE           0
 #endif 
 
 #if 0
@@ -135,17 +156,9 @@
 #define TIME_MAX     LLC_TIME_MAX 
 #endif 
 
-
-struct ts {
-  uint32_t data[TIME_MAX];
-};
-
-typedef struct ts *ts_t;
-
-inline uint32_t ts_get(ts_t ts, int tm) {
-  assert(tm > 0);
-  return tm < TIME_MAX ? ts->data[tm] : 0;
-}
+#ifndef TIME_MAX  
+#define TIME_MAX     100 
+#endif 
 
 
 
