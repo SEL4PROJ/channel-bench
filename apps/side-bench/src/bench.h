@@ -38,16 +38,14 @@ int mastik_victim(int ac, char **av);
 void mpi_victim(void);
 int mastik_spy(seL4_CPtr ep, char** av); 
 
+int l3_kd_trojan(bench_covert_t *);
+int l3_kd_spy(bench_covert_t *);
 int l1_trojan(bench_covert_t *env); 
 int l1_spy(bench_covert_t *env); 
 int l1i_trojan(bench_covert_t *env); 
 int l1i_spy(bench_covert_t *env);
 int l3_trojan(bench_covert_t *env); 
 int l3_spy(bench_covert_t *env); 
-
-
-
-
  
  
 #endif 

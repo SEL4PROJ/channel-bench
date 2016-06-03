@@ -34,18 +34,6 @@ static void  newTimeSlice() {
 }
 
 
-
-static inline uint64_t rdtscp_64() {
-  uint32_t low, high;
-
-  asm volatile (
-    "rdtscp          \n"
-    : "=d" (high), "=a" (low) : : "ecx");
-
-  return ((uint64_t) high) << 32llu | (uint64_t) low;
-}
-
-
 static int  newTimeSlice_tl(uint64_t end) {
   asm("");
   uint64_t prev = rdtscp_64();

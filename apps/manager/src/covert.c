@@ -205,6 +205,47 @@ void map_r_buf(m_env_t *env, uint32_t n_p, bench_env_t *t) {
 
 }
 
+void map_shared_buf(bench_env_t *owner, bench_env_t *share, uint32_t n_p) {
+
+    /*allocate buffer from owner that shared between two threads*/
+    reservation_t v_r;
+    void  *e_v;
+    cspacepath_t src, dest;
+    int ret;
+    sel4utils_process_t *p_o = &owner->process, *p_s = &share->process;
+
+    /*pages for spy record, ts structure*/
+    owner->s_vaddr = vspace_new_pages(&p_o->vspace, seL4_AllRights,
+            n_p, PAGE_BITS_4K);
+    assert(owner->s_vaddr != NULL);
+
+    uint32_t v = (uint32_t)owner->s_vaddr;
+
+    /*reserve the area in shared process*/
+    v_r = vspace_reserve_range(&p_s->vspace, n_p * BENCH_PAGE_SIZE,
+            seL4_AllRights, 1, &e_v);
+    assert(v_r.res != NULL);
+
+    share->s_vaddr = e_v;
+
+    for (int i = 0; i < n_p; i++, v+= BENCH_PAGE_SIZE) {
+
+        /*copy those frame caps*/
+        vka_cspace_make_path(owner->vka, vspace_get_cap(&p_o->vspace,
+                    (void*)v), &src);
+        ret = vka_cspace_alloc(share->vka, &share->s_frames[i]);
+        assert(ret == 0);
+        vka_cspace_make_path(share->vka, share->s_frames[i], &dest);
+        ret = vka_cnode_copy(&dest, &src, seL4_AllRights);
+        assert(ret == 0);
+    }
+    /*map in*/
+    ret = vspace_map_pages_at_vaddr(&p_s->vspace, share->s_frames,
+            NULL, e_v, n_p, PAGE_BITS_4K, v_r);
+    assert(ret == 0);
+
+}
+
 /*init covert bench for single core*/
 void init_single(m_env_t *env) {
     
@@ -221,7 +262,7 @@ void init_single(m_env_t *env) {
 
 
 
-int run_single_l2(void *ts) {
+int run_single_l2(m_env_t *env) {
 
 #if 0  
     seL4_MessageInfo_t info; 
@@ -261,7 +302,7 @@ int run_single_l2(void *ts) {
     return BENCH_SUCCESS; 
 }
 
-int run_single_l1(void *data) {
+int run_single_l1(m_env_t *env) {
 
     seL4_MessageInfo_t info; 
     seL4_MessageInfo_t tag = seL4_MessageInfo_new(seL4_NoFault, 0, 0, 0); 
@@ -284,7 +325,7 @@ int run_single_l1(void *data) {
 }
 
 
-int run_single_llc_kernel(void *data) {
+int run_single_llc_kernel(m_env_t *env) {
 
     seL4_MessageInfo_t info; 
     seL4_MessageInfo_t tag = seL4_MessageInfo_new(seL4_NoFault, 0, 0, 0); 
@@ -328,42 +369,90 @@ int run_single_llc_kernel(void *data) {
     return BENCH_SUCCESS; 
 }
 
-/*running the single core attack*/ 
-int run_single (void *data) {
+
+int run_single_llc_kernel_schedule(m_env_t *env) {
+
+    seL4_MessageInfo_t info;
+    seL4_MessageInfo_t tag = seL4_MessageInfo_new(seL4_NoFault, 0, 0, 1);
+    struct bench_kernel_schedule *r_d;
+    uint32_t n_p = (sizeof (struct bench_kernel_schedule) / BENCH_PAGE_SIZE) + 1;
+
+    printf("starting covert channel benchmark, LLC, kernel deterministic scheduling\n");
+
+    printf("data points %d runs %d  stepping %d\n", NUM_KERNEL_SCHEDULE_DATA,
+            CONFIG_BENCH_KERNEL_SCHEDULE_RUNS, CONFIG_BENCH_KERNEL_SCHEDULE_STEP);
+
+    map_shared_buf(&trojan, &spy, NUM_KERNEL_SCHEDULE_SHARED_PAGE);
+    map_r_buf(env, n_p, &spy);
+    
+    seL4_SetMR(0, (seL4_Word)trojan.s_vaddr);
+    seL4_Send(t_ep.cptr, tag);
+
+    info = seL4_Recv(t_ep.cptr, NULL);
+    if (seL4_MessageInfo_get_label(info) != seL4_NoFault)
+        return BENCH_FAILURE;
+
+    printf("trojan is ready\n");
+
+    tag = seL4_MessageInfo_new(seL4_NoFault, 0, 0, 2);
+
+    /*spy*/
+    seL4_SetMR(0,(seL4_Word)spy.t_vaddr);
+    seL4_SetMR(1, (seL4_Word)spy.s_vaddr);
+
+    seL4_Send(s_ep.cptr, tag);
 
 
-#ifdef CONFIG_BENCH_COVERT_L2
-    return run_single_l2(data); 
-#endif     
-#if defined (CONFIG_BENCH_COVERT_L1D) || defined (CONFIG_BENCH_COVERT_L1I)  
-    return run_single_l1(data);
-#endif 
-#ifdef CONFIG_BENCH_COVERT_LLC_KERNEL 
-    return run_single_llc_kernel(data); 
-#endif 
+    info = seL4_Recv(s_ep.cptr, NULL);
+    if (seL4_MessageInfo_get_label(info) != seL4_NoFault)
+        return BENCH_FAILURE;
+
+    r_d =  (struct bench_kernel_schedule *)env->record_vaddr;
+    printf("online time start\n");
+    for (int i = 1; i < NUM_KERNEL_SCHEDULE_DATA; i++) {
+        printf("%d %llu\n", r_d->prev_sec[i], r_d->prevs[i] - r_d->starts[i]);
+
+    }
+
+    printf("online time end\n");
+
+    printf("offline time start\n");
+    for (int i = 1; i < NUM_KERNEL_SCHEDULE_DATA; i++) {
+        printf("%d %llu\n", r_d->cur_sec[i], r_d->curs[i] - r_d->prevs[i]);
+    }
+    printf("offline time end\n");
+
+    /*printf("Trojan: %llu %llu %llu -> %llu %llu %llu\n", r_d->prevs[i], r_d->starts[i], r_d->curs[i], r_d->prevs[i] - r_d->starts[i], r_d->curs[i] - r_d->prevs[i], r_d->curs[i] - r_d->starts[i]);
+     */
+
+    printf("done covert benchmark\n");
+    return BENCH_SUCCESS;
+
 
 }
 
-static inline uint64_t rdtscp_64(void) {
-    uint32_t low, high;
+/*running the single core attack*/ 
+int run_single (m_env_t *env) {
 
-    asm volatile ( 
-            "rdtscp          \n"
-            "movl %%edx, %0 \n"
-            "movl %%eax, %1 \n"
-            : "=r" (high), "=r" (low)
-            :
-            : "eax", "ecx", "edx");
 
-    return ((uint64_t) high) << 32llu | (uint64_t) low;
+#ifdef CONFIG_BENCH_COVERT_L2
+    return run_single_l2(env); 
+#endif     
+#if defined (CONFIG_BENCH_COVERT_L1D) || defined (CONFIG_BENCH_COVERT_L1I)  
+    return run_single_l1(env);
+#endif 
+#ifdef CONFIG_BENCH_COVERT_LLC_KERNEL 
+    return run_single_llc_kernel(env); 
+#endif 
+#ifdef CONFIG_BENCH_COVERT_LLC_KERNEL_SCHEDULE 
+    return run_single_llc_kernel_schedule(env); 
+#endif 
+
 }
 
 static inline void mfence() {
   asm volatile("mfence");
 }
-/*sandy bridge machine frequency 3.4GHZ*/
-#define MASTIK_FEQ  (3400000000ull)
-
 void covert_sleep(unsigned int sec) {
 
     unsigned long long s_tick = (unsigned long long)sec * MASTIK_FEQ;  
@@ -536,7 +625,7 @@ void launch_bench_covert (m_env_t *env) {
     init_single(env);
     prepare_single(env); 
     /*run bench*/
-    ret = run_single(env->record_vaddr);
+    ret = run_single(env);
     assert(ret == BENCH_SUCCESS);
 #endif /*covert single*/ 
 

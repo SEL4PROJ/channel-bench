@@ -116,7 +116,7 @@ menu   "Timing Channel Benchmarks"
                bool "L1 instruction cache"
 
                config BENCH_COVERT_L2 
-               bool "L2"
+               bool "L2 NOT WORKING"
 
                config BENCH_COVERT_LLC 
                bool "LLC user-level p+p attack"
@@ -129,6 +129,19 @@ menu   "Timing Channel Benchmarks"
 
       endchoice
 
+      config BENCH_KERNEL_SCHEDULE_STEP
+      int "stepping for touching LLC by high domain"
+      default 4
+      depends on BENCH_COVERT_LLC_KERNEL_SCHEDULE 
+      help
+            stepping size for sampling the effect of LLC activities on high
+
+      config BENCH_KERNEL_SCHEDULE_RUNS
+      int "number of runs for each data point in high domain"
+      default 100
+      depends on BENCH_COVERT_LLC_KERNEL_SCHEDULE  
+      help
+           number of data points collected per step, used by both high and low
 
       config MASTIK_ATTACK
       bool "multicore cache-based timing attack"

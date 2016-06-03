@@ -33,12 +33,13 @@
 bench_covert_t covert_env; 
 
 static int (*covert_bench_fun[BENCH_COVERT_FUNS])(bench_covert_t *) = {NULL, 
-    NULL, NULL, 
+    NULL, NULL,  
     NULL, NULL, 
     NULL, NULL, 
     l1_trojan, l1_spy, 
     l1i_trojan, l1i_spy,
-    l3_trojan, l3_spy
+    l3_trojan, l3_spy, 
+    l3_kd_trojan, l3_kd_spy,
 };
 
 /* dummy global for libsel4muslcsys */
@@ -189,9 +190,10 @@ int run_bench_covert(char **argv) {
 
     if (seL4_MessageInfo_get_length(info) != BENCH_COVERT_MSG_LEN)
         return BENCH_FAILURE; 
-    
+   
+#ifdef CONFIG_DEBUG_BUILD
     platsupport_serial_setup_simple(NULL, NULL, NULL); 
-
+#endif 
    
     covert_env.p_buf = (void *)seL4_GetMR(0);
     covert_env.ts_buf = (void *)seL4_GetMR(1); 

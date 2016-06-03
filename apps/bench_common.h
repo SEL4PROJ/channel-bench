@@ -296,7 +296,9 @@ typedef struct bench_covert {
 #define BENCH_COVERT_L1I_SPY       10
 #define BENCH_COVERT_LLC_KERNEL_TROJAN   11 
 #define BENCH_COVERT_LLC_KERNEL_SPY      12 
-#define BENCH_COVERT_FUNS                13
+#define BENCH_COVERT_LLC_KD_TROJAN       13   /*kernel determinisitic scheduling*/
+#define BENCH_COVERT_LLC_KD_SPY          14 
+#define BENCH_COVERT_FUNS                15
 
 #define BENCH_COVERT_MSG_LEN  3 /*msg len for init env*/
 /*matching the test number according to the config*/ 
@@ -312,10 +314,16 @@ typedef struct bench_covert {
 #define BENCH_COVERT_TROJAN    BENCH_COVERT_L2_TROJAN 
 #define BENCH_COVERT_SPY       BENCH_COVERT_L2_SPY 
 #endif 
-#ifdef CONFIG_BENCH_COVERT_LLC_KERNEL 
+#ifdef CONFIG_BENCH_COVERT_LLC_KERNEL  /*LLC channel through shared kernel*/
 #define BENCH_COVERT_TROJAN    BENCH_COVERT_LLC_KERNEL_TROJAN 
 #define BENCH_COVERT_SPY       BENCH_COVERT_LLC_KERNEL_SPY 
 #endif 
+
+/*LLC channel through kernel scheduling*/
+#ifdef CONFIG_BENCH_COVERT_LLC_KERNEL_SCHEDULE 
+#define BENCH_COVERT_TROJAN      BENCH_COVERT_LLC_KD_TROJAN
+#define BENCH_COVERT_SPY         BENCH_COVERT_LLC_KD_SPY
+#endif
 
 #ifdef CONFIG_MASTIK_ATTACK_COVERT
 #define BENCH_COVERT_SPY       BENCH_MASTIK_TEST
@@ -326,6 +334,52 @@ typedef struct bench_covert {
 #define BENCH_COVERT_SPY       BENCH_MASTIK_SPY
 #define BENCH_COVERT_TROJAN    BENCH_MPI_VICTIM
 #endif 
+
+
+/*used by kernel determinsitic scheduling benchmark*/
+#ifdef CONFIG_CACHE_COLOURING
+/*if cache colouring enabled, the number of cache sets that high uses doubles*/
+#define NUM_LLC_CACHE_SETS   4096
+#else
+#define NUM_LLC_CACHE_SETS   2048 
+#endif
+
+#define NUM_KERNEL_SCHEDULE_DATA  (((NUM_LLC_CACHE_SETS) / (CONFIG_BENCH_KERNEL_SCHEDULE_STEP)) * (CONFIG_BENCH_KERNEL_SCHEDULE_RUNS))
+
+/*one system tick is 1ms, 3400000 cycles, 3.4GHZ sandybridge machine*/
+#define KERNEL_SCHEDULE_TICK_LENTH   1000000
+#define NUM_KERNEL_SCHEDULE_SHARED_PAGE  1
+
+struct bench_kernel_schedule {
+    uint64_t prevs[NUM_KERNEL_SCHEDULE_DATA];
+    uint64_t starts[NUM_KERNEL_SCHEDULE_DATA];
+    uint64_t curs[NUM_KERNEL_SCHEDULE_DATA];
+    uint32_t prev_sec[NUM_KERNEL_SCHEDULE_DATA];
+    uint32_t cur_sec[NUM_KERNEL_SCHEDULE_DATA];
+};
+
+
+
+
+static inline uint64_t rdtscp_64(void) {
+    uint32_t low, high;
+
+    asm volatile ( 
+            "rdtscp          \n"
+            "movl %%edx, %0 \n"
+            "movl %%eax, %1 \n"
+            : "=r" (high), "=r" (low)
+            :
+            : "eax", "ecx", "edx");
+
+    return ((uint64_t) high) << 32llu | (uint64_t) low;
+}
+
+
+
+
+/*sandy bridge machine frequency 3.4GHZ*/
+#define MASTIK_FEQ  (3400000000ull)
 
 
 #define COMPILER_BARRIER do { asm volatile ("" ::: "memory"); } while(0);
