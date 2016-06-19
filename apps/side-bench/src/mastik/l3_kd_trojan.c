@@ -350,14 +350,18 @@ int l3_kd_trojan(bench_covert_t *env) {
 
     /*receive the shared address to record the secret*/
     uint32_t *share_vaddr = (uint32_t *)seL4_GetMR(0);
+    
     cachemap_t cm = map();
 
     info = seL4_MessageInfo_new(seL4_NoFault, 0, 0, 1);
     seL4_SetMR(0, 0); 
     seL4_Send(ep, info);
 
+
+    seL4_Send(env->syn_ep, info);
     uint64_t cur, prev; 
-   
+
+
     /*nprobing sets is 64 (16 colour * 4 cores) on a coloured platform
      and 128 (32 colour * 4 cores) on a non-coloured platform
      secret represents the number of cache sets in total, 64 sets in a 
@@ -369,9 +373,9 @@ int l3_kd_trojan(bench_covert_t *env) {
             cur = prev = rdtscp_64(); 
             while (cur - prev < KERNEL_SCHEDULE_TICK_LENTH) {
                 prev = cur;
+                /*waiting for the timer tick to break the schedule*/
                 cur = rdtscp_64();
             }
-
             /*update the secret read by low*/ 
             *share_vaddr = secret; 
             for (int i = 0; i < secret; i++) {

@@ -21,19 +21,24 @@ static inline uint32_t rdtscp() {
 }
 
 
-static void measure(seL4_CPtr ep) 
+static void measure(bench_covert_t *env) 
 {
   seL4_Word badge;
   seL4_MessageInfo_t info;
 
-  info = seL4_Recv(ep, &badge);
+  info = seL4_Recv(env->r_ep, &badge);
   assert(seL4_MessageInfo_get_label(info) == seL4_NoFault);
 
   /*the record address*/
   r_addr = (struct bench_kernel_schedule *)seL4_GetMR(0);
   /*the shared address*/
   uint32_t *secret = (uint32_t *)seL4_GetMR(1);
-  
+
+
+  info = seL4_Recv(env->syn_ep, &badge);
+  assert(seL4_MessageInfo_get_label(info) == seL4_NoFault);
+
+
   starts[0] = 1;
   curs[0] = 1;
   prevs[0] = 1;
@@ -72,7 +77,7 @@ static void measure(seL4_CPtr ep)
 
   info = seL4_MessageInfo_new(seL4_NoFault, 0, 0, 1);
   seL4_SetMR(0, 0);
-  seL4_Send(ep, info);
+  seL4_Send(env->r_ep, info);
 
   for (;;) 
   {
@@ -81,7 +86,7 @@ static void measure(seL4_CPtr ep)
 }
 
 int l3_kd_spy(bench_covert_t *env) {
-  measure(env->r_ep);
+  measure(env);
   MPI p = mpi_alloc(0);
   mpi_fromstr(p, "0xe1baf27f25bdd90774579c9df4160097fb5a6b927636d78762e45cf55d706b7443b2bb9220a0397479cd20a7e136e3bd6b3b1e41a913e70da107491cf7d6b3b0e36851246b9b93b1d902fbdc14cae6c4ca529664451138e840554ce2cb69d6a7bc552db92e86f41cc2b20ac4ce6c4f2798eb64c728e0664b6e7557e6d99d291a36e8b3889de12626ee7c18c2de07be01ceda394f96de2a2e5d22272fd6fbb8900460089a2667bd2ae9581417f3f51edd39d6bb2838be175f96ac4e347b7252d8cbbedcdbbfa0eb54dc516c90895e62241b4a5a225867a39c853aa00cefa770a59e3d12d41f09f8d3425a5c69f40ec1dff64d3f59600ff92145198b7bcf4a8e07");
   MPI b = mpi_alloc(0);

@@ -87,7 +87,11 @@ static void create_thread(bench_env_t *t) {
     /*assign the affinity*/ 
     error = seL4_TCB_SetAffinity(process->thread.tcb.cptr, t->affinity);
     assert(error == 0); 
-    
+#ifdef CONFIG_DEBUG_BUILD
+    seL4_DebugNameThread(process->thread.tcb.cptr, t->name);
+#endif
+
+    printf("process is ready\n"); 
     error = seL4_TCB_Resume(process->thread.tcb.cptr);
     assert(error == 0);
    
@@ -385,15 +389,6 @@ int run_single_llc_kernel_schedule(m_env_t *env) {
     map_shared_buf(&trojan, &spy, NUM_KERNEL_SCHEDULE_SHARED_PAGE);
     map_r_buf(env, n_p, &spy);
     
-    seL4_SetMR(0, (seL4_Word)trojan.s_vaddr);
-    seL4_Send(t_ep.cptr, tag);
-
-    info = seL4_Recv(t_ep.cptr, NULL);
-    if (seL4_MessageInfo_get_label(info) != seL4_NoFault)
-        return BENCH_FAILURE;
-
-    printf("trojan is ready\n");
-
     tag = seL4_MessageInfo_new(seL4_NoFault, 0, 0, 2);
 
     /*spy*/
@@ -401,7 +396,16 @@ int run_single_llc_kernel_schedule(m_env_t *env) {
     seL4_SetMR(1, (seL4_Word)spy.s_vaddr);
 
     seL4_Send(s_ep.cptr, tag);
+    printf("spy is ready\n");   
+   
+    seL4_SetMR(0, (seL4_Word)trojan.s_vaddr);
+    seL4_Send(t_ep.cptr, tag);
 
+    info = seL4_Recv(t_ep.cptr, NULL);
+    if (seL4_MessageInfo_get_label(info) != seL4_NoFault)
+       return BENCH_FAILURE;
+
+    printf("trojan is ready\n");
 
     info = seL4_Recv(s_ep.cptr, NULL);
     if (seL4_MessageInfo_get_label(info) != seL4_NoFault)
@@ -409,7 +413,7 @@ int run_single_llc_kernel_schedule(m_env_t *env) {
 
     r_d =  (struct bench_kernel_schedule *)env->record_vaddr;
     printf("online time start\n");
-    for (int i = 1; i < NUM_KERNEL_SCHEDULE_DATA; i++) {
+    for (int i = 3; i < NUM_KERNEL_SCHEDULE_DATA; i++) {
         printf("%d %llu\n", r_d->prev_sec[i], r_d->prevs[i] - r_d->starts[i]);
 
     }
@@ -417,7 +421,7 @@ int run_single_llc_kernel_schedule(m_env_t *env) {
     printf("online time end\n");
 
     printf("offline time start\n");
-    for (int i = 1; i < NUM_KERNEL_SCHEDULE_DATA; i++) {
+    for (int i = 3; i < NUM_KERNEL_SCHEDULE_DATA; i++) {
         printf("%d %llu\n", r_d->cur_sec[i], r_d->curs[i] - r_d->prevs[i]);
     }
     printf("offline time end\n");
@@ -553,15 +557,22 @@ void init_multi(m_env_t *env) {
     /*never return*/
     seL4_Recv(syn_ep.cptr, NULL); 
 }
-
+static inline uint32_t rdtscp() {
+  uint32_t rv;
+  asm volatile ("rdtscp": "=a" (rv) :: "edx", "ecx");
+  return rv;
+}
 /*entry point of covert channel benchmark*/
 void launch_bench_covert (m_env_t *env) {
 
     int ret; 
-
+#ifdef CONFIG_COVERT_TROJAN_SENSITIVE
+    uint32_t low = 0, high = 0;
+#endif
     trojan.image = spy.image = CONFIG_BENCH_THREAD_NAME;
     trojan.vspace = spy.vspace = &env->vspace;
-
+    trojan.name = "trojan"; 
+    spy.name = "spy";
 #ifdef CONFIG_CACHE_COLOURING
     /*by default the kernel is shared*/
     trojan.kernel = spy.kernel = env->kernel;
@@ -578,11 +589,32 @@ void launch_bench_covert (m_env_t *env) {
 #ifdef CONFIG_COVERT_TROJAN_SENSITIVE 
     seL4_KernelImage_Sensitive(trojan.kernel); 
     seL4_KernelImage_HoldTime(trojan.kernel, CONFIG_COVERT_TROJAN_HOLD_TIME, 0);
+    srandom(rdtscp());
+    for (int i = 0; i < 8; i++) {
+        if (i < 4) 
+            low |= ((random() % 256) << i * 8); 
+        else 
+            high |= ((random() % 256) << (i - 4) * 8);
+
+    }
+   printf("trojan: setting random value low 0x%x high 0x%x\n ", low, high);
+   seL4_KernelImage_Random(trojan.kernel, low, high);
 #endif 
 #ifdef CONFIG_COVERT_SPY_SENSITIVE 
 
     seL4_KernelImage_Sensitive(spy.kernel);                                    
     seL4_KernelImage_HoldTime(spy.kernel, CONFIG_COVERT_SPY_HOLD_TIME, 0); 
+    srandom(rdtscp());
+    low = high = 0;
+    for (int i = 0; i < 8; i++) {
+        if (i < 4) 
+            low |= ((random() % 256) << i * 8); 
+        else 
+            high |= ((random() % 256) << (i - 4) * 8);
+
+    }
+    printf("spy: setting random value low 0x%x high 0x%x\n ", low, high);
+    seL4_KernelImage_Random(spy.kernel, low, high);
 #endif 
 
 #else /*CONFIG_CACHE_COLOURING*/ 

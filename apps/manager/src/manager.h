@@ -97,6 +97,7 @@ typedef struct bench_env {
     void *s_vaddr;  /*shared address between spy and trojan*/
     /*the affinity of this thread*/ 
     uint32_t affinity; 
+    char *name;    /*name of this thread*/ 
 
 } bench_env_t; 
 

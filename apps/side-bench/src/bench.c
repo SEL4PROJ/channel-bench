@@ -183,6 +183,9 @@ int run_bench_covert(char **argv) {
     covert_env.syn_ep = (seL4_CPtr)atol(argv[1]);
     covert_env.r_ep = (seL4_CPtr)atol(argv[2]);
     
+#ifdef CONFIG_DEBUG_BUILD
+    platsupport_serial_setup_simple(NULL, NULL, NULL); 
+#endif 
     info = seL4_Recv(covert_env.r_ep, &badge); 
 
     if (seL4_MessageInfo_get_label(info) != seL4_NoFault)
@@ -191,14 +194,11 @@ int run_bench_covert(char **argv) {
     if (seL4_MessageInfo_get_length(info) != BENCH_COVERT_MSG_LEN)
         return BENCH_FAILURE; 
    
-#ifdef CONFIG_DEBUG_BUILD
-    platsupport_serial_setup_simple(NULL, NULL, NULL); 
-#endif 
-   
+
     covert_env.p_buf = (void *)seL4_GetMR(0);
     covert_env.ts_buf = (void *)seL4_GetMR(1); 
     covert_env.notification_ep = (seL4_CPtr)seL4_GetMR(2); 
-
+    
     /*run bench*/
     assert(covert_bench_fun[covert_env.opt] != NULL); 
     return covert_bench_fun[covert_env.opt](&covert_env); 
@@ -248,7 +248,8 @@ int main (int argc, char **argv) {
 #endif 
 #ifdef CONFIG_BENCH_COVERT_SINGLE
     run_bench_covert(argv); 
-#endif 
+#endif
+
 #ifdef CONFIG_BENCH_CACHE_FLUSH 
     run_bench_single(argv);
 #endif 
