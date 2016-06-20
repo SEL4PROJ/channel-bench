@@ -337,48 +337,16 @@ void measure() {
   exit(0);
 }
       
+static void warmup(cachemap_t cm) {
 
+    /*warming up the testing platform with randomized 
+     cache accessing sequence*/
+    int total_sec = cm->nsets * 64;
+    int secret; 
+    for (int i = 0; i < NUM_KD_WARMUP_ROUNDS; i++) {
+        secret = random() % total_sec; 
 
-int l3_kd_trojan(bench_covert_t *env) {
-//  extern unsigned int sleep(unsigned int seconds);
-    seL4_Word badge;
-    seL4_MessageInfo_t info;
-    seL4_CPtr ep = env->r_ep; 
- 
-    info = seL4_Recv(ep, &badge);
-    assert(seL4_MessageInfo_get_label(info) == seL4_NoFault);
-
-    /*receive the shared address to record the secret*/
-    uint32_t *share_vaddr = (uint32_t *)seL4_GetMR(0);
-    
-    cachemap_t cm = map();
-
-    info = seL4_MessageInfo_new(seL4_NoFault, 0, 0, 1);
-    seL4_SetMR(0, 0); 
-    seL4_Send(ep, info);
-
-
-    seL4_Send(env->syn_ep, info);
-    uint64_t cur, prev; 
-
-
-    /*nprobing sets is 64 (16 colour * 4 cores) on a coloured platform
-     and 128 (32 colour * 4 cores) on a non-coloured platform
-     secret represents the number of cache sets in total, 64 sets in a 
-     page, all together nsets * 64.*/
-    for (int secret = 0; secret < cm->nsets * 64; secret += CONFIG_BENCH_KERNEL_SCHEDULE_STEP) {
-
-        for (int n = 0; n < CONFIG_BENCH_KERNEL_SCHEDULE_RUNS; n++) {
-            /*wait for a new time slice*/ 
-            cur = prev = rdtscp_64(); 
-            while (cur - prev < KERNEL_SCHEDULE_TICK_LENTH) {
-                prev = cur;
-                /*waiting for the timer tick to break the schedule*/
-                cur = rdtscp_64();
-            }
-            /*update the secret read by low*/ 
-            *share_vaddr = secret; 
-            for (int i = 0; i < secret; i++) {
+        for (int i = 0; i < secret; i++) {
                 /*16 is the associativity*/
                 vlist_t vl = cm->sets[i >> 6]; 
                 int l = 16; 
@@ -393,8 +361,101 @@ int l3_kd_trojan(bench_covert_t *env) {
                 }
 
             }
+
+    }
+
+}
+
+
+int l3_kd_trojan(bench_covert_t *env) {
+//  extern unsigned int sleep(unsigned int seconds);
+    seL4_Word badge;
+    seL4_MessageInfo_t info;
+    seL4_CPtr ep = env->r_ep; 
+    int total_sec, secret;
+ 
+    info = seL4_Recv(ep, &badge);
+    assert(seL4_MessageInfo_get_label(info) == seL4_NoFault);
+
+    /*receive the shared address to record the secret*/
+    uint32_t volatile *share_vaddr = (uint32_t *)seL4_GetMR(0);
+    *share_vaddr = SYSTEM_TICK_SYN_FLAG; 
+    
+    cachemap_t cm = map();
+
+    info = seL4_MessageInfo_new(seL4_NoFault, 0, 0, 1);
+    seL4_SetMR(0, 0); 
+    seL4_Send(ep, info);
+
+    warmup(cm);
+
+    /*ready to do the test*/
+    seL4_Send(env->syn_ep, info);
+    uint64_t cur, prev; 
+
+    /*nprobing sets is 64 (16 colour * 4 cores) on a coloured platform
+     and 128 (32 colour * 4 cores) on a non-coloured platform
+     secret represents the number of cache sets in total, 64 sets in a 
+     page, all together nsets * 64.*/
+
+    total_sec = cm->nsets * 64;
+
+    /*using 100 time ticks to syn scheduling sequence*/
+    for (int n = 0; n < 100; n++) {
+        secret = random() % total_sec;  
+        /*wait for a new time slice*/ 
+        cur = prev = rdtscp_64(); 
+        while (cur - prev < KERNEL_SCHEDULE_TICK_LENTH) {
+            prev = cur;
+            /*waiting for the timer tick to break the schedule*/
+            cur = rdtscp_64();
+        }
+        /*update the secret read by low*/ 
+        for (int i = 0; i < secret; i++) {
+            /*16 is the associativity*/
+            vlist_t vl = cm->sets[i >> 6]; 
+            int l = 16; 
+            if (l > vl_len(vl)) 
+                l = vl_len(vl); 
+
+            /*touch the page*/
+            for (int j = 0; j < l; j++) {
+
+                char *p = (char *)vl_get(vl, j); 
+                p[(i & 0x3f) << 6] = 0; 
+            }
+
         }
     }
+
+    for (int n = 0; n < CONFIG_BENCH_DATA_POINTS; n++) {
+        secret = random() % total_sec;  
+        /*wait for a new time slice*/ 
+        cur = prev = rdtscp_64(); 
+        while (cur - prev < KERNEL_SCHEDULE_TICK_LENTH) {
+            prev = cur;
+            /*waiting for the timer tick to break the schedule*/
+            cur = rdtscp_64();
+        }
+        /*update the secret read by low*/ 
+        *share_vaddr = secret; 
+        for (int i = 0; i < secret; i++) {
+            /*16 is the associativity*/
+            vlist_t vl = cm->sets[i >> 6]; 
+            int l = 16; 
+            if (l > vl_len(vl)) 
+                l = vl_len(vl); 
+
+            /*touch the page*/
+            for (int j = 0; j < l; j++) {
+
+                char *p = (char *)vl_get(vl, j); 
+                p[(i & 0x3f) << 6] = 0; 
+            }
+
+        }
+    }
+
     for(;;) {
      /*never return*/
 

@@ -32,12 +32,14 @@ static void measure(bench_covert_t *env)
   /*the record address*/
   r_addr = (struct bench_kernel_schedule *)seL4_GetMR(0);
   /*the shared address*/
-  uint32_t *secret = (uint32_t *)seL4_GetMR(1);
+  uint32_t volatile *secret = (uint32_t *)seL4_GetMR(1);
 
 
   info = seL4_Recv(env->syn_ep, &badge);
   assert(seL4_MessageInfo_get_label(info) == seL4_NoFault);
 
+  /*waiting for a start*/
+  while (*secret == SYSTEM_TICK_SYN_FLAG) ;
 
   starts[0] = 1;
   curs[0] = 1;
@@ -53,8 +55,10 @@ static void measure(bench_covert_t *env)
       prevs[i] = prev;
       starts[i] = start;
       curs[i] = cur;
+      /*prev secret affect online time (prevs - starts)*/
       prev_sec[i] = prev_s;
       /*at the beginning of this tick, update the secret*/
+      /*cur secrete affect offline time (curs - prevs)*/
       prev_s = cur_sec[i] = *secret;
       start = cur;
       i++;

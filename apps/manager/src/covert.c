@@ -307,22 +307,54 @@ int run_single_l2(m_env_t *env) {
 }
 
 int run_single_l1(m_env_t *env) {
+    
+    seL4_MessageInfo_t info;
+    seL4_MessageInfo_t tag;
+    struct bench_l1d *r_d;
+    uint32_t n_p = (sizeof (struct bench_l1d) / BENCH_PAGE_SIZE) + 1;
 
-    seL4_MessageInfo_t info; 
-    seL4_MessageInfo_t tag = seL4_MessageInfo_new(seL4_NoFault, 0, 0, 0); 
-    printf("start covert benchmark, single core, L1 data/instruction cache\n"); 
+    printf("starting covert channel benchmark, L1 Data cache\n");
+
+    printf("data points %d with random sequence\n", CONFIG_BENCH_DATA_POINTS);
+ 
+
+    map_shared_buf(&trojan, &spy, NUM_L1D_SHARED_PAGE);
+    map_r_buf(env, n_p, &spy);
+    
+    tag = seL4_MessageInfo_new(seL4_NoFault, 0, 0, 2);
+
+    /*spy*/
+    seL4_SetMR(0,(seL4_Word)spy.t_vaddr);
+    seL4_SetMR(1, (seL4_Word)spy.s_vaddr);
 
     seL4_Send(s_ep.cptr, tag);
+    printf("spy is ready\n");   
+ 
+    
+    tag = seL4_MessageInfo_new(seL4_NoFault, 0, 0, 1);
+    seL4_SetMR(0, (seL4_Word)trojan.s_vaddr);
+    seL4_Send(t_ep.cptr, tag);
+    
+    info = seL4_Recv(t_ep.cptr, NULL);
+    if (seL4_MessageInfo_get_label(info) != seL4_NoFault)
+       return BENCH_FAILURE;
 
+    printf("trojan is ready\n");
+    
     info = seL4_Recv(s_ep.cptr, NULL);
     if (seL4_MessageInfo_get_label(info) != seL4_NoFault)
         return BENCH_FAILURE;
+    
+    printf("benchmark result ready\n");
+    
+    r_d =  (struct bench_l1d *)env->record_vaddr;
+    printf("probing time start\n");
+    
+    for (int i = 3; i < CONFIG_BENCH_DATA_POINTS; i++) {
+        printf("%d %u\n", r_d->sec[i], r_d->result[i]);
 
-    seL4_Send(s_ep.cptr, tag);
-
-    info = seL4_Recv(s_ep.cptr, NULL);
-    if (seL4_MessageInfo_get_label(info) != seL4_NoFault)
-        return BENCH_FAILURE; 
+    }
+    printf("probing time end\n");
 
     printf("done covert benchmark\n");
     return BENCH_SUCCESS; 
@@ -377,14 +409,13 @@ int run_single_llc_kernel(m_env_t *env) {
 int run_single_llc_kernel_schedule(m_env_t *env) {
 
     seL4_MessageInfo_t info;
-    seL4_MessageInfo_t tag = seL4_MessageInfo_new(seL4_NoFault, 0, 0, 1);
+    seL4_MessageInfo_t tag;
     struct bench_kernel_schedule *r_d;
     uint32_t n_p = (sizeof (struct bench_kernel_schedule) / BENCH_PAGE_SIZE) + 1;
 
     printf("starting covert channel benchmark, LLC, kernel deterministic scheduling\n");
 
-    printf("data points %d runs %d  stepping %d\n", NUM_KERNEL_SCHEDULE_DATA,
-            CONFIG_BENCH_KERNEL_SCHEDULE_RUNS, CONFIG_BENCH_KERNEL_SCHEDULE_STEP);
+    printf("data points %d with random sequence\n", NUM_KERNEL_SCHEDULE_DATA);
 
     map_shared_buf(&trojan, &spy, NUM_KERNEL_SCHEDULE_SHARED_PAGE);
     map_r_buf(env, n_p, &spy);
@@ -397,7 +428,8 @@ int run_single_llc_kernel_schedule(m_env_t *env) {
 
     seL4_Send(s_ep.cptr, tag);
     printf("spy is ready\n");   
-   
+    
+    tag = seL4_MessageInfo_new(seL4_NoFault, 0, 0, 1);
     seL4_SetMR(0, (seL4_Word)trojan.s_vaddr);
     seL4_Send(t_ep.cptr, tag);
 
@@ -410,6 +442,8 @@ int run_single_llc_kernel_schedule(m_env_t *env) {
     info = seL4_Recv(s_ep.cptr, NULL);
     if (seL4_MessageInfo_get_label(info) != seL4_NoFault)
         return BENCH_FAILURE;
+    
+    printf("benchmark result ready\n");
 
     r_d =  (struct bench_kernel_schedule *)env->record_vaddr;
     printf("online time start\n");

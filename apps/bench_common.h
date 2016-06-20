@@ -343,22 +343,36 @@ typedef struct bench_covert {
 #else
 #define NUM_LLC_CACHE_SETS   2048 
 #endif
+/*number of cache sets visits for trojan to warm up the platform
+ total 4096 cache sets, trying 0x16 rounds on each sets*/
+#define NUM_KD_WARMUP_ROUNDS   0x16000
+#define NUM_L1D_WARMUP_ROUNDS  0x1000
 
-#define NUM_KERNEL_SCHEDULE_DATA  (((NUM_LLC_CACHE_SETS) / (CONFIG_BENCH_KERNEL_SCHEDULE_STEP)) * (CONFIG_BENCH_KERNEL_SCHEDULE_RUNS))
+
+#define NUM_KERNEL_SCHEDULE_DATA (CONFIG_BENCH_DATA_POINTS)
+#define SYSTEM_TICK_SYN_FLAG   0x123456
+
 
 /*one system tick is 1ms, 3400000 cycles, 3.4GHZ sandybridge machine*/
 #define KERNEL_SCHEDULE_TICK_LENTH   1000000
 #define NUM_KERNEL_SCHEDULE_SHARED_PAGE  1
+#define NUM_L1D_SHARED_PAGE  1
+
 
 struct bench_kernel_schedule {
-    uint64_t prevs[NUM_KERNEL_SCHEDULE_DATA];
-    uint64_t starts[NUM_KERNEL_SCHEDULE_DATA];
-    uint64_t curs[NUM_KERNEL_SCHEDULE_DATA];
-    uint32_t prev_sec[NUM_KERNEL_SCHEDULE_DATA];
-    uint32_t cur_sec[NUM_KERNEL_SCHEDULE_DATA];
+    uint64_t volatile prevs[NUM_KERNEL_SCHEDULE_DATA];
+    uint64_t volatile starts[NUM_KERNEL_SCHEDULE_DATA];
+    uint64_t volatile curs[NUM_KERNEL_SCHEDULE_DATA];
+    uint32_t volatile prev_sec[NUM_KERNEL_SCHEDULE_DATA];
+    uint32_t volatile cur_sec[NUM_KERNEL_SCHEDULE_DATA];
 };
 
-
+struct bench_l1d {
+    /*L1 data cache 64 sets, the result contains the 
+     total cost on probing L1 D cache*/
+    uint32_t volatile result[CONFIG_BENCH_DATA_POINTS];
+    uint32_t volatile sec[CONFIG_BENCH_DATA_POINTS];
+};
 
 
 static inline uint64_t rdtscp_64(void) {
