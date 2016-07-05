@@ -20,7 +20,7 @@ l1iinfo_t l1i_prepare(uint64_t monitored_sets) {
     				(JMP_OFFSET >> 16) & 0xff, 
 				(JMP_OFFSET >> 24) & 0xff};
   
-
+  /*prepare the probing buffer according to the bitmask in monitored_sets*/
   l1iinfo_t l1 = (l1iinfo_t)malloc(sizeof(struct l1iinfo));
   l1->memory = mmap(0, PAGE_SIZE * (L1_ASSOCIATIVITY+1), PROT_READ|PROT_WRITE|PROT_EXEC, MAP_PRIVATE|MAP_ANON, -1, 0);
   l1->memory = (void *)((((uintptr_t)l1->memory) + 0xfff) & ~0xfff);
@@ -53,7 +53,9 @@ void l1i_set_monitored_set(l1iinfo_t l1, uint64_t monitored_sets) {
 }
 
 void l1i_randomise(l1iinfo_t l1) {
-  char *mem = (char *)l1->memory;
+
+    /*randomise the monitoring order stroed in monitored*/
+    char *mem = (char *)l1->memory;
   for (int i = 0; i < l1->nsets; i++) {
     int p = random() % (l1->nsets - i) + i;
     uint8_t t = l1->monitored[p];
@@ -68,6 +70,9 @@ void l1i_probe(l1iinfo_t l1, uint16_t *results) {
     uint32_t start = rdtscp();
     // Using assembly because I am not sure I can trust the compiler
     //asm volatile ("callq %0": : "r" (SET(0, l1->monitored[i])):);
+
+    /*for the total number of monitored cache sets 
+     do a probe, monitored contains the cache set number*/
     (*((fptr)SET(0, l1->monitored[i])))();
     uint32_t res = rdtscp() - start;
     results[i] = res > UINT16_MAX ? UINT16_MAX : res;

@@ -310,10 +310,10 @@ int run_single_l1(m_env_t *env) {
     
     seL4_MessageInfo_t info;
     seL4_MessageInfo_t tag;
-    struct bench_l1d *r_d;
-    uint32_t n_p = (sizeof (struct bench_l1d) / BENCH_PAGE_SIZE) + 1;
+    struct bench_l1 *r_d;
+    uint32_t n_p = (sizeof (struct bench_l1) / BENCH_PAGE_SIZE) + 1;
 
-    printf("starting covert channel benchmark, L1 Data cache\n");
+    printf("starting covert channel benchmark, L1 Data/instruction cache\n");
 
     printf("data points %d with random sequence\n", CONFIG_BENCH_DATA_POINTS);
  
@@ -347,7 +347,7 @@ int run_single_l1(m_env_t *env) {
     
     printf("benchmark result ready\n");
     
-    r_d =  (struct bench_l1d *)env->record_vaddr;
+    r_d =  (struct bench_l1 *)env->record_vaddr;
     printf("probing time start\n");
     
     for (int i = 3; i < CONFIG_BENCH_DATA_POINTS; i++) {
@@ -600,9 +600,6 @@ static inline uint32_t rdtscp() {
 void launch_bench_covert (m_env_t *env) {
 
     int ret; 
-#ifdef CONFIG_COVERT_TROJAN_SENSITIVE
-    uint32_t low = 0, high = 0;
-#endif
     trojan.image = spy.image = CONFIG_BENCH_THREAD_NAME;
     trojan.vspace = spy.vspace = &env->vspace;
     trojan.name = "trojan"; 
@@ -624,31 +621,19 @@ void launch_bench_covert (m_env_t *env) {
     seL4_KernelImage_Sensitive(trojan.kernel); 
     seL4_KernelImage_HoldTime(trojan.kernel, CONFIG_COVERT_TROJAN_HOLD_TIME, 0);
     srandom(rdtscp());
-    for (int i = 0; i < 8; i++) {
-        if (i < 4) 
-            low |= ((random() % 256) << i * 8); 
-        else 
-            high |= ((random() % 256) << (i - 4) * 8);
+    
+    for (int i = 0; i < 512; i ++)
+        seL4_KernelImage_Random(trojan.kernel, i, random());
 
-    }
-   printf("trojan: setting random value low 0x%x high 0x%x\n ", low, high);
-   seL4_KernelImage_Random(trojan.kernel, low, high);
-#endif 
+  #endif 
 #ifdef CONFIG_COVERT_SPY_SENSITIVE 
 
     seL4_KernelImage_Sensitive(spy.kernel);                                    
     seL4_KernelImage_HoldTime(spy.kernel, CONFIG_COVERT_SPY_HOLD_TIME, 0); 
     srandom(rdtscp());
-    low = high = 0;
-    for (int i = 0; i < 8; i++) {
-        if (i < 4) 
-            low |= ((random() % 256) << i * 8); 
-        else 
-            high |= ((random() % 256) << (i - 4) * 8);
-
-    }
-    printf("spy: setting random value low 0x%x high 0x%x\n ", low, high);
-    seL4_KernelImage_Random(spy.kernel, low, high);
+     for (int i = 0; i < 512; i ++)
+        seL4_KernelImage_Random(spy.kernel, i, random());
+    
 #endif 
 
 #else /*CONFIG_CACHE_COLOURING*/ 

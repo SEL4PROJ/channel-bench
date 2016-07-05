@@ -347,6 +347,7 @@ typedef struct bench_covert {
  total 4096 cache sets, trying 0x16 rounds on each sets*/
 #define NUM_KD_WARMUP_ROUNDS   0x16000
 #define NUM_L1D_WARMUP_ROUNDS  0x1000
+#define NUM_L1I_WARMUP_ROUNDS  0x1000
 
 
 #define NUM_KERNEL_SCHEDULE_DATA (CONFIG_BENCH_DATA_POINTS)
@@ -367,9 +368,9 @@ struct bench_kernel_schedule {
     uint32_t volatile cur_sec[NUM_KERNEL_SCHEDULE_DATA];
 };
 
-struct bench_l1d {
-    /*L1 data cache 64 sets, the result contains the 
-     total cost on probing L1 D cache*/
+struct bench_l1 {
+    /*L1 data/instruction cache 64 sets, the result contains the 
+     total cost on probing L1 D/I cache*/
     uint32_t volatile result[CONFIG_BENCH_DATA_POINTS];
     uint32_t volatile sec[CONFIG_BENCH_DATA_POINTS];
 };

@@ -59,6 +59,8 @@ int l1_trojan(bench_covert_t *env) {
 
   for (int i = 0; i < 100; i++) {
       secret = random() % total_sec;
+       /*waiting for a system tick*/
+      newTimeSlice();
       
       for (int n = 0; n < secret; n+=64) 
 	access(data+i);
@@ -93,7 +95,7 @@ int l1_spy(bench_covert_t *env) {
   assert(seL4_MessageInfo_get_label(info) == seL4_NoFault);
 
   /*the record address*/
-  struct bench_l1d *r_addr = (struct bench_l1d *)seL4_GetMR(0);
+  struct bench_l1 *r_addr = (struct bench_l1 *)seL4_GetMR(0);
   /*the shared address*/
   uint32_t volatile *secret = (uint32_t *)seL4_GetMR(1);
 
@@ -105,7 +107,6 @@ int l1_spy(bench_covert_t *env) {
   while (*secret == SYSTEM_TICK_SYN_FLAG) ;
 
 
-  /*probing for 100 ticks*/
   for (int i = 0; i < CONFIG_BENCH_DATA_POINTS; i++) {
 
     newTimeSlice();
