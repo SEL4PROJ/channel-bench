@@ -19,6 +19,7 @@
 #include "manager.h"
 #include "../../covert.h"
 
+#ifdef  CONFIG_MANAGER_COVERT_BENCH
 
 /*start of the elf file*/
 extern char __executable_start;
@@ -685,4 +686,4 @@ void launch_bench_covert (m_env_t *env) {
 #endif 
 
 }
-
+#endif 

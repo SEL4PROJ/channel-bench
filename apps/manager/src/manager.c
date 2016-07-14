@@ -210,8 +210,7 @@ static void launch_bench_single (void *arg) {
 
 
     printf("\n"); 
-    printf("Side channel benchmarks\n");
-    printf("========================\n");
+    printf("Flushing cache\n");
 
     /*create frames that act as record buffer, mapping 
      to benchmark processes*/
@@ -243,7 +242,7 @@ static void launch_bench_single (void *arg) {
     assert(ret == 0); 
 
 
-    /*copy the fault endpoint to the benchmark thread*/
+    /*copy the fault endpoint to benchmaring thread for communicate*/
     env.bench_ep = copy_cap_to(&env.bench_thread, 
             env.bench_thread.fault_endpoint.cptr); 
 

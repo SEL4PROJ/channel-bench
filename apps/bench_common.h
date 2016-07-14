@@ -87,7 +87,7 @@
          overhead calculations aren't unduly influenced */
 #define FENCE() asm volatile("" ::: "memory")
 /*for cache flushing benchmark*/
-#define WARMUPS 16
+#define WARMUPS 10
 #define OVERHEAD_RUNS 10
 #define OVERHEAD_RETRIES 4
 
@@ -349,6 +349,9 @@ typedef struct bench_covert {
 #define NUM_L1D_WARMUP_ROUNDS  0x1000
 #define NUM_L1I_WARMUP_ROUNDS  0x1000
 
+#ifndef CONFIG_BENCH_DATA_POINTS 
+#define CONFIG_BENCH_DATA_POINTS  1
+#endif 
 
 #define NUM_KERNEL_SCHEDULE_DATA (CONFIG_BENCH_DATA_POINTS)
 #define SYSTEM_TICK_SYN_FLAG   0x123456

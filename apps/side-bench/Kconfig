@@ -43,26 +43,37 @@ menu   "Timing Channel Benchmarks"
                config BENCH_CACH_FLUSH_NONE 
                bool "Flushing none"
 
-               config BENCH_CACHE_FLUSH_L1 
-               bool "Flushing L1 caches"
+               config BENCH_CACHE_FLUSH_L1D
+               bool "Flushing L1 data cache"
+
+               config BENCH_CACHE_FLUSH_L1I
+               bool "Flushing L1 instruction cache"
 
                config BENCH_CACHE_FLUSH_ALL 
                bool "Flushing all caches"
         endchoice
        
         config BENCH_CACHE_BUFFER 
-        int "buffer size representing maximum working set (Bytes)"
+        int "buffer size representing maximum working set (number of uint * 4 bytes)"
         depends on BENCH_CACHE_FLUSH 
         default 32768
         help 
-               the buffer size for measuring indirect cost of flushing caches. Benchmarking thread writes each buffer lines which equal the size of cache line. 
-        
+               the buffer size for measuring indirect cost of flushing caches. Benchmarking thread writes or reads each buffer lines which equal the size of cache line. 
+       
+
         config BENCH_FLUSH_START 
-        int "starting size"
+        int "starting size (number of unit)"
         depends on BENCH_CACHE_FLUSH 
         default 8192
         help 
               the starting size for testing the flushing cost, the working set size stepping for the power of 2 in each set.
+              
+        config BENCH_FLUSH_STEPPING 
+        int "stepping size on the defined buffer"
+        depends on BENCH_CACHE_FLUSH 
+        default 16
+        help 
+              the stepping size should be the cache lines size divided by the unit size (unsigned int) of the flushing buffer
 
         config BENCH_FLUSH_RUNS 
         int "number of runs for cache flushing" 

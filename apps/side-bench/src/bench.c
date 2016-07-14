@@ -109,6 +109,7 @@ static inline void send_result_to(seL4_CPtr endpoint, seL4_Word w) {
 }
 
 
+/*benchmarking cache flush costs*/
 void run_bench_single (char **argv) {
     
     void *record_vaddr; 
