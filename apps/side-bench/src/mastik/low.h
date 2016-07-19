@@ -39,7 +39,8 @@ static inline int accesstime(void *v) {
 }
 
 static inline void clflush(void *v) {
-  asm volatile ("clflush 0(%0)": : "r" (v):);
+//  asm volatile ("clflush 0(%0)": : "r" (v):);
+    asm volatile("clflush %[v]" : [v] "+m"(*(volatile char *)v));
 }
 
 static inline uint32_t rdtscp() {

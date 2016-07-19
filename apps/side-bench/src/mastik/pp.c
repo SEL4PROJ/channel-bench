@@ -30,6 +30,99 @@ void pp_prime(pp_t pp, int reps) {
 
 #define str(x) #x
 #define xstr(x) str(x)
+/*probing on the probe list, return the total cost in time
+ used by cache flush benchmark*/
+uint32_t pp_probe_flush(pp_t pp) {
+
+    if (pp == NULL)
+        return 0;
+    void *p = (void *)pp;
+    uint32_t s, e; 
+    
+    s = rdtscp();
+#ifndef CONFIG_BENCH_CACHE_FLUSH_READ /*1*/
+    LNEXT(p + 10) = (void *) 0xff;
+#endif 
+    p = LNEXT(p);
+#ifndef CONFIG_BENCH_CACHE_FLUSH_READ /*2*/
+    LNEXT(p + 10) = (void *) 0xff;
+#endif 
+    p = LNEXT(p);
+#ifndef CONFIG_BENCH_CACHE_FLUSH_READ /*3*/
+    LNEXT(p + 10) = (void *) 0xff;
+#endif 
+    p = LNEXT(p);
+
+#ifndef CONFIG_BENCH_CACHE_FLUSH_READ /*4*/
+    LNEXT(p + 10) = (void *) 0xff;
+#endif 
+    p = LNEXT(p);
+
+#ifndef CONFIG_BENCH_CACHE_FLUSH_READ /*5*/
+    LNEXT(p + 10) = (void *) 0xff;
+#endif 
+    p = LNEXT(p);
+
+#ifndef CONFIG_BENCH_CACHE_FLUSH_READ /*6*/
+    LNEXT(p + 10) = (void *) 0xff;
+#endif 
+    p = LNEXT(p);
+
+#ifndef CONFIG_BENCH_CACHE_FLUSH_READ /*7*/
+    LNEXT(p + 10) = (void *) 0xff;
+#endif 
+    p = LNEXT(p);
+
+#ifndef CONFIG_BENCH_CACHE_FLUSH_READ /*8*/
+    LNEXT(p + 10) = (void *) 0xff;
+#endif 
+    p = LNEXT(p);
+
+#ifndef CONFIG_BENCH_CACHE_FLUSH_READ /*9*/
+    LNEXT(p + 10) = (void *) 0xff;
+#endif 
+    p = LNEXT(p);
+
+#ifndef CONFIG_BENCH_CACHE_FLUSH_READ /*10*/
+    LNEXT(p + 10) = (void *) 0xff;
+#endif 
+    p = LNEXT(p);
+
+#ifndef CONFIG_BENCH_CACHE_FLUSH_READ /*11*/
+    LNEXT(p + 10) = (void *) 0xff;
+#endif 
+    p = LNEXT(p);
+
+#ifndef CONFIG_BENCH_CACHE_FLUSH_READ /*12*/
+    LNEXT(p + 10) = (void *) 0xff;
+#endif 
+    p = LNEXT(p);
+
+#ifndef CONFIG_BENCH_CACHE_FLUSH_READ /*13*/
+    LNEXT(p + 10) = (void *) 0xff;
+#endif 
+    p = LNEXT(p);
+
+#ifndef CONFIG_BENCH_CACHE_FLUSH_READ /*14*/
+    LNEXT(p + 10) = (void *) 0xff;
+#endif 
+    p = LNEXT(p);
+
+#ifndef CONFIG_BENCH_CACHE_FLUSH_READ /*15*/
+    LNEXT(p + 10) = (void *) 0xff;
+#endif 
+    p = LNEXT(p);
+
+#ifndef CONFIG_BENCH_CACHE_FLUSH_READ /*16*/
+    LNEXT(p + 10) = (void *) 0xff;
+#endif 
+    p = LNEXT(p);
+
+    e = rdtscp(); 
+
+    return e - s; 
+}
+
 
 int pp_probe(pp_t pp) {
   if (pp == NULL)

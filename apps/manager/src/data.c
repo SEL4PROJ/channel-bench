@@ -102,6 +102,7 @@ static void print_bench_cache_flush(void *record) {
         count += WARMUPS; 
 
         uint32_t recorded = seL4_BenchmarkDumpLog(count, CONFIG_BENCH_FLUSH_RUNS);
+        printf("cost in kernel:  ");
         for (int i = 0; i < recorded; i++) {
             /*skip the key field in the log entry given by kernel*/
             printf("%u\t", seL4_GetMR(i * 2 + 1));

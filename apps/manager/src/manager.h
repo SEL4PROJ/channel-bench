@@ -29,7 +29,7 @@
 /*common definitions*/
 #include "../../bench_common.h"
 
-
+#define MANAGER_MORECORE_SIZE  (16 * 1024 * 1024)
 typedef struct {
 
     vka_t vka;    
@@ -61,6 +61,13 @@ typedef struct {
     /*virtual address for recording data, used by root*/ 
     void *record_vaddr; 
 
+    /*mapping the huge pages into the process address space for benchmarking
+     40 * 4M = 160M*/
+    seL4_CPtr huge_frames[40]; 
+
+    /*virtual address for the huge frames, used by root thread*/ 
+    void *huge_vaddr; 
+    
     /*benchmark thread structure*/
     sel4utils_process_t bench_thread;
    // [MAX_BENCH_THREADS]; 
@@ -114,6 +121,8 @@ void launch_bench_ipc(m_env_t *);
 /*interface in covert.c*/
 /*entry point of covert channel benchmark*/
 void launch_bench_covert(m_env_t *env);
+
+
 
 #endif
 

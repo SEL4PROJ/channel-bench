@@ -44,6 +44,10 @@
 /*system resources*/
 static m_env_t env; 
 
+extern char *morecore_area;
+extern size_t morecore_size;
+
+char manager_morecore_area[MANAGER_MORECORE_SIZE]; 
 
 /* dimensions of virtual memory for the allocator to use */
 #define ALLOCATOR_VIRTUAL_POOL_SIZE ((1 << seL4_PageBits) * 4096)
@@ -73,11 +77,11 @@ seL4_CPtr copy_cap_to(sel4utils_process_t *pro, seL4_CPtr cap) {
 
 /*map the N frame caps to a process*/
 static inline 
-void *map_frames_to(sel4utils_process_t *pro, seL4_CPtr *caps, int n) {
+void *map_frames_to(sel4utils_process_t *pro, seL4_CPtr *caps, int n, int size) {
 
 
     void *vaddr = vspace_map_pages(&pro->vspace, 
-            caps, NULL, seL4_AllRights, n, PAGE_BITS_4K, 1);
+            caps, NULL, seL4_AllRights, n, size, 1);
 
     assert(vaddr); 
 
@@ -201,6 +205,7 @@ static void launch_bench_single (void *arg) {
     int ret; 
     void *r_cp, *vaddr; 
     seL4_Word bench_result;
+    int total = 0;
 
     /*current format for argument: "name, endpoint slot, xxx"*/
     char *arg0 = CONFIG_BENCH_THREAD_NAME;
@@ -210,7 +215,7 @@ static void launch_bench_single (void *arg) {
 
 
     printf("\n"); 
-    printf("Flushing cache\n");
+    printf("Flushing cache benchmark, preparing...\n");
 
     /*create frames that act as record buffer, mapping 
      to benchmark processes*/
@@ -231,6 +236,33 @@ static void launch_bench_single (void *arg) {
         ret = vka_cnode_copy(&dest, &src, seL4_AllRights); 
         assert(ret == 0); 
 
+    }
+
+   /*creating the large page that uses as the probe buffer 
+    for the LLC miss, mapping to the benchmark process, and passing in 
+    the pointer and the size to the benchmark thread*/ 
+    if (CONFIG_BENCH_CACHE_BUFFER  > 64 * 1024)  {
+
+        total = 16 * 6 * 1024 * 1024; 
+        if (total % (1 << seL4_LargePageBits)) { 
+            total += 1 << seL4_LargePageBits; 
+        }
+        total /= 1 << seL4_LargePageBits; 
+        env.huge_vaddr = vspace_new_pages(&env.vspace, seL4_AllRights, total, 
+                seL4_LargePageBits);
+
+        for (uint32_t i = 0; i < total; i++) {
+            
+            vaddr = env.huge_vaddr + i * (1 << seL4_LargePageBits); 
+            vka_cspace_make_path(&env.vka, vspace_get_cap(&env.vspace, 
+                    vaddr), &src); 
+            ret = vka_cspace_alloc(&env.vka, env.huge_frames + i); 
+            assert(ret == 0); 
+            
+            vka_cspace_make_path(&env.vka, env.huge_frames[i], &dest); 
+            ret = vka_cnode_copy(&dest, &src, seL4_AllRights); 
+            assert(ret == 0); 
+        }
     }
     
 
@@ -262,14 +294,27 @@ static void launch_bench_single (void *arg) {
 
     /*map the frames for data recording into benchmark pro*/
     r_cp = map_frames_to(&env.bench_thread, env.record_frames, 
-            CONFIG_BENCH_RECORD_PAGES); 
-
+            CONFIG_BENCH_RECORD_PAGES, PAGE_BITS_4K); 
+    
     printf("frames map to benchmark, manager: %p, side-bench: %p\n", 
            env.record_vaddr, r_cp );
 
     printf("sending record vaddr... \n");
     send_msg_to(env.bench_thread.fault_endpoint.cptr, (seL4_Word)r_cp); 
 
+   
+    if (CONFIG_BENCH_CACHE_BUFFER  > 64 * 1024)  {
+
+
+        r_cp = map_frames_to(&env.bench_thread, env.huge_frames, 
+            total, seL4_LargePageBits); 
+        printf("huge frames map to benchmark, manager: %p, side-bench: %p, %d pages\n", 
+           env.huge_vaddr, r_cp, total );
+
+        printf("sending record vaddr... \n");
+        send_msg_to(env.bench_thread.fault_endpoint.cptr, (seL4_Word)r_cp); 
+
+    }
     printf("waiting on results... \n");
     /*waiting on benchmark to finish*/
     bench_result = wait_msg_from(env.bench_thread.fault_endpoint.cptr); 
@@ -448,7 +493,10 @@ static void create_kernel_pd(seL4_BootInfo *info, m_env_t *env) {
 int main (void) {
 
     seL4_BootInfo *info = seL4_GetBootInfo(); 
-    
+
+    /*init the more core area for the libc to use*/
+    morecore_area = manager_morecore_area; 
+    morecore_size = MANAGER_MORECORE_SIZE; 
 
 #ifdef CONFIG_KERNEL_STABLE 
     simple_stable_init_bootinfo(&env.simple, info); 

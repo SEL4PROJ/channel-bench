@@ -31,7 +31,8 @@
 #include "bench.h"
 
 bench_covert_t covert_env; 
-
+extern char *morecore_area;
+extern size_t morecore_size;
 static int (*covert_bench_fun[BENCH_COVERT_FUNS])(bench_covert_t *) = {NULL, 
     NULL, NULL,  
     NULL, NULL, 
@@ -117,6 +118,10 @@ void run_bench_single (char **argv) {
     int ret; 
     seL4_CPtr endpoint; 
 
+#ifdef CONFIG_DEBUG_BUILD
+    platsupport_serial_setup_simple(NULL, NULL, NULL); 
+#endif 
+
     /*current format for argument: "name, endpoint slot, xxx"*/
 
     //printf("side-bench running \n");
@@ -143,6 +148,15 @@ void run_bench_single (char **argv) {
 #endif 
    
 #ifdef CONFIG_BENCH_CACHE_FLUSH 
+
+    /*init the more core space 64M to be used as the probe buffer*/
+    if (CONFIG_BENCH_CACHE_BUFFER  > 64 * 1024)  { 
+        morecore_area = wait_vaddr_from(endpoint); 
+        assert(morecore_area != NULL); 
+        morecore_size = 16 * 6 * 1024 * 1024; 
+        printf("more core area in side bench %p \n", morecore_area);
+    }
+
     /*measuring the cost of flushing caches*/
     result = bench_flush(record_vaddr); 
     /*return result to root task*/

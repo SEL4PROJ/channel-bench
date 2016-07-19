@@ -46,7 +46,7 @@ typedef enum {
 
 struct cachemap *cm_linelist(vlist_t lines);
 
-int a;
+static int a;
 
 static char *findstart(char *record) {
   int len = 0;
