@@ -7,6 +7,7 @@
  *
  * @TAG(NICTA_BSD)
  */
+#ifdef CONFIG_BENCH_DCACHE_ATTACK 
 #include <stdlib.h>
 #include "../../bench_common.h"
 #include "bench.h"
@@ -46,3 +47,4 @@ void crypto_init(void) {
 
 
 }
+#endif 

@@ -205,7 +205,6 @@ static void launch_bench_single (void *arg) {
     int ret; 
     void *r_cp, *vaddr; 
     seL4_Word bench_result;
-    int total = 0;
 
     /*current format for argument: "name, endpoint slot, xxx"*/
     char *arg0 = CONFIG_BENCH_THREAD_NAME;
@@ -241,6 +240,8 @@ static void launch_bench_single (void *arg) {
    /*creating the large page that uses as the probe buffer 
     for the LLC miss, mapping to the benchmark process, and passing in 
     the pointer and the size to the benchmark thread*/ 
+#ifdef CONFIG_ARCH_X86 
+ 
     if (CONFIG_BENCH_CACHE_BUFFER  > 64 * 1024)  {
 
         total = 16 * 6 * 1024 * 1024; 
@@ -265,7 +266,7 @@ static void launch_bench_single (void *arg) {
         }
     }
     
-
+#endif 
     /*configure benchmark thread*/ 
     printf("Config benchmark thread...\n");
     ret = sel4utils_configure_process(&env.bench_thread, &env.vka, 
@@ -302,7 +303,8 @@ static void launch_bench_single (void *arg) {
     printf("sending record vaddr... \n");
     send_msg_to(env.bench_thread.fault_endpoint.cptr, (seL4_Word)r_cp); 
 
-   
+#ifdef CONFIG_ARCH_X86 
+ 
     if (CONFIG_BENCH_CACHE_BUFFER  > 64 * 1024)  {
 
 
@@ -315,6 +317,7 @@ static void launch_bench_single (void *arg) {
         send_msg_to(env.bench_thread.fault_endpoint.cptr, (seL4_Word)r_cp); 
 
     }
+#endif
     printf("waiting on results... \n");
     /*waiting on benchmark to finish*/
     bench_result = wait_msg_from(env.bench_thread.fault_endpoint.cptr); 
@@ -450,7 +453,8 @@ static void *main_continued (void* arg) {
     printf("Done\n"); 
 
     /*init the benchmakring functions*/
-    sel4bench_init(); 
+    sel4bench_init();
+    sel4bench_private_init(NULL);
 #ifdef CONFIG_MANAGER_PMU_COUNTER 
     init_pmu_counters(); 
 #endif 
@@ -467,7 +471,7 @@ static void *main_continued (void* arg) {
 
     /*halt cpu*/
     printf("Finished benchmark, now halting...\n"); 
-
+    sel4bench_private_deinit(NULL); 
     /*NOTE: using while loop, as debug feature is disabled.*/
     while (1);
    

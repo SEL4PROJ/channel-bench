@@ -35,7 +35,7 @@ endif
 
 
 # extra cflag for manager
-CFLAGS += -Werror -g
+CFLAGS += -Werror -g -Wno-unused-function
 ifdef CONFIG_X86_64
 CFLAGS += -mno-sse
 endif

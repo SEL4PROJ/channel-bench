@@ -188,7 +188,8 @@ void run_bench_ipc(char **argv) {
 
 }
 #endif 
-
+#ifdef CONFIG_BENCH_COVERT_SINGLE
+ 
 int run_bench_covert(char **argv) {
     seL4_Word badge; 
     seL4_MessageInfo_t info; 
@@ -219,6 +220,9 @@ int run_bench_covert(char **argv) {
     return covert_bench_fun[covert_env.opt](&covert_env); 
 
 }
+#endif
+#ifdef CONFIG_MASTIK_ATTACK
+ 
 void run_bench_mastik(char **argv) {
 
     unsigned int test_num; 
@@ -250,7 +254,7 @@ void run_bench_mastik(char **argv) {
 
 }
 
-
+#endif
 int main (int argc, char **argv) {
 
 

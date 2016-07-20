@@ -16,14 +16,17 @@
 #include <autoconf.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdbool.h>
 #include <sys/mman.h>
 #include <sel4/sel4.h>
 #include <sel4bench/sel4bench.h>
+#ifdef CONFIG_ARCH_X86 
 #include "./mastik/low.h"
 #include "./mastik/l1.h"
 #include "./mastik/vlist.h"
 #include "./mastik/cachemap.h"
 #include "./mastik/pp.h"
+#endif
 #include "../../bench_common.h"
 #include "bench.h"
 
@@ -38,15 +41,16 @@ static volatile char user_flush[32768] __attribute__((aligned (4096)));
 static uint32_t probe_size = CONFIG_BENCH_FLUSH_START;
 static sel4bench_counter_t measure_overhead[OVERHEAD_RUNS];
 static volatile uint32_t readc, readt; 
+#ifdef CONFIG_ARCH_X86
 static uint16_t *l1_probe_result; 
 /*l1 data flush buffer*/
 static l1info_t l1_1, l1_2, l1_3;
 /*llc flush buffer*/ 
 static cachemap_t cm_1, cm_2, cm_3;
 /*llc flush probe link list*/
-static pp_t *pps_1[32][128]; 
-static pp_t *pps_2[64][128]; 
-static pp_t *pps_3[64][128]; 
+static pp_t *pps_1; 
+static pp_t *pps_2; 
+static pp_t *pps_3; 
 /*llc flush overhead for probing on one cache set*/
 static uint32_t overhead_llc; 
 static int a; /*variabel used in map(), do not understand the purpose*/
@@ -189,52 +193,87 @@ static cachemap_t map(uint32_t *probe_buf) {
 
 }
 static inline void prepare_probe_buffer_llc(void) {
-   uint32_t index = 0;
 
     /*3 buffers, one for half of the LLC, one for LLC, two for twice as big as LLC*/
+ 
+    pp_t *pp; 
     cm_1 = map(&probe_buffer_1);
     cm_2 = map(&probe_buffer_2);
     cm_3 = map(&probe_buffer_3); 
 
     /*creating the probing buffer*/
+    pps_1 =(pp_t *) malloc (32 * 128 * sizeof (pp_t)); 
+    assert(pps_1 != NULL);
+    pps_2 = (pp_t *)malloc(64 * 128 * sizeof (pp_t));
+    assert(pps_2 != NULL); 
+    pps_3 = (pp_t *)malloc(64 * 128 * sizeof (pp_t));
+    assert(pps_3 != NULL); 
 
+    pp = pps_1; 
     for (int i = 0; i < 2048; i += 64) {
 
-       for (int j = 0; j < cm_1->nsets; j++) 
-            pps_1[index][j] = pp_prepare(cm_1->sets[j], L3_ASSOCIATIVITY, i); 
+        for (int j = 0; j <  cm_1->nsets; j++) {
+            *pp = pp_prepare(cm_1->sets[j], L3_ASSOCIATIVITY, i); 
+            clflush((void *)pp); 
+            pp++;
+        }
        
-       index++;
     }
-    
-    index = 0;
+    pp = pps_2; 
     for (int i = 0; i < 4096; i += 64) {
 
-        for (int j = 0; j < cm_2->nsets; j++) 
-            pps_2[index][j] = pp_prepare(cm_2->sets[j], L3_ASSOCIATIVITY, i); 
+        for (int j = 0; j < cm_2->nsets; j++) {
+            *pp = pp_prepare(cm_2->sets[j], L3_ASSOCIATIVITY, i); 
+            clflush((void *)pp);
+            pp++;
         
-        index++; 
+        }
     }
-    index = 0;
-
+    pp = pps_3; 
     for (int i = 0; i < 4096; i += 64) {
 
-        for (int j = 0; j < cm_3->nsets; j++) 
-            pps_3[index][j] = pp_prepare(cm_3->sets[j], L3_ASSOCIATIVITY, i); 
-        
-        index++;
+        for (int j = 0; j < cm_3->nsets; j++) {
+            *pp = pp_prepare(cm_3->sets[j], L3_ASSOCIATIVITY, i); 
+            clflush((void *)pp);
+            pp++; 
+        }
     }
+}
+# if 0
 
+static inline void prepare_random_buffer_llc(void) {
+
+ char *buf = (char *)mmap(NULL, 8 * 1024 * 1024 + 4096 * 2, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANON, -1, 0);
+  if (buf == MAP_FAILED) {
+    perror("mmap");
+    exit(1);
+  }
+   
+  /*making the buffer page aligned*/
+  int buf_switch = (int) buf; 
+
+  buf_switch &= ~(0xfff); 
+  buf_switch += 0x1000; 
+  buf = (char *) buf_switch; 
+
+  printf("buf_switch in prepare random buffer llc 0x%x\n", buf_switch); 
+
+  for (int i = 0; i < 8 * 1024 * 1024; i += 64) 
+      *(uint32 *)(buf + i ) = (uint32_t *)(buf + i + 64);
+
+  /*the last one point to the head*/
+  *(uint32_t *)(buf + 8 * 1024 * 1024 - 64) = (uint32_t *)buf;
+
+
+  /*randomise the list except the last one*/
 }
 
+#endif
 
-
-
-
-static inline sel4bench_counter_t walk_probe_buffer_llc (pp_t * probe_list[][128], 
+static inline sel4bench_counter_t walk_probe_buffer_llc (pp_t *probe_list, 
         cachemap_t cm, bool half) { 
 
     int offset = half ? 2048: 4096; 
-    uint32_t index = 0;
 
     sel4bench_counter_t result = 0ull;
     
@@ -243,10 +282,10 @@ static inline sel4bench_counter_t walk_probe_buffer_llc (pp_t * probe_list[][128
         /*probe the buffer for different offset within a page*/
 
         for (int j = 0; j < cm->nsets; j++) {
-            result += pp_probe_flush(probe_list[index][j]);
+            result += pp_probe_flush(*probe_list);
             result -= overhead_llc; 
+            probe_list++;
         }
-        index++;
     }
 
     return result;
@@ -429,5 +468,13 @@ seL4_Word bench_flush(void *record) {
     return BENCH_SUCCESS;
 
 }
+
+#endif 
+#ifdef CONFIG_ARCH_ARM 
+
+seL4_Word bench_flush(void *record) {
+    return 1;
+}
+#endif 
 
 #endif 
