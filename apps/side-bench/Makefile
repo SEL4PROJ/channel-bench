@@ -13,7 +13,7 @@ TARGETS := $(notdir $(SOURCE_DIR)).bin
 
 # Make sure this symbol stays around as we don't reference this, but
 # whoever loads us will
-LDFLAGS += -u __vsyscall_ptr
+LDFLAGS += -u __vsyscall_ptr 
 
 # Source files required to build the target     
 ASMFILES :=  $(patsubst $(SOURCE_DIR)/%,%,$(wildcard $(SOURCE_DIR)/src/*.S))

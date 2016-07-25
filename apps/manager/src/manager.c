@@ -205,6 +205,7 @@ static void launch_bench_single (void *arg) {
     int ret; 
     void *r_cp, *vaddr; 
     seL4_Word bench_result;
+    uint32_t total, huge_page_size;
 
     /*current format for argument: "name, endpoint slot, xxx"*/
     char *arg0 = CONFIG_BENCH_THREAD_NAME;
@@ -238,35 +239,39 @@ static void launch_bench_single (void *arg) {
     }
 
    /*creating the large page that uses as the probe buffer 
-    for the LLC miss, mapping to the benchmark process, and passing in 
+    for testing, mapping to the benchmark process, and passing in 
     the pointer and the size to the benchmark thread*/ 
-#ifdef CONFIG_ARCH_X86 
- 
-    if (CONFIG_BENCH_CACHE_BUFFER  > 64 * 1024)  {
 
-        total = 16 * 6 * 1024 * 1024; 
-        if (total % (1 << seL4_LargePageBits)) { 
-            total += 1 << seL4_LargePageBits; 
-        }
-        total /= 1 << seL4_LargePageBits; 
-        env.huge_vaddr = vspace_new_pages(&env.vspace, seL4_AllRights, total, 
-                seL4_LargePageBits);
+    total = 16 * 6 * 1024 * 1024; 
 
-        for (uint32_t i = 0; i < total; i++) {
-            
-            vaddr = env.huge_vaddr + i * (1 << seL4_LargePageBits); 
-            vka_cspace_make_path(&env.vka, vspace_get_cap(&env.vspace, 
+#ifdef CONFIG_ARCH_X86
+    huge_page_size = seL4_LargePageBits; 
+#endif 
+
+#ifdef CONFIG_ARCH_ARM 
+     huge_page_size = vka_get_object_size(seL4_ARM_SuperSectionObject, 0); 
+#endif 
+
+    if (total % (1 << huge_page_size)) { 
+        total += 1 << huge_page_size; 
+    }
+    total /= 1 << huge_page_size; 
+    env.huge_vaddr = vspace_new_pages(&env.vspace, seL4_AllRights, total, 
+            huge_page_size);
+
+    for (uint32_t i = 0; i < total; i++) {
+
+        vaddr = env.huge_vaddr + i * (1 << huge_page_size); 
+        vka_cspace_make_path(&env.vka, vspace_get_cap(&env.vspace, 
                     vaddr), &src); 
-            ret = vka_cspace_alloc(&env.vka, env.huge_frames + i); 
-            assert(ret == 0); 
-            
-            vka_cspace_make_path(&env.vka, env.huge_frames[i], &dest); 
-            ret = vka_cnode_copy(&dest, &src, seL4_AllRights); 
-            assert(ret == 0); 
-        }
+        ret = vka_cspace_alloc(&env.vka, env.huge_frames + i); 
+        assert(ret == 0); 
+
+        vka_cspace_make_path(&env.vka, env.huge_frames[i], &dest); 
+        ret = vka_cnode_copy(&dest, &src, seL4_AllRights); 
+        assert(ret == 0); 
     }
     
-#endif 
     /*configure benchmark thread*/ 
     printf("Config benchmark thread...\n");
     ret = sel4utils_configure_process(&env.bench_thread, &env.vka, 
@@ -303,21 +308,29 @@ static void launch_bench_single (void *arg) {
     printf("sending record vaddr... \n");
     send_msg_to(env.bench_thread.fault_endpoint.cptr, (seL4_Word)r_cp); 
 
-#ifdef CONFIG_ARCH_X86 
- 
-    if (CONFIG_BENCH_CACHE_BUFFER  > 64 * 1024)  {
+    r_cp = map_frames_to(&env.bench_thread, env.huge_frames, 
+            total, huge_page_size); 
+    
+    printf("huge frames map to benchmark, manager: %p, side-bench: %p, %d pages\n", 
+            env.huge_vaddr, r_cp, total );
 
+    printf("sending huge page vaddr... \n");
+    send_msg_to(env.bench_thread.fault_endpoint.cptr, (seL4_Word)r_cp); 
 
-        r_cp = map_frames_to(&env.bench_thread, env.huge_frames, 
-            total, seL4_LargePageBits); 
-        printf("huge frames map to benchmark, manager: %p, side-bench: %p, %d pages\n", 
-           env.huge_vaddr, r_cp, total );
+#ifdef CONFIG_ARCH_ARM 
 
-        printf("sending record vaddr... \n");
-        send_msg_to(env.bench_thread.fault_endpoint.cptr, (seL4_Word)r_cp); 
+        wait_msg_from(env.bench_thread.fault_endpoint.cptr); 
 
-    }
+        printf("clean and invalidate the huge pages from cache....\n"); 
+        for (uint32_t i = 0; i < total; i++) {
+
+            seL4_ARM_Page_CleanInvalidate_Data(env.huge_frames[i], 0, (1 << huge_page_size)); 
+            seL4_ARM_Page_CleanInvalidate_Data(env.huge_frames[i], 0, (1 << huge_page_size)); 
+        }
+        printf("starting benchmark in side-bench... \n");
+        send_msg_to(env.bench_thread.fault_endpoint.cptr, 0); 
 #endif
+    
     printf("waiting on results... \n");
     /*waiting on benchmark to finish*/
     bench_result = wait_msg_from(env.bench_thread.fault_endpoint.cptr); 
@@ -454,7 +467,6 @@ static void *main_continued (void* arg) {
 
     /*init the benchmakring functions*/
     sel4bench_init();
-    sel4bench_private_init(NULL);
 #ifdef CONFIG_MANAGER_PMU_COUNTER 
     init_pmu_counters(); 
 #endif 
@@ -471,7 +483,6 @@ static void *main_continued (void* arg) {
 
     /*halt cpu*/
     printf("Finished benchmark, now halting...\n"); 
-    sel4bench_private_deinit(NULL); 
     /*NOTE: using while loop, as debug feature is disabled.*/
     while (1);
    

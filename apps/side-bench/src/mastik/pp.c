@@ -41,83 +41,45 @@ uint32_t pp_probe_flush(pp_t pp) {
     
     s = rdtscp();
 #ifndef CONFIG_BENCH_CACHE_FLUSH_READ /*1*/
-    LNEXT(p + 10) = (void *) 0xff;
+   *(uint32_t*) ((uint32_t*)p + 4 ) = 0xff;
 #endif 
     p = LNEXT(p);
 #ifndef CONFIG_BENCH_CACHE_FLUSH_READ /*2*/
-    LNEXT(p + 10) = (void *) 0xff;
+   *(uint32_t*) ((uint32_t*)p + 4 ) = 0xff;
 #endif 
     p = LNEXT(p);
 #ifndef CONFIG_BENCH_CACHE_FLUSH_READ /*3*/
-    LNEXT(p + 10) = (void *) 0xff;
+   *(uint32_t*) ((uint32_t*)p + 4 ) = 0xff;
 #endif 
     p = LNEXT(p);
 
 #ifndef CONFIG_BENCH_CACHE_FLUSH_READ /*4*/
-    LNEXT(p + 10) = (void *) 0xff;
+   *(uint32_t*) ((uint32_t*)p + 4 ) = 0xff;
 #endif 
     p = LNEXT(p);
 
 #ifndef CONFIG_BENCH_CACHE_FLUSH_READ /*5*/
-    LNEXT(p + 10) = (void *) 0xff;
+   *(uint32_t*) ((uint32_t*)p + 4 ) = 0xff;
 #endif 
     p = LNEXT(p);
 
 #ifndef CONFIG_BENCH_CACHE_FLUSH_READ /*6*/
-    LNEXT(p + 10) = (void *) 0xff;
+   *(uint32_t*) ((uint32_t*)p + 4 ) = 0xff;
 #endif 
     p = LNEXT(p);
 
 #ifndef CONFIG_BENCH_CACHE_FLUSH_READ /*7*/
-    LNEXT(p + 10) = (void *) 0xff;
+   *(uint32_t*) ((uint32_t*)p + 4 ) = 0xff;
 #endif 
     p = LNEXT(p);
 
 #ifndef CONFIG_BENCH_CACHE_FLUSH_READ /*8*/
-    LNEXT(p + 10) = (void *) 0xff;
+   *(uint32_t*) ((uint32_t*)p + 4 ) = 0xff;
 #endif 
     p = LNEXT(p);
 
-#ifndef CONFIG_BENCH_CACHE_FLUSH_READ /*9*/
-    LNEXT(p + 10) = (void *) 0xff;
-#endif 
-    p = LNEXT(p);
-
-#ifndef CONFIG_BENCH_CACHE_FLUSH_READ /*10*/
-    LNEXT(p + 10) = (void *) 0xff;
-#endif 
-    p = LNEXT(p);
-
-#ifndef CONFIG_BENCH_CACHE_FLUSH_READ /*11*/
-    LNEXT(p + 10) = (void *) 0xff;
-#endif 
-    p = LNEXT(p);
-
-#ifndef CONFIG_BENCH_CACHE_FLUSH_READ /*12*/
-    LNEXT(p + 10) = (void *) 0xff;
-#endif 
-    p = LNEXT(p);
-
-#ifndef CONFIG_BENCH_CACHE_FLUSH_READ /*13*/
-    LNEXT(p + 10) = (void *) 0xff;
-#endif 
-    p = LNEXT(p);
-
-#ifndef CONFIG_BENCH_CACHE_FLUSH_READ /*14*/
-    LNEXT(p + 10) = (void *) 0xff;
-#endif 
-    p = LNEXT(p);
-
-#ifndef CONFIG_BENCH_CACHE_FLUSH_READ /*15*/
-    LNEXT(p + 10) = (void *) 0xff;
-#endif 
-    p = LNEXT(p);
-
-#ifndef CONFIG_BENCH_CACHE_FLUSH_READ /*16*/
-    LNEXT(p + 10) = (void *) 0xff;
-#endif 
-    p = LNEXT(p);
-
+    asm volatile("" ::"r"(p):"memory");
+    
     e = rdtscp(); 
 
     return e - s; 

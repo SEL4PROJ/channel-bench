@@ -16,6 +16,7 @@
 #include <autoconf.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <assert.h>
 #include <stdbool.h>
 #include <sys/mman.h>
 #include <sel4/sel4.h>
@@ -35,28 +36,10 @@
 #define SIZE (16*1024*1024)
 
 
-static volatile uint32_t flush_buf[65536] __attribute__((aligned (4096)));
-static volatile char user_flush[32768] __attribute__((aligned (4096)));
-
 static uint32_t probe_size = CONFIG_BENCH_FLUSH_START;
 static sel4bench_counter_t measure_overhead[OVERHEAD_RUNS];
 static volatile uint32_t readc, readt; 
-#ifdef CONFIG_ARCH_X86
-static uint16_t *l1_probe_result; 
-/*l1 data flush buffer*/
-static l1info_t l1_1, l1_2, l1_3;
-/*llc flush buffer*/ 
-static cachemap_t cm_1, cm_2, cm_3;
-/*llc flush probe link list*/
-static pp_t *pps_1; 
-static pp_t *pps_2; 
-static pp_t *pps_3; 
-/*llc flush overhead for probing on one cache set*/
 static uint32_t overhead_llc; 
-static int a; /*variabel used in map(), do not understand the purpose*/
-/*the probe buffer used by llc test, trying to test a user-level cache 
- flush*/
-uint32_t probe_buffer_1, probe_buffer_2, probe_buffer_3; 
 
 static inline int overhead_stable(sel4bench_counter_t *array) {
     for (int i = 1; i < OVERHEAD_RUNS; i++) {
@@ -82,10 +65,14 @@ static inline void overhead(void) {
             FENCE(); 
             for (int k = 0; k < WARMUPS; k++) { 
 
-                //start = sel4bench_get_cycle_count(); 
-               // end = sel4bench_get_cycle_count(); 
+#ifdef CONFIG_ARCH_ARM
+                start = sel4bench_get_cycle_count(); 
+                end = sel4bench_get_cycle_count(); 
+#endif
+#ifdef CONFIG_ARCH_X86
                 start = rdtscp(); 
                 end = rdtscp();
+#endif 
             }
             FENCE(); 
             measure_overhead[j] = end - start;
@@ -95,6 +82,49 @@ static inline void overhead(void) {
     }
 
 }
+
+/*send msg to the root task*/
+static inline void send_msg_to(seL4_CPtr endpoint, seL4_Word w) {
+
+    seL4_MessageInfo_t info = seL4_MessageInfo_new(seL4_NoFault, 0, 0, 1);
+
+    seL4_SetMR(0, w); 
+    seL4_Send(endpoint, info);
+}
+
+static inline seL4_CPtr wait_msg_from(seL4_CPtr endpoint)
+{
+    /* wait for a message */
+    seL4_Word badge;
+    seL4_MessageInfo_t info;
+
+    info = seL4_Recv(endpoint, &badge);
+
+    /* check the label and length*/
+    assert(seL4_MessageInfo_get_label(info) == seL4_NoFault);
+    assert(seL4_MessageInfo_get_length(info) == 1);
+
+    return (seL4_CPtr)seL4_GetMR(0);
+}
+
+#ifdef CONFIG_ARCH_X86
+
+static volatile uint32_t flush_buf[65536] __attribute__((aligned (4096)));
+static volatile char user_flush[32768] __attribute__((aligned (4096)));
+
+static uint16_t *l1_probe_result; 
+/*l1 data flush buffer*/
+static l1info_t l1_1, l1_2, l1_3;
+/*llc flush buffer*/ 
+static cachemap_t cm_1, cm_2, cm_3;
+/*llc flush probe link list*/
+static pp_t *pps_1; 
+static pp_t *pps_2; 
+static pp_t *pps_3; 
+static int a; /*variabel used in map(), do not understand the purpose*/
+/*the probe buffer used by llc test, trying to test a user-level cache 
+ flush*/
+uint32_t probe_buffer_1, probe_buffer_2, probe_buffer_3; 
 
 static inline void flush_buffer(void) {
 
@@ -403,7 +433,7 @@ seL4_Word bench_flush_llc(void *record) {
     return BENCH_SUCCESS;
 }
 
-seL4_Word bench_flush(void *record) {
+seL4_Word bench_flush(seL4_CPtr reply_ep, void *record) {
 
     /*recording the result at buffer, only return the result*/
     sel4bench_counter_t *r_buf = (sel4bench_counter_t*)record; 
@@ -472,8 +502,429 @@ seL4_Word bench_flush(void *record) {
 #endif 
 #ifdef CONFIG_ARCH_ARM 
 
-seL4_Word bench_flush(void *record) {
-    return 1;
+uint32_t *probe_buffer_1, *probe_buffer_2, *probe_buffer_3;
+
+static uint32_t *map_buffer(uint32_t size) {
+    printf("map_buf size  0x%x\n", size);
+    /*allocating buffer from huge page, mapped by manager*/
+    char *buf = (char *)mmap(NULL, 4 * size  + 4096 * 2, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANON, -1, 0);
+    if (buf == MAP_FAILED) {
+        perror("mmap");
+        exit(1);
+    }
+   
+  /*making the buffer page aligned*/
+  int buf_switch = (int) buf; 
+
+  buf_switch &= ~(0xfff); 
+  buf_switch += 0x1000; 
+  return  (uint32_t *) buf_switch; 
+
+}
+
+static inline void create_probe_list(uint32_t *probe_buffer, uint32_t size) {
+
+    /*creating a probing list that is generated in random order*/
+
+    uint32_t lines = 0, *current = probe_buffer, *next = NULL; 
+    uint32_t nlines = size / CONFIG_BENCH_CACHE_LINE_SIZE;
+    uint32_t buffer_lines = nlines; 
+    /*if the size is more than 32K, select from a large section*/
+   // if (size > 1 * 1024 * 1024) 
+     //   buffer_lines =  2 * nlines; 
+
+    int select;
+
+    printf("creating probe list size 0x%x lines %d  \n", size, nlines);
+
+    while (lines < nlines - 1) {
+
+        /*select a random line*/
+        select = random() % buffer_lines; 
+        next = (uint32_t *)((char*)probe_buffer + select * CONFIG_BENCH_CACHE_LINE_SIZE); 
+        /*no deadloop*/
+        if (next == current) 
+            continue; 
+        /*not connected yet*/
+        if (*next)
+            continue;
+
+        /*link the line, and continue*/
+        *current = (uint32_t)next; 
+        current = next;
+        lines++; 
+    }
+    /*the last line connect to the first line*/
+    *current = (uint32_t)probe_buffer;    
+
+}
+
+
+static void prepare_probe_buffer_arm(void) {
+
+   probe_buffer_1 = map_buffer(probe_size * 4);
+   probe_buffer_2 = map_buffer(probe_size * 4 * 2 ); 
+   probe_buffer_3 = map_buffer(probe_size * 4 * 4);
+
+   printf("probe_buffers %p, %p, %p\n", probe_buffer_1, probe_buffer_2, probe_buffer_3); 
+
+  /*generating the link list on the probing buffers*/
+  create_probe_list(probe_buffer_1, probe_size * 4); 
+  create_probe_list(probe_buffer_2, probe_size * 4 * 2); 
+  create_probe_list(probe_buffer_3, probe_size * 4 * 4);
+
+  
+}
+
+static sel4bench_counter_t walk_random_buffer_arm(uint32_t **list) {
+
+
+    /*starting from the buffer */
+    uint32_t volatile __attribute__((unused)) **p = list; 
+    sel4bench_counter_t s, e; 
+    
+    s = sel4bench_get_cycle_count(); 
+
+    do {
+
+#ifndef CONFIG_BENCH_CACHE_FLUSH_READ 
+      *(uint32_t*)((uint32_t)p + 8) =  0xff;
+#endif 
+      p = (uint32_t **)*p;
+#ifndef CONFIG_BENCH_CACHE_FLUSH_READ 
+      *(uint32_t*)((uint32_t)p + 8) =  0xff;
+#endif 
+        p = (uint32_t **)*p; 
+#ifndef CONFIG_BENCH_CACHE_FLUSH_READ 
+      *(uint32_t*)((uint32_t)p + 8) =  0xff;
+#endif 
+        p = (uint32_t **)*p; 
+#ifndef CONFIG_BENCH_CACHE_FLUSH_READ 
+      *(uint32_t*)((uint32_t)p + 8) =  0xff;
+#endif 
+        p = (uint32_t **)*p;    
+#ifndef CONFIG_BENCH_CACHE_FLUSH_READ 
+      *(uint32_t*)((uint32_t)p + 8) =  0xff;
+#endif 
+        p = (uint32_t **)*p; 
+#ifndef CONFIG_BENCH_CACHE_FLUSH_READ 
+      *(uint32_t*)((uint32_t)p + 8) =  0xff;
+#endif 
+        p = (uint32_t **)*p; 
+#ifndef CONFIG_BENCH_CACHE_FLUSH_READ 
+      *(uint32_t*)((uint32_t)p + 8) =  0xff;
+#endif 
+        p = (uint32_t **)*p; 
+#ifndef CONFIG_BENCH_CACHE_FLUSH_READ 
+      *(uint32_t*)((uint32_t)p + 8) =  0xff;
+#endif 
+        p = (uint32_t **)*p;           
+#ifndef CONFIG_BENCH_CACHE_FLUSH_READ 
+      *(uint32_t*)((uint32_t)p + 8) =  0xff;
+#endif 
+        p = (uint32_t **)*p; 
+#ifndef CONFIG_BENCH_CACHE_FLUSH_READ 
+      *(uint32_t*)((uint32_t)p + 8) =  0xff;
+#endif 
+        p = (uint32_t **)*p; 
+#ifndef CONFIG_BENCH_CACHE_FLUSH_READ 
+      *(uint32_t*)((uint32_t)p + 8) =  0xff;
+#endif 
+        p = (uint32_t **)*p; 
+#ifndef CONFIG_BENCH_CACHE_FLUSH_READ 
+      *(uint32_t*)((uint32_t)p + 8) =  0xff;
+#endif 
+        p = (uint32_t **)*p;    
+#ifndef CONFIG_BENCH_CACHE_FLUSH_READ 
+      *(uint32_t*)((uint32_t)p + 8) =  0xff;
+#endif 
+        p = (uint32_t **)*p; 
+#ifndef CONFIG_BENCH_CACHE_FLUSH_READ 
+      *(uint32_t*)((uint32_t)p + 8) =  0xff;
+#endif 
+        p = (uint32_t **)*p; 
+#ifndef CONFIG_BENCH_CACHE_FLUSH_READ 
+      *(uint32_t*)((uint32_t)p + 8) =  0xff;
+#endif 
+        p = (uint32_t **)*p; 
+#ifndef CONFIG_BENCH_CACHE_FLUSH_READ 
+      *(uint32_t*)((uint32_t)p + 8) =  0xff;
+#endif 
+        p = (uint32_t **)*p;      
+
+
+#ifndef CONFIG_BENCH_CACHE_FLUSH_READ 
+      *(uint32_t*)((uint32_t)p + 8) =  0xff;
+#endif 
+        p = (uint32_t **)*p; 
+#ifndef CONFIG_BENCH_CACHE_FLUSH_READ 
+      *(uint32_t*)((uint32_t)p + 8) =  0xff;
+#endif 
+        p = (uint32_t **)*p; 
+#ifndef CONFIG_BENCH_CACHE_FLUSH_READ 
+      *(uint32_t*)((uint32_t)p + 8) =  0xff;
+#endif 
+        p = (uint32_t **)*p; 
+#ifndef CONFIG_BENCH_CACHE_FLUSH_READ 
+      *(uint32_t*)((uint32_t)p + 8) =  0xff;
+#endif 
+        p = (uint32_t **)*p;    
+#ifndef CONFIG_BENCH_CACHE_FLUSH_READ 
+      *(uint32_t*)((uint32_t)p + 8) =  0xff;
+#endif 
+        p = (uint32_t **)*p; 
+#ifndef CONFIG_BENCH_CACHE_FLUSH_READ 
+      *(uint32_t*)((uint32_t)p + 8) =  0xff;
+#endif 
+        p = (uint32_t **)*p; 
+#ifndef CONFIG_BENCH_CACHE_FLUSH_READ 
+      *(uint32_t*)((uint32_t)p + 8) =  0xff;
+#endif 
+        p = (uint32_t **)*p; 
+#ifndef CONFIG_BENCH_CACHE_FLUSH_READ 
+      *(uint32_t*)((uint32_t)p + 8) =  0xff;
+#endif 
+        p = (uint32_t **)*p;           
+#ifndef CONFIG_BENCH_CACHE_FLUSH_READ 
+      *(uint32_t*)((uint32_t)p + 8) =  0xff;
+#endif 
+        p = (uint32_t **)*p; 
+#ifndef CONFIG_BENCH_CACHE_FLUSH_READ 
+      *(uint32_t*)((uint32_t)p + 8) =  0xff;
+#endif 
+        p = (uint32_t **)*p; 
+#ifndef CONFIG_BENCH_CACHE_FLUSH_READ 
+      *(uint32_t*)((uint32_t)p + 8) =  0xff;
+#endif 
+        p = (uint32_t **)*p; 
+#ifndef CONFIG_BENCH_CACHE_FLUSH_READ 
+      *(uint32_t*)((uint32_t)p + 8) =  0xff;
+#endif 
+        p = (uint32_t **)*p;    
+#ifndef CONFIG_BENCH_CACHE_FLUSH_READ 
+      *(uint32_t*)((uint32_t)p + 8) =  0xff;
+#endif 
+        p = (uint32_t **)*p; 
+#ifndef CONFIG_BENCH_CACHE_FLUSH_READ 
+      *(uint32_t*)((uint32_t)p + 8) =  0xff;
+#endif 
+        p = (uint32_t **)*p; 
+#ifndef CONFIG_BENCH_CACHE_FLUSH_READ 
+      *(uint32_t*)((uint32_t)p + 8) =  0xff;
+#endif 
+        p = (uint32_t **)*p; 
+#ifndef CONFIG_BENCH_CACHE_FLUSH_READ 
+      *(uint32_t*)((uint32_t)p + 8) =  0xff;
+#endif 
+        p = (uint32_t **)*p;      
+
+
+
+
+#ifndef CONFIG_BENCH_CACHE_FLUSH_READ 
+      *(uint32_t*)((uint32_t)p + 8) =  0xff;
+#endif 
+        p = (uint32_t **)*p; 
+#ifndef CONFIG_BENCH_CACHE_FLUSH_READ 
+      *(uint32_t*)((uint32_t)p + 8) =  0xff;
+#endif 
+        p = (uint32_t **)*p; 
+#ifndef CONFIG_BENCH_CACHE_FLUSH_READ 
+      *(uint32_t*)((uint32_t)p + 8) =  0xff;
+#endif 
+        p = (uint32_t **)*p; 
+#ifndef CONFIG_BENCH_CACHE_FLUSH_READ 
+      *(uint32_t*)((uint32_t)p + 8) =  0xff;
+#endif 
+        p = (uint32_t **)*p;    
+#ifndef CONFIG_BENCH_CACHE_FLUSH_READ 
+      *(uint32_t*)((uint32_t)p + 8) =  0xff;
+#endif 
+        p = (uint32_t **)*p; 
+#ifndef CONFIG_BENCH_CACHE_FLUSH_READ 
+      *(uint32_t*)((uint32_t)p + 8) =  0xff;
+#endif 
+        p = (uint32_t **)*p; 
+#ifndef CONFIG_BENCH_CACHE_FLUSH_READ 
+      *(uint32_t*)((uint32_t)p + 8) =  0xff;
+#endif 
+        p = (uint32_t **)*p; 
+#ifndef CONFIG_BENCH_CACHE_FLUSH_READ 
+      *(uint32_t*)((uint32_t)p + 8) =  0xff;
+#endif 
+        p = (uint32_t **)*p;           
+#ifndef CONFIG_BENCH_CACHE_FLUSH_READ 
+      *(uint32_t*)((uint32_t)p + 8) =  0xff;
+#endif 
+        p = (uint32_t **)*p; 
+#ifndef CONFIG_BENCH_CACHE_FLUSH_READ 
+      *(uint32_t*)((uint32_t)p + 8) =  0xff;
+#endif 
+        p = (uint32_t **)*p; 
+#ifndef CONFIG_BENCH_CACHE_FLUSH_READ 
+      *(uint32_t*)((uint32_t)p + 8) =  0xff;
+#endif 
+        p = (uint32_t **)*p; 
+#ifndef CONFIG_BENCH_CACHE_FLUSH_READ 
+      *(uint32_t*)((uint32_t)p + 8) =  0xff;
+#endif 
+        p = (uint32_t **)*p;    
+#ifndef CONFIG_BENCH_CACHE_FLUSH_READ 
+      *(uint32_t*)((uint32_t)p + 8) =  0xff;
+#endif 
+        p = (uint32_t **)*p; 
+#ifndef CONFIG_BENCH_CACHE_FLUSH_READ 
+      *(uint32_t*)((uint32_t)p + 8) =  0xff;
+#endif 
+        p = (uint32_t **)*p; 
+#ifndef CONFIG_BENCH_CACHE_FLUSH_READ 
+      *(uint32_t*)((uint32_t)p + 8) =  0xff;
+#endif 
+        p = (uint32_t **)*p; 
+#ifndef CONFIG_BENCH_CACHE_FLUSH_READ 
+      *(uint32_t*)((uint32_t)p + 8) =  0xff;
+#endif 
+        p = (uint32_t **)*p;      
+
+
+
+
+#ifndef CONFIG_BENCH_CACHE_FLUSH_READ 
+      *(uint32_t*)((uint32_t)p + 8) =  0xff;
+#endif 
+        p = (uint32_t **)*p; 
+#ifndef CONFIG_BENCH_CACHE_FLUSH_READ 
+      *(uint32_t*)((uint32_t)p + 8) =  0xff;
+#endif 
+        p = (uint32_t **)*p; 
+#ifndef CONFIG_BENCH_CACHE_FLUSH_READ 
+      *(uint32_t*)((uint32_t)p + 8) =  0xff;
+#endif 
+        p = (uint32_t **)*p; 
+#ifndef CONFIG_BENCH_CACHE_FLUSH_READ 
+      *(uint32_t*)((uint32_t)p + 8) =  0xff;
+#endif 
+        p = (uint32_t **)*p;    
+#ifndef CONFIG_BENCH_CACHE_FLUSH_READ 
+      *(uint32_t*)((uint32_t)p + 8) =  0xff;
+#endif 
+        p = (uint32_t **)*p; 
+#ifndef CONFIG_BENCH_CACHE_FLUSH_READ 
+      *(uint32_t*)((uint32_t)p + 8) =  0xff;
+#endif 
+        p = (uint32_t **)*p; 
+#ifndef CONFIG_BENCH_CACHE_FLUSH_READ 
+      *(uint32_t*)((uint32_t)p + 8) =  0xff;
+#endif 
+        p = (uint32_t **)*p; 
+#ifndef CONFIG_BENCH_CACHE_FLUSH_READ 
+      *(uint32_t*)((uint32_t)p + 8) =  0xff;
+#endif 
+        p = (uint32_t **)*p;           
+#ifndef CONFIG_BENCH_CACHE_FLUSH_READ 
+      *(uint32_t*)((uint32_t)p + 8) =  0xff;
+#endif 
+        p = (uint32_t **)*p; 
+#ifndef CONFIG_BENCH_CACHE_FLUSH_READ 
+      *(uint32_t*)((uint32_t)p + 8) =  0xff;
+#endif 
+        p = (uint32_t **)*p; 
+#ifndef CONFIG_BENCH_CACHE_FLUSH_READ 
+      *(uint32_t*)((uint32_t)p + 8) =  0xff;
+#endif 
+        p = (uint32_t **)*p; 
+#ifndef CONFIG_BENCH_CACHE_FLUSH_READ 
+      *(uint32_t*)((uint32_t)p + 8) =  0xff;
+#endif 
+        p = (uint32_t **)*p;    
+#ifndef CONFIG_BENCH_CACHE_FLUSH_READ 
+      *(uint32_t*)((uint32_t)p + 8) =  0xff;
+#endif 
+        p = (uint32_t **)*p; 
+#ifndef CONFIG_BENCH_CACHE_FLUSH_READ 
+      *(uint32_t*)((uint32_t)p + 8) =  0xff;
+#endif 
+        p = (uint32_t **)*p; 
+#ifndef CONFIG_BENCH_CACHE_FLUSH_READ 
+      *(uint32_t*)((uint32_t)p + 8) =  0xff;
+#endif 
+        p = (uint32_t **)*p; 
+#ifndef CONFIG_BENCH_CACHE_FLUSH_READ 
+      *(uint32_t*)((uint32_t)p + 8) =  0xff;
+#endif 
+        p = (uint32_t **)*p;      
+
+        asm volatile("" ::"r"(p):"memory");
+    } while (p != list); 
+
+    e = sel4bench_get_cycle_count(); 
+    return e - s - overhead_llc; 
+}
+
+
+seL4_Word bench_flush(seL4_CPtr result_ep, void *record) {
+
+    /*recording the result at buffer, only return the result*/
+    sel4bench_counter_t *r_buf = (sel4bench_counter_t*)record; 
+    uint32_t n_flush = 0, n_runs = CONFIG_BENCH_FLUSH_RUNS + WARMUPS;
+
+    /*measure the overhead of read timestamp*/
+    overhead();
+
+    prepare_probe_buffer_arm(); 
+    /*sending msg manager, doing a cache flush on probe buffers*/
+    send_msg_to(result_ep, 0); 
+    wait_msg_from(result_ep);
+ 
+   
+    while (probe_size <= CONFIG_BENCH_CACHE_BUFFER) {
+
+        FENCE();
+            /*using seL4 yield to jump into kernel
+              seL4 will do the cache flush. according to the configured type
+              because the L1 cache is small, only jumping into the kernel may be
+              enough to pollute the cache*/
+        
+            while (n_flush++ < n_runs) {
+
+//#ifndef CONFIG_BENCH_MANAGER_FLUSH_NONE 
+            /*using seL4 yield to jump into kernel
+              seL4 will do the cache flush. according to the configured type
+              because the L1 cache is small, only jumping into the kernel may be
+              enough to pollute the cache*/
+            seL4_Yield();
+//#endif
+            /*walk the random buffer created for sabre platform*/
+
+            if (probe_size == CONFIG_BENCH_FLUSH_START) {
+                *r_buf = walk_random_buffer_arm(probe_buffer_1);
+            }
+            else if (probe_size == CONFIG_BENCH_FLUSH_START * 2) {
+                *r_buf = walk_random_buffer_arm(probe_buffer_2);
+            } else {
+                *r_buf = walk_random_buffer_arm(probe_buffer_2);
+                *r_buf += walk_random_buffer_arm(probe_buffer_3);
+            }
+
+            r_buf++;
+
+        }
+
+        FENCE();
+        n_flush = 0;
+        probe_size *= 2;
+    }
+
+    /*report the overhead of measure timestamp*/
+    for (int i = 0; i < OVERHEAD_RUNS; i++) {
+        *r_buf = measure_overhead[i];
+        r_buf++;
+    }
+    return BENCH_SUCCESS;
+
+
+
+
 }
 #endif 
 

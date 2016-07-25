@@ -135,7 +135,9 @@ void run_bench_single (char **argv) {
     record_vaddr = wait_vaddr_from(endpoint); 
     assert(record_vaddr != NULL); 
     
-    //printf("side-bench record vaddr: %p\n", record_vaddr);
+#ifdef CONFIG_DEBUG_BUILD
+    printf("side-bench starting, record vaddr: %p\n", record_vaddr);
+#endif 
 
 #ifdef CONFIG_BENCH_DCACHE_ATTACK 
     crypto_init(); 
@@ -150,15 +152,16 @@ void run_bench_single (char **argv) {
 #ifdef CONFIG_BENCH_CACHE_FLUSH 
 
     /*init the more core space 64M to be used as the probe buffer*/
-    if (CONFIG_BENCH_CACHE_BUFFER  > 64 * 1024)  { 
-        morecore_area = wait_vaddr_from(endpoint); 
-        assert(morecore_area != NULL); 
-        morecore_size = 16 * 6 * 1024 * 1024; 
-        printf("more core area in side bench %p \n", morecore_area);
-    }
+    morecore_area = wait_vaddr_from(endpoint); 
+    assert(morecore_area != NULL); 
+    morecore_size = 16 * 6 * 1024 * 1024; 
+
+#ifdef CONFIG_DEBUG_BUILD
+    printf("more core area in side bench %p \n", morecore_area);
+#endif
 
     /*measuring the cost of flushing caches*/
-    result = bench_flush(record_vaddr); 
+    result = bench_flush(endpoint, record_vaddr); 
     /*return result to root task*/
     send_result_to(endpoint, result); 
 

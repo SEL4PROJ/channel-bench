@@ -26,7 +26,7 @@ void crypto_aes_en(uint8_t *in, uint8_t *out);
 /*L1 data cache prime + probe attack */
 seL4_Word dcache_attack(void *record_vaddr); 
 /*cache flushing benchmark*/
-seL4_Word bench_flush(void *record_vaddr);
+seL4_Word bench_flush(seL4_CPtr result_ep, void *record_vaddr);
 /*ipc benchmark*/ 
 seL4_Word ipc_bench(seL4_CPtr result_ep, seL4_CPtr test_ep, int test_n,
         void *record_vaddr);
