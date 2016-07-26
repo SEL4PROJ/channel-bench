@@ -40,45 +40,14 @@ uint32_t pp_probe_flush(pp_t pp) {
     uint32_t s, e; 
     
     s = rdtscp();
-#ifndef CONFIG_BENCH_CACHE_FLUSH_READ /*1*/
-   *(uint32_t*) ((uint32_t*)p + 4 ) = 0xff;
+    do {
+  
+#ifndef CONFIG_BENCH_CACHE_FLUSH_READ 
+        *(uint32_t*) ((uint32_t*)p + 4 ) = 0xff;
 #endif 
-    p = LNEXT(p);
-#ifndef CONFIG_BENCH_CACHE_FLUSH_READ /*2*/
-   *(uint32_t*) ((uint32_t*)p + 4 ) = 0xff;
-#endif 
-    p = LNEXT(p);
-#ifndef CONFIG_BENCH_CACHE_FLUSH_READ /*3*/
-   *(uint32_t*) ((uint32_t*)p + 4 ) = 0xff;
-#endif 
-    p = LNEXT(p);
-
-#ifndef CONFIG_BENCH_CACHE_FLUSH_READ /*4*/
-   *(uint32_t*) ((uint32_t*)p + 4 ) = 0xff;
-#endif 
-    p = LNEXT(p);
-
-#ifndef CONFIG_BENCH_CACHE_FLUSH_READ /*5*/
-   *(uint32_t*) ((uint32_t*)p + 4 ) = 0xff;
-#endif 
-    p = LNEXT(p);
-
-#ifndef CONFIG_BENCH_CACHE_FLUSH_READ /*6*/
-   *(uint32_t*) ((uint32_t*)p + 4 ) = 0xff;
-#endif 
-    p = LNEXT(p);
-
-#ifndef CONFIG_BENCH_CACHE_FLUSH_READ /*7*/
-   *(uint32_t*) ((uint32_t*)p + 4 ) = 0xff;
-#endif 
-    p = LNEXT(p);
-
-#ifndef CONFIG_BENCH_CACHE_FLUSH_READ /*8*/
-   *(uint32_t*) ((uint32_t*)p + 4 ) = 0xff;
-#endif 
-    p = LNEXT(p);
-
-    asm volatile("" ::"r"(p):"memory");
+        p = LNEXT(p);
+        asm volatile("" ::"r"(p):"memory");
+   } while (p != (void *) pp);
     
     e = rdtscp(); 
 

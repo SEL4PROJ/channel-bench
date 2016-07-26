@@ -7,6 +7,7 @@ l1info_t l1_prepare(uint64_t monitored_sets);
 void l1_set_monitored_set(l1info_t l1, uint64_t monitored_sets);
 void l1_randomise(l1info_t l1);
 int l1_probe(l1info_t l1, uint16_t *results);
+int l1_probe_clflush(l1info_t l1, uint16_t *results);
 void l1_bprobe(l1info_t l1, uint16_t *results);
 
 void *l1_prime(l1info_t l1);

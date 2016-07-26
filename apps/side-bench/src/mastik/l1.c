@@ -22,9 +22,29 @@ static int probelist_flush(void *pp, int segments, int seglen, uint16_t *results
       // We need this test to ensure the optimiser does not kill the whole loop...
       if (p == NULL)
 	break;
-#ifndef CONFIG_BENCH_CACHE_FLUSH_READ
-      LNEXT(p + 10) = (void *) 0xff;
+#ifndef CONFIG_BENCH_CACHE_FLUSH_READ 
+        *(uint32_t*) ((uint32_t*)p + 4 ) = 0xff;
 #endif 
+        p = LNEXT(p);
+    }
+   }
+  uint32_t res = rdtscp() - s;
+  *results = res > UINT16_MAX ? UINT16_MAX : res;
+  
+  return p == pp;
+}
+
+static int probelist_clflush(void *pp, int segments, int seglen, uint16_t *results) {
+  void *p = pp;
+  
+  uint32_t s = rdtscp();
+  while (segments--) {
+    for (int i = seglen; i--; ) {
+      // Under normal circumstances, p is never NULL. 
+      // We need this test to ensure the optimiser does not kill the whole loop...
+      if (p == NULL)
+	break;
+      clflush(p);  
       p = LNEXT(p);
     }
    }
@@ -116,6 +136,10 @@ int l1_probe(l1info_t l1, uint16_t *results) {
 #else
   return probelist(l1->fwdlist, l1->nsets, L1_ASSOCIATIVITY, results);
 #endif 
+}
+
+int l1_probe_clflush(l1info_t l1, uint16_t *results) {
+  return probelist_clflush(l1->fwdlist, l1->nsets, L1_ASSOCIATIVITY, results);
 }
 
 void l1_bprobe(l1info_t l1, uint16_t *results) {

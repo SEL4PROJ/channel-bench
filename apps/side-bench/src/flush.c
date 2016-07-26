@@ -109,9 +109,6 @@ static inline seL4_CPtr wait_msg_from(seL4_CPtr endpoint)
 
 #ifdef CONFIG_ARCH_X86
 
-static volatile uint32_t flush_buf[65536] __attribute__((aligned (4096)));
-static volatile char user_flush[32768] __attribute__((aligned (4096)));
-
 static uint16_t *l1_probe_result; 
 /*l1 data flush buffer*/
 static l1info_t l1_1, l1_2, l1_3;
@@ -125,15 +122,6 @@ static int a; /*variabel used in map(), do not understand the purpose*/
 /*the probe buffer used by llc test, trying to test a user-level cache 
  flush*/
 uint32_t probe_buffer_1, probe_buffer_2, probe_buffer_3; 
-
-static inline void flush_buffer(void) {
-
-    for (int i = 0; i < 32768; i+= 64)  {
-        readc =  user_flush[i];
-        asm volatile("" ::"r"(readc):"memory");
-    }
-
-}
 
 static inline void flush_buffer_llc (void) { 
 
@@ -150,43 +138,7 @@ static inline void flush_buffer_llc (void) {
            
 }
 
-static inline void prepare_buffer_sequential(void) {
 
-    for (int i = 0; i < probe_size; i+= CONFIG_BENCH_FLUSH_STEPPING ) {
-        flush_buf[i] = i; 
-    }
-
-}
-
-static inline void prepare_buffer(void) {
-
-
-    for (int i = 0; i < probe_size; i+= CONFIG_BENCH_FLUSH_STEPPING ) {
-        flush_buf[i] = i; 
-    }
-    for (int i = 0; i < probe_size; i+= CONFIG_BENCH_FLUSH_STEPPING) {
-        
-        int temp = random() % (probe_size - i) + i ;
-        temp = temp / CONFIG_BENCH_FLUSH_STEPPING * CONFIG_BENCH_FLUSH_STEPPING;
-
-        int temp_buf = flush_buf[temp]; 
-        flush_buf[temp] = i; 
-        flush_buf[i] = temp_buf; 
-    }
-}
-
-static inline void prepare_probe_buffer(void) {
-
-    l1_1 = l1_prepare(~0LLU);
-    l1_2 = l1_prepare(~0LLU);
-    l1_3 = l1_prepare(~0LLU);
-
-    l1_probe_result = malloc(l1_nsets(l1_2)*sizeof(uint16_t));
-    assert(l1_probe_result != NULL);  
-    /*using only half of the L1 for the L1_1*/
-    l1_set_monitored_set(l1_1, 0xffffffffLLU);
-
-}
 
 static cachemap_t map(uint32_t *probe_buf) {
   for (int i = 0; i < 1024*1024; i++)
@@ -269,36 +221,6 @@ static inline void prepare_probe_buffer_llc(void) {
         }
     }
 }
-# if 0
-
-static inline void prepare_random_buffer_llc(void) {
-
- char *buf = (char *)mmap(NULL, 8 * 1024 * 1024 + 4096 * 2, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANON, -1, 0);
-  if (buf == MAP_FAILED) {
-    perror("mmap");
-    exit(1);
-  }
-   
-  /*making the buffer page aligned*/
-  int buf_switch = (int) buf; 
-
-  buf_switch &= ~(0xfff); 
-  buf_switch += 0x1000; 
-  buf = (char *) buf_switch; 
-
-  printf("buf_switch in prepare random buffer llc 0x%x\n", buf_switch); 
-
-  for (int i = 0; i < 8 * 1024 * 1024; i += 64) 
-      *(uint32 *)(buf + i ) = (uint32_t *)(buf + i + 64);
-
-  /*the last one point to the head*/
-  *(uint32_t *)(buf + 8 * 1024 * 1024 - 64) = (uint32_t *)buf;
-
-
-  /*randomise the list except the last one*/
-}
-
-#endif
 
 static inline sel4bench_counter_t walk_probe_buffer_llc (pp_t *probe_list, 
         cachemap_t cm, bool half) { 
@@ -322,52 +244,6 @@ static inline sel4bench_counter_t walk_probe_buffer_llc (pp_t *probe_list,
 
 }
 
-static inline sel4bench_counter_t walk_probe_buffer(l1info_t p_buf) {
-
-
-    l1_probe(p_buf, l1_probe_result); 
-
-    return l1_probe_result[0];
-}
-
-static inline sel4bench_counter_t walk_buffer(void) {
-
-    sel4bench_counter_t start, end; 
-    uint32_t lines = 0; 
-    readc = 0; 
-
-    FENCE();
-
-    start = sel4bench_get_cycle_count(); 
-
-#if 0
-
-    for (int i = 0; i < probe_size; i += CONFIG_BENCH_FLUSH_STEPPING)
-    {
-
-
-        readc = flush_buf[i];
-        asm volatile("" ::"r"(readc):"memory");
-    }
-#endif 
-#if 1
-    while (lines < probe_size / CONFIG_BENCH_FLUSH_STEPPING) {
-
-
-#ifndef CONFIG_BENCH_CACHE_FLUSH_READ 
- 
-        flush_buf[readc + 1] ^= 0xff;  
-#endif
-        readc = flush_buf[readc];
-        
-        lines++;
-    }
-#endif 
-    end = sel4bench_get_cycle_count(); 
-    FENCE();
-
-    return end - start;
-}
 
 
 
@@ -400,10 +276,8 @@ seL4_Word bench_flush_llc(void *record) {
              enough to pollute the cache*/
             seL4_Yield();
 #endif
-            /*trying to flush it at user-level 
-             to verify the cost of doing a LLC flush*/
-            // flush_buffer_llc();
 
+       
 
             /*walk the probe buffer*/
             if (probe_size == CONFIG_BENCH_FLUSH_START) {
@@ -415,7 +289,6 @@ seL4_Word bench_flush_llc(void *record) {
                 *r_buf = walk_probe_buffer_llc(pps_2, cm_2, false);
                 *r_buf += walk_probe_buffer_llc(pps_3, cm_3, false);
             }
-
             r_buf++;
 
         }
@@ -433,6 +306,33 @@ seL4_Word bench_flush_llc(void *record) {
     return BENCH_SUCCESS;
 }
 
+static inline sel4bench_counter_t walk_probe_buffer(l1info_t p_buf) {
+
+
+    l1_probe(p_buf, l1_probe_result); 
+
+    return l1_probe_result[0] - overhead_llc;
+}
+
+static inline void prepare_probe_buffer(void) {
+
+    l1_1 = l1_prepare(~0LLU);
+    l1_2 = l1_prepare(~0LLU);
+    l1_3 = l1_prepare(~0LLU);
+
+    l1_probe_result = malloc(l1_nsets(l1_2)*sizeof(uint16_t));
+    assert(l1_probe_result != NULL);  
+    /*using only half of the L1 for the L1_1*/
+    l1_set_monitored_set(l1_1, 0xffffffffLLU);
+
+
+    /*flush the buffer from caches, resetting the cache line states */
+    l1_probe_clflush(l1_1, l1_probe_result); 
+    l1_probe_clflush(l1_2, l1_probe_result); 
+    l1_probe_clflush(l1_3, l1_probe_result); 
+
+}
+
 seL4_Word bench_flush(seL4_CPtr reply_ep, void *record) {
 
     /*recording the result at buffer, only return the result*/
@@ -440,20 +340,17 @@ seL4_Word bench_flush(seL4_CPtr reply_ep, void *record) {
     uint32_t n_flush = 0, n_runs = CONFIG_BENCH_FLUSH_RUNS + WARMUPS;
 
     /*using a sperate function for testing the LLC buffer*/
-   if (CONFIG_BENCH_CACHE_BUFFER > 64 * 1024) 
+   if (CONFIG_BENCH_CACHE_BUFFER * 4  > 64 * 1024) 
        return bench_flush_llc(record); 
 
     /*measure the overhead of read timestamp*/
     overhead();
 
-    prepare_probe_buffer(); 
+    prepare_probe_buffer();
+
 
     while (probe_size <= CONFIG_BENCH_CACHE_BUFFER) {
 
-        /*prepare the buffer, randomise it*/
-        //prepare_buffer();
-        /*prepare buffer sequential*/
-        //prepare_buffer_sequential();
         FENCE();
 
         while (n_flush++ < n_runs) {
@@ -465,10 +362,6 @@ seL4_Word bench_flush(seL4_CPtr reply_ep, void *record) {
              enough to pollute the cache*/
             seL4_Yield();
 #endif
-           // flush_buffer();
-
-            /*walk the sequential buffer*/
-            //*r_buf = walk_buffer(); 
             /*walk the probe buffer*/
             if (probe_size == CONFIG_BENCH_FLUSH_START) {
                 *r_buf = walk_probe_buffer(l1_1);
@@ -587,6 +480,7 @@ static sel4bench_counter_t walk_random_buffer_arm(uint32_t **list) {
 
     do {
 
+        /*unwrap the loop to mitigate the branch prediction cost*/
 #ifndef CONFIG_BENCH_CACHE_FLUSH_READ 
       *(uint32_t*)((uint32_t)p + 8) =  0xff;
 #endif 
@@ -887,13 +781,13 @@ seL4_Word bench_flush(seL4_CPtr result_ep, void *record) {
         
             while (n_flush++ < n_runs) {
 
-//#ifndef CONFIG_BENCH_MANAGER_FLUSH_NONE 
+#ifndef CONFIG_BENCH_MANAGER_FLUSH_NONE 
             /*using seL4 yield to jump into kernel
               seL4 will do the cache flush. according to the configured type
               because the L1 cache is small, only jumping into the kernel may be
               enough to pollute the cache*/
             seL4_Yield();
-//#endif
+#endif
             /*walk the random buffer created for sabre platform*/
 
             if (probe_size == CONFIG_BENCH_FLUSH_START) {
