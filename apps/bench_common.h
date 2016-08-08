@@ -354,7 +354,9 @@ typedef struct bench_covert {
 #endif 
 
 #define NUM_KERNEL_SCHEDULE_DATA (CONFIG_BENCH_DATA_POINTS)
-#define SYSTEM_TICK_SYN_FLAG   0x123456
+#define SYSTEM_TICK_SYN_FLAG   0xffff
+#define SPY_SYN_FLAG           0x87654321
+#define TROJAN_SYN_FLAG        0x12345678
 
 
 /*one system tick is 1ms, 3400000 cycles, 3.4GHZ sandybridge machine*/
@@ -378,7 +380,7 @@ struct bench_l1 {
     uint32_t volatile sec[CONFIG_BENCH_DATA_POINTS];
 };
 
-
+#ifdef CONFIG_ARCH_X86
 static inline uint64_t rdtscp_64(void) {
     uint32_t low, high;
 
@@ -393,7 +395,7 @@ static inline uint64_t rdtscp_64(void) {
     return ((uint64_t) high) << 32llu | (uint64_t) low;
 }
 
-
+#endif
 
 
 /*sandy bridge machine frequency 3.4GHZ*/

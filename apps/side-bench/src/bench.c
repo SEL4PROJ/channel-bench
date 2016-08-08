@@ -31,8 +31,10 @@
 #include "bench.h"
 
 bench_covert_t covert_env; 
+#ifdef CONFIG_BENCH_CACHE_FLUSH
 extern char *morecore_area;
 extern size_t morecore_size;
+#endif 
 static int (*covert_bench_fun[BENCH_COVERT_FUNS])(bench_covert_t *) = {NULL, 
     NULL, NULL,  
     NULL, NULL, 

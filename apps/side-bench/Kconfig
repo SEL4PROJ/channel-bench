@@ -146,6 +146,13 @@ menu   "Timing Channel Benchmarks"
       depends on BENCH_COVERT_SINGLE 
       help
            number of data points collected, used by both high and low
+      
+      config BENCH_DATA_SEQUENTIAL
+      bool "sending the secret in sequential order"
+      default n
+      depends on BENCH_COVERT_SINGLE 
+      help
+           the trojan probe the secret in sequential order
 
       config MASTIK_ATTACK
       bool "multicore cache-based timing attack"

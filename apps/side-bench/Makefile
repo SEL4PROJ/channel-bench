@@ -18,12 +18,22 @@ LDFLAGS += -u __vsyscall_ptr
 # Source files required to build the target     
 ASMFILES :=  $(patsubst $(SOURCE_DIR)/%,%,$(wildcard $(SOURCE_DIR)/src/*.S))
 
+ifdef CONFIG_ARCH_ARM 
+ASMFILES += $(patsubst $(SOURCE_DIR)/%,%,$(wildcard $(SOURCE_DIR)/src/mastik_arm/*.S))
+endif
+ifdef CONFIG_ARCH_X86
+ASMFILES += $(patsubst $(SOURCE_DIR)/%,%,$(wildcard $(SOURCE_DIR)/src/mastik/*.S))
+endif
+
 CFILES :=  $(patsubst $(SOURCE_DIR)/%,%,$(wildcard $(SOURCE_DIR)/src/*.c))
 ifdef CONFIG_ARCH_X86
 CFILES +=  $(patsubst $(SOURCE_DIR)/%,%,$(wildcard $(SOURCE_DIR)/src/aes/*.c))
 CFILES +=  $(patsubst $(SOURCE_DIR)/%,%,$(wildcard $(SOURCE_DIR)/src/mastik/*.c))
 CFILES +=  $(patsubst $(SOURCE_DIR)/%,%,$(wildcard $(SOURCE_DIR)/src/MPI/*.c))
 endif
+ifdef CONFIG_ARCH_ARM 
+CFILES +=  $(patsubst $(SOURCE_DIR)/%,%,$(wildcard $(SOURCE_DIR)/src/mastik_arm/*.c))
+endif 
 #CFILES +=  $(patsubst $(SOURCE_DIR)/%,%,$(wildcard $(SOURCE_DIR)/src/capacity/*.c))
 
 

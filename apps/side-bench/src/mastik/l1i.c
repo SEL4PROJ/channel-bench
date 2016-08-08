@@ -12,7 +12,9 @@
 #define RET_OPCODE 0xC3
 
 #define SET(page, set) (((uint8_t *)l1->memory) + PAGE_SIZE * (page) + L1I_CACHELINE * (set))
+extern void nop_spy(void);
 
+uint32_t l1i_probe_nop_time;
 l1iinfo_t l1i_prepare(uint64_t monitored_sets) {
   static uint8_t jmp[] = { JMP_OPCODE, 
     				JMP_OFFSET & 0xff, 
@@ -65,6 +67,19 @@ void l1i_randomise(l1iinfo_t l1) {
 }
 
 typedef void (*fptr)(void);
+void l1i_probe_1(l1iinfo_t l1, uint16_t *results) {
+  for (int i = 0; i < l1->nsets; i++) {
+    uint32_t start = rdtscp();
+    // Using assembly because I am not sure I can trust the compiler
+    //asm volatile ("callq %0": : "r" (SET(0, l1->monitored[i])):);
+
+    /*for the total number of monitored cache sets 
+     do a probe, monitored contains the cache set number*/
+    (*((fptr)SET(0, l1->monitored[i])))();
+    uint32_t res = rdtscp() - start;
+    results[i] = res > UINT16_MAX ? UINT16_MAX : res;
+  }
+}
 void l1i_probe(l1iinfo_t l1, uint16_t *results) {
   for (int i = 0; i < l1->nsets; i++) {
     uint32_t start = rdtscp();
@@ -77,4 +92,16 @@ void l1i_probe(l1iinfo_t l1, uint16_t *results) {
     uint32_t res = rdtscp() - start;
     results[i] = res > UINT16_MAX ? UINT16_MAX : res;
   }
+}
+
+uint32_t l1i_probe_nop(void) {
+//    uint32_t start = rdtscp();
+    // Using assembly because I am not sure I can trust the compiler
+    //asm volatile ("callq %0": : "r" (SET(0, l1->monitored[i])):);
+
+    /*for the total number of monitored cache sets 
+     do a probe, monitored contains the cache set number*/
+    asm volatile ("call nop_spy;"::: "eax", "ebx", "ecx", "edx");
+    return l1i_probe_nop_time;
+   //return rdtscp() - start;
 }

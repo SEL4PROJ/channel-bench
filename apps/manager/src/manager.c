@@ -44,11 +44,13 @@
 /*system resources*/
 static m_env_t env; 
 
+#ifdef CONFIG_MANAGER_CACHE_FLUSH  
+/*use to create huge mappings and given to cache flush benchmark*/
 extern char *morecore_area;
 extern size_t morecore_size;
 
 char manager_morecore_area[MANAGER_MORECORE_SIZE]; 
-
+#endif
 /* dimensions of virtual memory for the allocator to use */
 #define ALLOCATOR_VIRTUAL_POOL_SIZE ((1 << seL4_PageBits) * 4096)
 
@@ -507,23 +509,21 @@ static void create_kernel_pd(seL4_BootInfo *info, m_env_t *env) {
 
 int main (void) {
 
+    
     seL4_BootInfo *info = seL4_GetBootInfo(); 
+    int err;
 
+#ifdef CONFIG_MANAGER_CACHE_FLUSH 
     /*init the more core area for the libc to use*/
     morecore_area = manager_morecore_area; 
     morecore_size = MANAGER_MORECORE_SIZE; 
+#endif 
 
 #ifdef CONFIG_KERNEL_STABLE 
     simple_stable_init_bootinfo(&env.simple, info); 
 #else 
     simple_default_init_bootinfo(&env.simple, info); 
 #endif
-    
-    /*enable serial driver*/
-    platsupport_serial_setup_simple(NULL, &env.simple, &env.vka); 
-
-    printf("manager app start\n");
-
 
 #ifdef CONFIG_CACHE_COLOURING
     /*allocator, vka, and vspace*/
@@ -532,7 +532,11 @@ int main (void) {
     init_env(&env); 
 #endif
 
-    
+    /*enable serial driver*/
+    err = platsupport_serial_setup_simple(NULL, &env.simple, &env.vka); 
+    assert(err == 0);
+
+
 #ifdef CONFIG_CACHE_COLOURING
     create_kernel_pd(info, &env); 
 #endif

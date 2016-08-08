@@ -498,10 +498,19 @@ void covert_sleep(unsigned int sec) {
     unsigned long long cur, tar; 
 
     /*a self implmeneted sleep function*/
-    cur = rdtscp_64(); 
+#ifdef CONFIG_ARCH_X86
+    cur = rdtscp_64();
+#else 
+    cur = sel4bench_get_cycle_count(); 
+#endif 
     tar = cur + s_tick; 
-    while (cur < tar) 
-        cur = rdtscp_64(); 
+    while (cur < tar) {
+#ifdef CONFIG_ARCH_X86
+        cur = rdtscp_64();
+#else 
+        cur = sel4bench_get_cycle_count(); 
+#endif 
+    }
 
 }
 int run_multi(m_env_t *env) {
@@ -592,11 +601,13 @@ void init_multi(m_env_t *env) {
     /*never return*/
     seL4_Recv(syn_ep.cptr, NULL); 
 }
+#ifdef CONFIG_ARCH_X86
 static inline uint32_t rdtscp() {
   uint32_t rv;
   asm volatile ("rdtscp": "=a" (rv) :: "edx", "ecx");
   return rv;
 }
+#endif 
 /*entry point of covert channel benchmark*/
 void launch_bench_covert (m_env_t *env) {
 
@@ -621,21 +632,32 @@ void launch_bench_covert (m_env_t *env) {
 #ifdef CONFIG_COVERT_TROJAN_SENSITIVE 
     seL4_KernelImage_Sensitive(trojan.kernel); 
     seL4_KernelImage_HoldTime(trojan.kernel, CONFIG_COVERT_TROJAN_HOLD_TIME, 0);
+#ifdef CONFIG_ARCH_X86 
     srandom(rdtscp());
-    
+#else 
+    srandom(sel4bench_get_cycle_count());
+#endif 
+   
+#ifdef CONFIG_ARCH_X86
     for (int i = 0; i < 512; i ++)
         seL4_KernelImage_Random(trojan.kernel, i, random());
+#endif  /*CONFIG_ARCH_X86*/
+#endif  /*CONFIG COVERT TROJAN SENSITIVE*/
 
-  #endif 
 #ifdef CONFIG_COVERT_SPY_SENSITIVE 
 
     seL4_KernelImage_Sensitive(spy.kernel);                                    
     seL4_KernelImage_HoldTime(spy.kernel, CONFIG_COVERT_SPY_HOLD_TIME, 0); 
+#ifdef CONFIG_ARCH_X86 
     srandom(rdtscp());
+#else 
+    srandom(sel4bench_get_cycle_count());
+#endif
+#ifdef CONFIG_ARCH_X86
      for (int i = 0; i < 512; i ++)
         seL4_KernelImage_Random(spy.kernel, i, random());
-    
-#endif 
+#endif   /*CONFIG_ARCH_X86*/
+#endif  /*CONFIG_COVERT_SPY_SENSITIVE*/
 
 #else /*CONFIG_CACHE_COLOURING*/ 
     spy.vka = trojan.vka = &env->vka; 
