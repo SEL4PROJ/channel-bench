@@ -1,11 +1,19 @@
 #ifndef __LOW_H__
 #define __LOW_H__
 
+#ifndef PAGE_SIZE 
+#define PAGE_SIZE 4096
+#endif 
+/*the cache architecture configuration on benchmarking platforms*/
+#ifdef CONFIG_ARCH_X86
 
 #define L1_ASSOCIATIVITY 8
 #define L1_SETS 64
 #define L1_CACHELINE 64
+#define L1_LINES 512
 #define L1_STRIDE (L1_CACHELINE * L1_SETS)
+#define L1_PROBE_BUFFER  (PAGE_SIZE * (L1_ASSOCIATIVITY+1)) 
+
 
 #define L1I_ASSOCIATIVITY 8
 #define L1I_SETS 64
@@ -14,10 +22,39 @@
 #define L3_THRESHOLD 140
 #define L3_ASSOCIATIVITY 16
 #define L3_SIZE (6*1024*1024)
-#ifndef PAGE_SIZE 
-#define PAGE_SIZE 4096
+
+#endif
+
+#ifdef CONFIG_ARCH_ARM 
+
+#define L1_ASSOCIATIVITY 4
+#define L1_SETS 256
+#define L1_LINES  1024
+#define L1_CACHELINE 32
+#define L1_STRIDE (L1_CACHELINE * L1_SETS)
+#define L1_PROBE_BUFFER (L1_STRIDE * L1_ASSOCIATIVITY + PAGE_SIZE)
+
+#define L1I_ASSOCIATIVITY 4
+#define L1I_SETS 256
+#define L1I_CACHELINE 32
+
+#define L3_THRESHOLD 140
+#define L3_ASSOCIATIVITY 16
+#define L3_SIZE (1*1024*1024)
+
 #endif 
 
+
+#ifdef CONFIG_ARCH_ARM 
+
+static inline int access(void *v) {
+    int rv; 
+    asm volatile("ldr %0, [%1]": "=r" (rv): "r" (v):);
+    return rv;
+}
+
+#endif
+#ifdef CONFIG_ARCH_X86
 static inline int access(void *v) {
   int rv;
   asm volatile("mov (%1), %0": "=r" (rv): "r" (v):);
@@ -125,5 +162,5 @@ inline void cpuid(struct cpuidRegs *regs) {
   asm volatile ("cpuid": "+a" (regs->eax), "+b" (regs->ebx), "+c" (regs->ecx), "+d" (regs->edx));
 }
 
-
+#endif 
 #endif //__LOW_H__

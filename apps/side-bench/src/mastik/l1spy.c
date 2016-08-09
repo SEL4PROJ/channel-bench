@@ -26,8 +26,8 @@ static void  newTimeSlice(){
 int l1_trojan(bench_covert_t *env) {
   /*buffer size 32K L1 cache size
    512 cache lines*/
-  char *data = malloc(4096*8);
-  int total_sec = 512, secret = 0; 
+  char *data = malloc(4096 * 8);
+  int secret = 0; 
 
 
   seL4_Word badge;
@@ -46,10 +46,10 @@ int l1_trojan(bench_covert_t *env) {
 
   /*warm up the platform*/
   for (int i = 0; i < NUM_L1D_WARMUP_ROUNDS; i++) {
-      secret = random() % total_sec;
+      secret = random() % L1_LINES;
       
-      for (int n = 0; n < secret; n+=64) 
-	access(data+i);
+      for (int n = 0; n < secret; n++) 
+	access(data + n * L1_CACHELINE);
 
   }
   /*ready to do the test*/
@@ -58,25 +58,26 @@ int l1_trojan(bench_covert_t *env) {
   /*giving some number of system ticks to syn trojan and spy */
 
   for (int i = 0; i < 100; i++) {
-      secret = random() % total_sec;
-       /*waiting for a system tick*/
+      secret = random() % L1_LINES;
+      /*waiting for a system tick*/
       newTimeSlice();
       
-      for (int n = 0; n < secret; n+=64) 
-	access(data+i);
+      for (int n = 0; n < secret; n++) 
+	access(data + n * L1_CACHELINE);
 
   }
 
   for (int i = 0; i < CONFIG_BENCH_DATA_POINTS; i++) {
-      secret = random() % total_sec; 
-      
+
+      secret = random() % L1_LINES;
       /*waiting for a system tick*/
       newTimeSlice();
       /*update the secret read by low*/ 
       *share_vaddr = secret; 
-       
-      for (int n = 0; n < secret; n+=64) 
-	access(data+i);
+      
+      for (int n = 0; n < secret; n++) 
+	access(data + n * L1_CACHELINE);
+
   }
   while (1);
 
@@ -86,8 +87,9 @@ int l1_trojan(bench_covert_t *env) {
 int l1_spy(bench_covert_t *env) {
   seL4_Word badge;
   seL4_MessageInfo_t info;
+  uint64_t monitored_mask = ~0LLU;
 
-  l1info_t l1_1 = l1_prepare(~0LLU);
+  l1info_t l1_1 = l1_prepare(&monitored_mask);
 
   uint16_t *results = malloc(l1_nsets(l1_1)*sizeof(uint16_t));
   

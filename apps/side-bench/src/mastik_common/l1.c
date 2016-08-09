@@ -6,7 +6,7 @@
 #include <autoconf.h>
 #include "low.h"
 #include "l1.h"
-
+#include "../ipc_test.h"
 
 
 #define PTR(set, way, ptr) (void *)(((uintptr_t)l1->memory) + ((set) * L1_CACHELINE) + ((way) * L1_STRIDE) + ((ptr)*sizeof(void *)))
@@ -14,8 +14,14 @@
 
 static int probelist_flush(void *pp, int segments, int seglen, uint16_t *results) {
   void *p = pp;
-  
-  uint32_t s = rdtscp();
+  uint32_t s,res; 
+
+#ifdef CONFIG_ARCH_ARM
+  READ_COUNTER_ARMV7(s);
+#endif 
+#ifdef CONFIG_ARCH_X86
+  s = rdtscp();
+#endif 
   while (segments--) {
     for (int i = seglen; i--; ) {
       // Under normal circumstances, p is never NULL. 
@@ -28,36 +34,67 @@ static int probelist_flush(void *pp, int segments, int seglen, uint16_t *results
         p = LNEXT(p);
     }
    }
-  uint32_t res = rdtscp() - s;
+ #ifdef CONFIG_ARCH_ARM 
+    READ_COUNTER_ARMV7(res); 
+    res -= s; 
+#endif 
+#ifdef CONFIG_ARCH_X86
+    res = rdtscp() - s;
+#endif 
+
+  /*FIXME: the cost should not exceed the max 16 65536, otherwise incorrect*/
   *results = res > UINT16_MAX ? UINT16_MAX : res;
-  
+
   return p == pp;
 }
 
 static int probelist_clflush(void *pp, int segments, int seglen, uint16_t *results) {
   void *p = pp;
-  
-  uint32_t s = rdtscp();
+  uint32_t s,res; 
+
+#ifdef CONFIG_ARCH_ARM
+  READ_COUNTER_ARMV7(s);
+#endif 
+#ifdef CONFIG_ARCH_X86
+  s = rdtscp();
+#endif 
   while (segments--) {
-    for (int i = seglen; i--; ) {
-      // Under normal circumstances, p is never NULL. 
-      // We need this test to ensure the optimiser does not kill the whole loop...
-      if (p == NULL)
-	break;
-      clflush(p);  
-      p = LNEXT(p);
-    }
-   }
-  uint32_t res = rdtscp() - s;
+      for (int i = seglen; i--; ) {
+          // Under normal circumstances, p is never NULL. 
+          // We need this test to ensure the optimiser does not kill the whole loop...
+          if (p == NULL)
+              break;
+          /*FIXME: what is the cache flush command on arm??*/
+#ifdef CONFIG_ARCH_X86
+          clflush(p);
+#endif 
+          p = LNEXT(p);
+      }
+  }
+#ifdef CONFIG_ARCH_ARM 
+    READ_COUNTER_ARMV7(res); 
+    res -= s; 
+#endif 
+#ifdef CONFIG_ARCH_X86
+    res = rdtscp() - s;
+#endif 
+
+  /*FIXME: the cost should not exceed the max 16 65536, otherwise incorrect*/
   *results = res > UINT16_MAX ? UINT16_MAX : res;
-  
+
   return p == pp;
 }
 
 static int probelist(void *pp, int segments, int seglen, uint16_t *results) {
   void *p = pp;
+  uint32_t s, res; 
   while (segments--) {
-    uint32_t s = rdtscp();
+#ifdef CONFIG_ARCH_ARM
+      READ_COUNTER_ARMV7(s);
+#endif 
+#ifdef CONFIG_ARCH_X86
+      s = rdtscp();
+#endif 
     for (int i = seglen; i--; ) {
       // Under normal circumstances, p is never NULL. 
       // We need this test to ensure the optimiser does not kill the whole loop...
@@ -65,7 +102,13 @@ static int probelist(void *pp, int segments, int seglen, uint16_t *results) {
 	break;
       p = LNEXT(p);
     }
-    uint32_t res = rdtscp() - s;
+#ifdef CONFIG_ARCH_ARM 
+    READ_COUNTER_ARMV7(res); 
+    res -= s; 
+#endif 
+#ifdef CONFIG_ARCH_X86
+    res = rdtscp() - s;
+#endif 
     *results = res > UINT16_MAX ? UINT16_MAX : res;
     results++;
   }
@@ -86,10 +129,11 @@ static void *primelist(void *p, int segments, int seglen) {
   return p;
 }
 
-l1info_t l1_prepare(uint64_t monitored_sets) {
+l1info_t l1_prepare(uint64_t *monitored_sets) {
   l1info_t l1 = (l1info_t)malloc(sizeof(struct l1info));
-  l1->memory = mmap(0, PAGE_SIZE * (L1_ASSOCIATIVITY+1), PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANON, -1, 0);
+  l1->memory = mmap(0, L1_PROBE_BUFFER, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANON, -1, 0);
   l1->memory = (void *)((((uintptr_t)l1->memory) + 0xfff) & ~0xfff);
+
   assert((((uintptr_t)l1->memory) & 0xfff) == 0);
   l1->fwdlist = NULL;
   l1->bkwlist = NULL;
@@ -103,24 +147,37 @@ l1info_t l1_prepare(uint64_t monitored_sets) {
   return l1;
 }
 
-void l1_set_monitored_set(l1info_t l1, uint64_t monitored_sets) {
-  l1->monitored_sets = monitored_sets;
+void l1_set_monitored_set(l1info_t l1, uint64_t *monitored_sets) {
+  
   int nsets = 0;
-  for (int i = 0; i < 64; i++) {
-    if (monitored_sets & (1ULL << i))
-      l1->monitored[nsets++] = i;
+ 
+  assert(monitored_sets != NULL);
+
+  for (int i = 0; i < MONITOR_MASK; i++) {
+
+        l1->monitored_sets[i] = monitored_sets[i];
+  
+        for (int j = 0; j < 64; j++) {
+            if (monitored_sets[i] & (1ULL << j)) {
+                l1->monitored[nsets++] = i * 64 + j;
+
+            }
+        }
   }
+
   l1->nsets = nsets;
   l1_randomise(l1);
 }
 
 void l1_randomise(l1info_t l1) {
+
   for (int i = 0; i < l1->nsets; i++) {
     int p = random() % (l1->nsets - i) + i;
-    uint8_t t = l1->monitored[p];
+    uint16_t t = l1->monitored[p];
     l1->monitored[p] = l1->monitored[i];
     l1->monitored[i] = t;
   }
+
   for (int i = 0; i < l1->nsets - 1; i++) {
     LNEXT(PTR(l1->monitored[i], L1_ASSOCIATIVITY - 1, 0)) = PTR(l1->monitored[i+1], 0, 0);
     LNEXT(PTR(l1->monitored[i], 0, 1)) = PTR(l1->monitored[i+1], L1_ASSOCIATIVITY - 1, 1);
