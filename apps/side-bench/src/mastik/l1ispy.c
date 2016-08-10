@@ -1,9 +1,10 @@
+#include <autoconf.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <sel4/sel4.h>
 
-#include "low.h"
+#include "../mastik_common/low.h"
 #include "l1i.h"
 #include "../../../bench_common.h"
 

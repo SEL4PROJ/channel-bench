@@ -1,3 +1,4 @@
+#include <autoconf.h>
 #include <stdio.h>
 #include <assert.h>
 #include <stdint.h>
@@ -6,7 +7,7 @@
 #include "vlist.h"
 #include "cachemap.h"
 #include "timestats.h"
-#include "low.h"
+#include "../mastik_common/low.h"
 
 #define CHECKTIMES 16
 

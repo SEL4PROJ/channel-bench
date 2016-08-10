@@ -1,10 +1,10 @@
+#include <autoconf.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <sys/mman.h>
 #include <assert.h>
-
-#include "low.h"
+#include "../mastik_common/low.h"
 #include "l1i.h"
 
 #define JMP_OFFSET (PAGE_SIZE - 5)

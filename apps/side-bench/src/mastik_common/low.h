@@ -4,9 +4,10 @@
 #ifndef PAGE_SIZE 
 #define PAGE_SIZE 4096
 #endif 
-/*the cache architecture configuration on benchmarking platforms*/
-#ifdef CONFIG_ARCH_X86
 
+/*the cache architecture configuration on benchmarking platforms*/
+
+#ifdef CONFIG_ARCH_X86
 #define L1_ASSOCIATIVITY 8
 #define L1_SETS 64
 #define L1_CACHELINE 64
@@ -23,7 +24,7 @@
 #define L3_ASSOCIATIVITY 16
 #define L3_SIZE (6*1024*1024)
 
-#endif
+#endif /*CONFIG_ARCH_X86*/
 
 #ifdef CONFIG_ARCH_ARM 
 

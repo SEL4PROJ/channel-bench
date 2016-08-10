@@ -22,8 +22,15 @@ int l1_trojan(bench_covert_t *env) {
   
   /*buffer size 32K L1 cache size
    1024 cache lines*/
-  char *data = malloc(4096 * 8);
- 
+  char *data;
+
+  /*trying to allocate 3.2M memory, avoiding the virtual address conflict
+   with the spy. In case the prefetcher uses virtual address*/
+//  for (int i = 0; i < 100; i++)
+      data = malloc(4096 * 8);
+
+  assert(data != NULL);
+
   info = seL4_Recv(env->r_ep, &badge);
   assert(seL4_MessageInfo_get_label(info) == seL4_NoFault);
 

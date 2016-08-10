@@ -22,8 +22,8 @@
 #include <sel4/sel4.h>
 #include <sel4bench/sel4bench.h>
 #ifdef CONFIG_ARCH_X86 
-#include "./mastik/low.h"
-#include "./mastik/l1.h"
+#include "./mastik_common/low.h"
+#include "./mastik_common/l1.h"
 #include "./mastik/vlist.h"
 #include "./mastik/cachemap.h"
 #include "./mastik/pp.h"

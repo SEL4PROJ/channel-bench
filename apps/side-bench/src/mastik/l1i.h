@@ -13,6 +13,7 @@ uint32_t l1i_probe_nop(void);
 //---------------------------------------------
 
 #include <assert.h>
+#include "../mastik_common/low.h"
 
 struct l1iinfo{
   void *memory;

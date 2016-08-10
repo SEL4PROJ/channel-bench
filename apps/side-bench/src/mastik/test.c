@@ -1,3 +1,4 @@
+#include <autoconf.h>
 #include <sys/types.h>
 #include <sys/mman.h>
 #include <stdio.h>
@@ -8,7 +9,7 @@
 #include "vlist.h"
 #include "cachemap.h"
 #include "pp.h"
-#include "low.h"
+#include "../mastik_common/low.h"
 
 #define SIZE (16*1024*1024)
 

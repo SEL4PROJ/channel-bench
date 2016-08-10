@@ -34,6 +34,7 @@ endif
 ifdef CONFIG_ARCH_ARM 
 CFILES +=  $(patsubst $(SOURCE_DIR)/%,%,$(wildcard $(SOURCE_DIR)/src/mastik_arm/*.c))
 endif 
+
 CFILES +=  $(patsubst $(SOURCE_DIR)/%,%,$(wildcard $(SOURCE_DIR)/src/mastik_common/*.c))
 
 
