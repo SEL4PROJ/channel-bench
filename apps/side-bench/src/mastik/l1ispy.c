@@ -88,7 +88,7 @@ static void l1i_trojan_nop_select(uint32_t n) {
     }
 
 }
-
+#if 0
 int l1i_trojan(bench_covert_t *env) {
 
   uint32_t total_sec = 9, secret;
@@ -141,8 +141,8 @@ for (int i = 0; i < CONFIG_BENCH_DATA_POINTS; i++) {
  
   return 0;
 }
-
-#if 0
+#endif 
+#if 1
 int l1i_trojan(bench_covert_t *env) {
 
   uint16_t results[64];
@@ -221,6 +221,7 @@ for (int i = 0; i < CONFIG_BENCH_DATA_POINTS; i++) {
   return 0;
 }
 #endif
+#if 0
 int l1i_spy(bench_covert_t *env) {
   seL4_Word badge;
   seL4_MessageInfo_t info;
@@ -268,7 +269,8 @@ int l1i_spy(bench_covert_t *env) {
 
   return 0;
 }
-#if 0
+#endif 
+#if 1
 int l1i_spy(bench_covert_t *env) {
   seL4_Word badge;
   seL4_MessageInfo_t info;
