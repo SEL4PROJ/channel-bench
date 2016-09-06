@@ -298,7 +298,9 @@ typedef struct bench_covert {
 #define BENCH_COVERT_LLC_KERNEL_SPY      12 
 #define BENCH_COVERT_LLC_KD_TROJAN       13   /*kernel determinisitic scheduling*/
 #define BENCH_COVERT_LLC_KD_SPY          14 
-#define BENCH_COVERT_FUNS                15
+#define BENCH_COVERT_TLB_TROJAN          15 
+#define BENCH_COVERT_TLB_SPY             16
+#define BENCH_COVERT_FUNS                17
 
 #define BENCH_COVERT_MSG_LEN  3 /*msg len for init env*/
 /*matching the test number according to the config*/ 
@@ -317,6 +319,12 @@ typedef struct bench_covert {
 #ifdef CONFIG_BENCH_COVERT_LLC_KERNEL  /*LLC channel through shared kernel*/
 #define BENCH_COVERT_TROJAN    BENCH_COVERT_LLC_KERNEL_TROJAN 
 #define BENCH_COVERT_SPY       BENCH_COVERT_LLC_KERNEL_SPY 
+#endif 
+
+/*the tlb covert channel*/
+#ifdef CONFIG_BENCH_COVERT_TLB
+#define BENCH_COVERT_TROJAN    BENCH_COVERT_TLB_TROJAN 
+#define BENCH_COVERT_SPY       BENCH_COVERT_TLB_SPY 
 #endif 
 
 /*LLC channel through kernel scheduling*/

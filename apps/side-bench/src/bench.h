@@ -46,7 +46,8 @@ int l1i_trojan(bench_covert_t *env);
 int l1i_spy(bench_covert_t *env);
 int l3_trojan(bench_covert_t *env); 
 int l3_spy(bench_covert_t *env); 
- 
+int tlb_trojan(bench_covert_t *env); 
+int tlb_spy(bench_covert_t *env); 
  
 #endif 
 

@@ -314,7 +314,7 @@ int run_single_l1(m_env_t *env) {
     struct bench_l1 *r_d;
     uint32_t n_p = (sizeof (struct bench_l1) / BENCH_PAGE_SIZE) + 1;
 
-    printf("starting covert channel benchmark, L1 Data/instruction cache\n");
+    printf("starting covert channel benchmark\n");
 
 #ifdef CONFIG_BENCH_DATA_SEQUENTIAL 
     printf("data points %d with sequential sequence\n", CONFIG_BENCH_DATA_POINTS);
@@ -481,6 +481,9 @@ int run_single (m_env_t *env) {
     return run_single_l2(env); 
 #endif     
 #if defined (CONFIG_BENCH_COVERT_L1D) || defined (CONFIG_BENCH_COVERT_L1I)  
+    return run_single_l1(env);
+#endif 
+#ifdef CONFIG_BENCH_COVERT_TLB 
     return run_single_l1(env);
 #endif 
 #ifdef CONFIG_BENCH_COVERT_LLC_KERNEL 

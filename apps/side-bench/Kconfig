@@ -118,7 +118,7 @@ menu   "Timing Channel Benchmarks"
        help 
              a simple P+P attack on single core
       choice 
-               prompt "cache level"
+               prompt "attack model"
                depends on BENCH_COVERT_SINGLE
                config BENCH_COVERT_L1D 
                bool "L1 data cache" 
@@ -137,6 +137,9 @@ menu   "Timing Channel Benchmarks"
 
                config BENCH_COVERT_LLC_KERNEL 
                bool "LLC through shared kernel"
+
+               config BENCH_COVERT_TLB 
+               bool "unified tlb"
 
       endchoice
 

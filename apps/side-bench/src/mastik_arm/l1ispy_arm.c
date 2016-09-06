@@ -73,9 +73,9 @@ int l1i_trojan(bench_covert_t *env) {
   /*ready to do the test*/
   seL4_Send(env->syn_ep, info);
 #ifdef CONFIG_BENCH_DATA_SEQUENTIAL 
-  for (int i = 0; i < CONFIG_BENCH_DATA_POINTS / 9; i++) {
+  for (int i = 0; i < CONFIG_BENCH_DATA_POINTS / total_sec; i++) {
 
-      for (secret = 0; secret < 9; secret++) {
+      for (secret = 0; secret < total_sec; secret++) {
 
           FENCE(); 
 
