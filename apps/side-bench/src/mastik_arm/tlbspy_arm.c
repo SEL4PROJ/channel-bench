@@ -18,6 +18,7 @@
 static inline void tlb_access(char *buf, uint32_t s) {
 
     /*access s tlb entries by visiting one line in each page*/
+
     for (int i = 0; i < s; i ++) 
         access(buf + i * 4096);
 
@@ -50,9 +51,9 @@ int tlb_trojan(bench_covert_t *env) {
   /*ready to do the test*/
   seL4_Send(env->syn_ep, info);
 #ifdef CONFIG_BENCH_DATA_SEQUENTIAL 
-  for (int i = 0; i < CONFIG_BENCH_DATA_POINTS / TLB_ENTRIES; i++) {
+  for (int i = 0; i < CONFIG_BENCH_DATA_POINTS / TLB_ENTRIES + 1; i++) {
 
-      for (secret = 0; secret < TLB_ENTRIES; secret++) {
+      for (secret = 0; secret <= TLB_ENTRIES; secret++) {
 
           FENCE(); 
 
@@ -83,7 +84,7 @@ int tlb_trojan(bench_covert_t *env) {
          ;
      }
      FENCE();
-     secret = random() % TLB_ENTRIES; 
+     secret = random() % TLB_ENTRIES + 1; 
 
      tlb_access(buf,secret);
      /*update the secret read by low*/ 
@@ -144,7 +145,7 @@ int tlb_spy(bench_covert_t *env) {
       sel4bench_reset_cycle_count();
       start = sel4bench_get_cycle_count();
 
-      tlb_access(buf, TLB_ENTRIES);
+      tlb_access(buf, TLB_ENTRIES / 2);
       /*using the nops to test the benchmark*/
       after = sel4bench_get_cycle_count();
       r_addr->result[i] = after - start; 
