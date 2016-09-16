@@ -354,7 +354,7 @@ int run_single_l1(m_env_t *env) {
     r_d =  (struct bench_l1 *)env->record_vaddr;
     printf("probing time start\n");
     
-    for (int i = 10; i < CONFIG_BENCH_DATA_POINTS; i++) {
+    for (int i = 1; i < CONFIG_BENCH_DATA_POINTS; i++) {
         printf("%d %u\n", r_d->sec[i], r_d->result[i]);
 
     }
@@ -485,6 +485,9 @@ int run_single (m_env_t *env) {
 #endif 
 #ifdef CONFIG_BENCH_COVERT_TLB 
     return run_single_l1(env);
+#endif 
+#ifdef CONFIG_BENCH_COVERT_BTB 
+    return run_single_l1(env); 
 #endif 
 #ifdef CONFIG_BENCH_COVERT_LLC_KERNEL 
     return run_single_llc_kernel(env); 

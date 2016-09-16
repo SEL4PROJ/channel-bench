@@ -44,6 +44,7 @@ static int (*covert_bench_fun[BENCH_COVERT_FUNS])(bench_covert_t *) = {NULL,
     l3_trojan, l3_spy, 
     l3_kd_trojan, l3_kd_spy,
     tlb_trojan, tlb_spy,
+    btb_trojan, btb_spy,
 };
 
 /* dummy global for libsel4muslcsys */

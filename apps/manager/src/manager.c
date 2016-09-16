@@ -150,7 +150,7 @@ void init_env (m_env_t *env) {
 
 #ifdef CONFIG_CACHE_COLOURING
 /*init run time environment for cache colouring*/
-static void init_env_colour (m_env_t *env) {
+static void init_env_colour(m_env_t *env) {
 
     /*allocator, vka, utils...*/
     color_allocator_t *init_allocator; 

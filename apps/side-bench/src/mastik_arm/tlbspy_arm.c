@@ -11,17 +11,19 @@
 #include <sel4/sel4.h>
 #include "../../../bench_common.h"
 #include "../mastik_common/low.h"
+#include "../ipc_test.h"
 
-#define TLB_ENTRIES  128
+#define TLB_ENTRIES  256
 
 
 static inline void tlb_access(char *buf, uint32_t s) {
 
     /*access s tlb entries by visiting one line in each page*/
-
     for (int i = 0; i < s; i ++) {
-        access(buf + (i * 4096));
-        access(buf + (i * 4096) + 64);
+        volatile char *addr = buf + (i * 4096);
+        access(addr);
+        //*addr = 0xff;
+        asm volatile (""::"r"(addr): "memory");
     }
 
 }
@@ -31,12 +33,14 @@ int tlb_trojan(bench_covert_t *env) {
   uint32_t secret;
   seL4_Word badge;
   seL4_MessageInfo_t info;
-  char *buf = malloc (TLB_ENTRIES * 4096 + 4096);
+  char *buf = malloc ((TLB_ENTRIES * 4096) + 4096);
+
+  assert(buf); 
   int temp = (int)buf; 
   temp &= ~0xfff;
   temp += 0x1000; 
   buf = (char *)temp; 
-
+ 
   info = seL4_Recv(env->r_ep, &badge);
   assert(seL4_MessageInfo_get_label(info) == seL4_NoFault);
 
@@ -53,7 +57,7 @@ int tlb_trojan(bench_covert_t *env) {
   /*ready to do the test*/
   seL4_Send(env->syn_ep, info);
 #ifdef CONFIG_BENCH_DATA_SEQUENTIAL 
-  for (int i = 0; i < CONFIG_BENCH_DATA_POINTS / TLB_ENTRIES + 1; i++) {
+  for (int i = 0; i < CONFIG_BENCH_DATA_POINTS / (TLB_ENTRIES + 1); i++) {
 
       for (secret = 0; secret <= TLB_ENTRIES; secret++) {
 
@@ -75,6 +79,9 @@ int tlb_trojan(bench_covert_t *env) {
   }
 
  FENCE(); 
+
+
+
 #else 
  for (int i = 0; i < CONFIG_BENCH_DATA_POINTS; i++) {
 
@@ -86,7 +93,7 @@ int tlb_trojan(bench_covert_t *env) {
          ;
      }
      FENCE();
-     secret = random() % TLB_ENTRIES + 1; 
+     secret = random() % (TLB_ENTRIES + 1); 
 
      tlb_access(buf,secret);
      /*update the secret read by low*/ 
@@ -110,12 +117,14 @@ int tlb_spy(bench_covert_t *env) {
   seL4_MessageInfo_t info;
   uint32_t start, after;
   
-  char *buf = malloc (TLB_ENTRIES * 4096 + 4096);
+  char *buf = malloc ((TLB_ENTRIES * 4096) + 4096);
+  assert(buf);
+ 
   int temp = (int)buf; 
   temp &= ~0xfff;
   temp += 0x1000; 
   buf = (char *)temp; 
-
+ 
 
   info = seL4_Recv(env->r_ep, &badge);
   assert(seL4_MessageInfo_get_label(info) == seL4_NoFault);
@@ -145,11 +154,13 @@ int tlb_spy(bench_covert_t *env) {
       FENCE(); 
       /*reset the counter to zero*/
       sel4bench_reset_cycle_count();
-      start = sel4bench_get_cycle_count();
+      READ_COUNTER_ARMV7(start);
+      //start = sel4bench_get_cycle_count();
 
-      tlb_access(buf, TLB_ENTRIES / 2);
-      /*using the nops to test the benchmark*/
-      after = sel4bench_get_cycle_count();
+      tlb_access(buf, 64);
+      
+      READ_COUNTER_ARMV7(after);
+      //after = sel4bench_get_cycle_count();
       r_addr->result[i] = after - start; 
       /*result is the total probing cost
         secret is updated by trojan in the previous system tick*/

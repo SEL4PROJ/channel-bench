@@ -116,7 +116,8 @@
 #else
 #define CC_DIV             16
 #endif 
-#endif 
+#endif  /*x86*/
+
 #ifdef CONFIG_PLAT_IMX6
 #define CC_DIV             8
 #endif
@@ -300,7 +301,9 @@ typedef struct bench_covert {
 #define BENCH_COVERT_LLC_KD_SPY          14 
 #define BENCH_COVERT_TLB_TROJAN          15 
 #define BENCH_COVERT_TLB_SPY             16
-#define BENCH_COVERT_FUNS                17
+#define BENCH_COVERT_BRANCH_TROJAN       17 
+#define BENCH_COVERT_BRANCH_SPY          18
+#define BENCH_COVERT_FUNS                19
 
 #define BENCH_COVERT_MSG_LEN  3 /*msg len for init env*/
 /*matching the test number according to the config*/ 
@@ -326,6 +329,13 @@ typedef struct bench_covert {
 #define BENCH_COVERT_TROJAN    BENCH_COVERT_TLB_TROJAN 
 #define BENCH_COVERT_SPY       BENCH_COVERT_TLB_SPY 
 #endif 
+
+/*the branch covert channel*/
+#ifdef CONFIG_BENCH_COVERT_BTB
+#define BENCH_COVERT_TROJAN    BENCH_COVERT_BRANCH_TROJAN 
+#define BENCH_COVERT_SPY       BENCH_COVERT_BRANCH_SPY 
+#endif 
+
 
 /*LLC channel through kernel scheduling*/
 #ifdef CONFIG_BENCH_COVERT_LLC_KERNEL_SCHEDULE 

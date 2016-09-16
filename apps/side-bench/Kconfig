@@ -140,6 +140,9 @@ menu   "Timing Channel Benchmarks"
 
                config BENCH_COVERT_TLB 
                bool "unified tlb"
+               
+               config BENCH_COVERT_BTB
+               bool "branch target buffer"
 
       endchoice
 
