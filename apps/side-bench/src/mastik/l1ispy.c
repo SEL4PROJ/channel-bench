@@ -31,6 +31,7 @@ static void  newTimeSlice(){
   }
 }
 
+#if 0
 static void l1i_trojan_nop_select(uint32_t n) {
 
     switch(n) {
@@ -88,7 +89,6 @@ static void l1i_trojan_nop_select(uint32_t n) {
     }
 
 }
-#if 0
 int l1i_trojan(bench_covert_t *env) {
 
   uint32_t total_sec = 9, secret;

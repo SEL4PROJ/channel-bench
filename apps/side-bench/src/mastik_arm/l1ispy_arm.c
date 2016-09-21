@@ -237,11 +237,14 @@ int l1i_spy(bench_covert_t *env) {
       FENCE(); 
       /*reset the counter to zero*/
       sel4bench_reset_cycle_count();
-      start = sel4bench_get_cycle_count();
-
+      //start = sel4bench_get_cycle_count();
+      READ_COUNTER_ARMV7(start);
+ 
       asm volatile ("bl arm_branch_spy"::: "lr"); 
       /*using the nops to test the benchmark*/
-      after = sel4bench_get_cycle_count();
+      READ_COUNTER_ARMV7(after);
+ 
+//      after = sel4bench_get_cycle_count();
       r_addr->result[i] = after - start; 
       /*result is the total probing cost
         secret is updated by trojan in the previous system tick*/

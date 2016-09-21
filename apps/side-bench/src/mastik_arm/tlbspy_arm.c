@@ -20,10 +20,10 @@ static inline void tlb_access(char *buf, uint32_t s) {
 
     /*access s tlb entries by visiting one line in each page*/
     for (int i = 0; i < s; i ++) {
-        volatile char *addr = buf + (i * 4096);
+        char *addr = buf + (i * 4096);
         access(addr);
         //*addr = 0xff;
-        asm volatile (""::"r"(addr): "memory");
+       // asm volatile (""::"r"(addr): "memory");
     }
 
 }
