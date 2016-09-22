@@ -46,7 +46,7 @@
 
 static void fillL3Info(l3pp_t l3) {
   l3->l3info.associativity = L3_ASSOCIATIVITY;
-  l3->l3info.bufsize = L3_SIZE * 2; /*16 * 16 * 2049 *2*/
+  l3->l3info.bufsize = L3_SIZE * 2; /*16 * 16 * 4096 *2*/
 }
 
 #if 0
@@ -88,6 +88,9 @@ static void *sethead(l3pp_t l3, int set) {
     /*offset within a group (page)*/
     int offset = (set % l3->groupsize) * L3_CACHELINE;
 
+#ifdef CONFIG_DEBUG_BUILD 
+    printf("sethead with %d lines in a set\n", count);
+#endif 
     /*link all the lines in a set, forward, and backward, circular link list*/
     for (int i = 0; i < count; i++) {
         LNEXT(OFFSET(vl_get(list, i), offset)) = OFFSET(vl_get(list, (i + 1) % count), offset);
@@ -502,7 +505,14 @@ void l3_probecount(l3pp_t l3, uint16_t *results) {
     }
 
 }
+void l3_probecount_simple(l3pp_t l3, uint16_t *results) {
+ 
+    /*probe and count L3 cache misses in each set*/
+    for (int i = 0; i < l3->nmonitored; i++) {
+        results[i] = probecount(l3->monitoredhead[i]);
+    }
 
+}
 void l3_bprobecount(l3pp_t l3, uint16_t *results) {
   for (int i = 0; i < l3->nmonitored; i++) {
     results[i] = bprobecount(l3->monitoredhead[i]);
@@ -529,7 +539,7 @@ int probeloop(l3pp_t l3, uint16_t *results, int count, int slot) {
   }
 #if DEBUG
   if (results - start == 0)
-    printff("Groups: %d\n", l3->ngroups);
+    printf("Groups: %d\n", l3->ngroups);
 #endif
   return results-start;
 

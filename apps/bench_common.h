@@ -118,6 +118,7 @@
 #endif 
 #endif  /*x86*/
 
+
 #ifdef CONFIG_PLAT_IMX6
 #define CC_DIV             8
 #endif

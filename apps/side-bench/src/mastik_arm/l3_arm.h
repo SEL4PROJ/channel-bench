@@ -62,7 +62,7 @@ void l3_probe(l3pp_t l3, uint16_t *results);
 void l3_bprobe(l3pp_t l3, uint16_t *results);
 void l3_probecount(l3pp_t l3, uint16_t *results);
 void l3_bprobecount(l3pp_t l3, uint16_t *results);
-
+void l3_probecount_simple(l3pp_t l3, uint16_t *results);
 int probeloop(l3pp_t l3, uint16_t *results, int count, int slot);
 
 

@@ -17,7 +17,18 @@
 #define SAMPLE_PREFIX 50
 #define SAMPLE_LEN 1000
 
- 
+#define L3_SINGLE_TROJAN_RANGE 2048
+
+/*assuming 2048 sets, one line each*/
+volatile char trojan_buf [2048 * 32];  
+
+static void trojan_access(uint32_t secret) { 
+
+    for (int i = 0; i < secret; i++) 
+        access(trojan_buf + i * L1_CACHELINE);
+
+}
+
 
 int l3_trojan_single(bench_covert_t *env) {
 
@@ -26,17 +37,17 @@ int l3_trojan_single(bench_covert_t *env) {
     seL4_MessageInfo_t info;
     
     /*creat the probing buffer*/
-    l3pp_t l3 = l3_prepare();
-    assert(l3); 
+    //l3pp_t l3 = l3_prepare();
+    //assert(l3); 
 
-    int nsets = l3_getSets(l3);
+    //int nsets = l3_getSets(l3);
 
 #ifdef CONFIG_DEBUG_BUILD
-    printf("trojan: Got %d sets\n", nsets);
+    //printf("trojan: Got %d sets\n", nsets);
 #endif
 
-    uint16_t *results = malloc(sizeof (uint16_t) * nsets); 
-    assert(results);
+   // uint16_t *results = malloc(sizeof (uint16_t) * nsets); 
+    //assert(results);
 
     info = seL4_Recv(env->r_ep, &badge);
     assert(seL4_MessageInfo_get_label(info) == seL4_NoFault);
@@ -66,22 +77,26 @@ int l3_trojan_single(bench_covert_t *env) {
         FENCE();
 
 #ifndef CONFIG_BENCH_DATA_SEQUENTIAL 
-        secret = random() % (nsets + 1); 
+     //   secret = random() % (nsets + 1); 
+        secret = random() % (L3_SINGLE_TROJAN_RANGE + 1); 
 #endif
+
+#if 0 
         l3_unmonitorall(l3);
- 
         for (int s = 0; s < secret; s++) {
             l3_monitor(l3, s);
         }
+#endif
         /*do simple probe*/
-        l3_probe(l3, results); 
-
-        //branch_probe(secret);
+        //l3_probe(l3, results); 
+        trojan_access(secret);
         /*update the secret read by low*/ 
         *share_vaddr = secret; 
 #ifdef CONFIG_BENCH_DATA_SEQUENTIAL 
-        if (++secret == nsets + 1)
-            secret = 0; 
+//        if (++secret == nsets + 1)
+  //          secret = 0; 
+        if (++secret == L3_SINGLE_TROJAN_RANGE + 1)
+            secret = 0;
 #endif 
         /*wait until spy set the flag*/
         *syn_vaddr = SPY_SYN_FLAG;
@@ -147,7 +162,7 @@ int l3_spy_single(bench_covert_t *env) {
         /*reset the counter to zero*/
         sel4bench_reset_cycle_count();
         /*do simple probe*/
-        l3_probe(l3, results); 
+        l3_probecount_simple(l3, results); 
         
         r_addr->result[i] = 0; 
         for (int s = 0; s < nsets; s++) {
@@ -209,7 +224,7 @@ void l3_spy_multicore(seL4_CPtr ep, char *p) {
         }
 #ifdef CONFIG_DEBUG_BUILD
         for (int i = 0; i < nsets; i++) 
-            print("%d\n", data[i]);
+            printf("%d\n", data[i]);
 #endif 
         printf("\n");
     }
