@@ -37,5 +37,6 @@ uint32_t ts_outliers(ts_t ts);
 int ts_median(ts_t ts);
 
 int ts_mean(ts_t ts, int scale);
-
+int ts_percentile(ts_t ts, int percentile);
+ 
 #endif // __TIMESTATS_H__

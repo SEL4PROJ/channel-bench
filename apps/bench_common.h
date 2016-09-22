@@ -303,7 +303,9 @@ typedef struct bench_covert {
 #define BENCH_COVERT_TLB_SPY             16
 #define BENCH_COVERT_BRANCH_TROJAN       17 
 #define BENCH_COVERT_BRANCH_SPY          18
-#define BENCH_COVERT_FUNS                19
+#define BENCH_COVERT_LLC_SINGLE_TROJAN   19 
+#define BENCH_COVERT_LLC_SINGLE_SPY      20
+#define BENCH_COVERT_FUNS                21
 
 #define BENCH_COVERT_MSG_LEN  3 /*msg len for init env*/
 /*matching the test number according to the config*/ 
@@ -323,6 +325,13 @@ typedef struct bench_covert {
 #define BENCH_COVERT_TROJAN    BENCH_COVERT_LLC_KERNEL_TROJAN 
 #define BENCH_COVERT_SPY       BENCH_COVERT_LLC_KERNEL_SPY 
 #endif 
+
+/*LLC covert channel, single core*/
+#ifdef CONFIG_BENCH_COVERT_LLC 
+#define BENCH_COVERT_TROJAN    BENCH_COVERT_LLC_SINGLE_TROJAN 
+#define BENCH_COVERT_SPY       BENCH_COVERT_LLC_SINGLE_SPY 
+#endif 
+
 
 /*the tlb covert channel*/
 #ifdef CONFIG_BENCH_COVERT_TLB

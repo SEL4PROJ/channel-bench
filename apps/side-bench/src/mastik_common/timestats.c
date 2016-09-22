@@ -80,6 +80,17 @@ int ts_median(ts_t ts) {
   return 0;
 }
 
+int ts_percentile(ts_t ts, int percentile) {
+    int c = 0;
+    for (int i = 0; i < TIME_MAX; i++)
+        c += ts->data[i];
+    c = (c *percentile + 50 ) / 100;
+    for (int i = 1; i < TIME_MAX; i++)
+        if ((c -= ts->data[i]) < 0)
+            return i;
+    return 0;
+}
+
 int ts_mean(ts_t ts, int scale) {
   uint64_t sum = 0;
   int count = 0;

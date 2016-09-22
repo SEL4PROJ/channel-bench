@@ -1,6 +1,7 @@
 #ifndef __LOW_H__
 #define __LOW_H__
 
+#include "../ipc_test.h"
 #ifndef PAGE_SIZE 
 #define PAGE_SIZE 4096
 #endif 
@@ -41,9 +42,17 @@
 #define L1I_STRIDE (L1I_CACHELINE * L1I_SETS)
 
 
-#define L3_THRESHOLD 140
+#define L3_THRESHOLD 150
 #define L3_ASSOCIATIVITY 16
 #define L3_SIZE (1*1024*1024)
+#define L3_CACHELINE 32
+// The number of cache sets in each slice.
+#define L3_SETS_PER_SLICE 2048
+
+// The number of cache sets in each page
+#define L3_SETS_PER_PAGE 128
+
+
 
 #endif 
 
@@ -54,6 +63,46 @@ static inline int access(void *v) {
     int rv; 
     asm volatile("ldr %0, [%1]": "=r" (rv): "r" (v):);
     return rv;
+}
+static inline void clflush(void *v) {
+
+}
+
+
+
+static volatile int a;
+
+static inline int memaccess(void *v) {
+    a +=  *(int *)v;
+    return *(int *)v;
+}   
+
+static inline int memaccesstime(void *v) {
+    uint32_t start, end ; 
+    READ_COUNTER_ARMV7(start);
+ 
+    int rv; 
+    asm volatile("");
+    rv = *(int *)v;
+    asm volatile("");
+    a+= rv;
+    READ_COUNTER_ARMV7(end);
+ 
+    return end - start; 
+} 
+
+static inline void walk(void *p, int count) {
+    if (p == NULL)
+        return;
+    void *pp;
+    for (int i = 0; i < count; i++) {
+        pp = p;
+        do {
+            pp = (void *)(((void **)pp)[0]);
+        } while (pp != p);
+        a += *(int *)pp;
+    }
+
 }
 
 #endif

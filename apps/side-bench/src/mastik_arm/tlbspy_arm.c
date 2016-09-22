@@ -13,7 +13,7 @@
 #include "../mastik_common/low.h"
 #include "../ipc_test.h"
 
-#define TLB_ENTRIES  256
+#define TLB_ENTRIES  128
 
 
 static inline void tlb_access(char *buf, uint32_t s) {

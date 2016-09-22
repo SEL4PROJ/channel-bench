@@ -17,11 +17,13 @@ int l3_kd_spy(bench_covert_t *v) {
     return 0;
 }
 
-int l3_trojan(bench_covert_t *env) {
+ 
+int l3_trojan(bench_covert_t *v) {
+
+    return 0;
+
+}
+int l3_spy(bench_covert_t *v) {
+
     return 0;
 }
-int l3_spy(bench_covert_t *env) {
-    return 0;
-}
- 
- 

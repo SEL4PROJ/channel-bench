@@ -488,6 +488,10 @@ int run_single (m_env_t *env) {
 #endif 
 #ifdef CONFIG_BENCH_COVERT_BTB 
     return run_single_l1(env); 
+#endif
+    /*the LLC single core covert channel*/
+#ifdef CONFIG_BENCH_COVERT_LLC
+    return run_single_l1(env); 
 #endif 
 #ifdef CONFIG_BENCH_COVERT_LLC_KERNEL 
     return run_single_llc_kernel(env); 
