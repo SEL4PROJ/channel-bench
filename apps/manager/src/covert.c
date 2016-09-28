@@ -210,7 +210,8 @@ void map_r_buf(m_env_t *env, uint32_t n_p, bench_env_t *t) {
 
 }
 
-void map_shared_buf(bench_env_t *owner, bench_env_t *share, uint32_t n_p) {
+void map_shared_buf(bench_env_t *owner, bench_env_t *share, 
+        uint32_t n_p, uint32_t *phy) {
 
     /*allocate buffer from owner that shared between two threads*/
     reservation_t v_r;
@@ -218,11 +219,17 @@ void map_shared_buf(bench_env_t *owner, bench_env_t *share, uint32_t n_p) {
     cspacepath_t src, dest;
     int ret;
     sel4utils_process_t *p_o = &owner->process, *p_s = &share->process;
+    uint32_t cookies; 
 
     /*pages for spy record, ts structure*/
     owner->s_vaddr = vspace_new_pages(&p_o->vspace, seL4_AllRights,
             n_p, PAGE_BITS_4K);
     assert(owner->s_vaddr != NULL);
+
+    /*find the physical address of the page*/
+    cookies = vspace_get_cookie(&p_o->vspace, owner->s_vaddr); 
+
+    *phy = vka_utspace_paddr(owner->vka, cookies, seL4_ARM_SmallPageObject, seL4_PageBits);
 
     uint32_t v = (uint32_t)owner->s_vaddr;
 
@@ -251,6 +258,49 @@ void map_shared_buf(bench_env_t *owner, bench_env_t *share, uint32_t n_p) {
 
 }
 
+
+
+void create_huge_pages(bench_env_t *owner, uint32_t size) {
+
+
+   /*creating the large page that uses as the probe buffer 
+    for testing, mapping to the benchmark process, and passing in 
+    the pointer and the size to the benchmark thread*/ 
+    uint32_t huge_page_size;
+    sel4utils_process_t *p_o = &owner->process;
+
+    uint32_t cookies, phy, huge_page_object; 
+
+#ifdef CONFIG_ARCH_X86
+    /*4M*/
+    huge_page_size = seL4_LargePageBits;
+    huge_page_object = seL4_IA32_LargePage;
+#endif 
+
+#ifdef CONFIG_ARCH_ARM 
+    /*16M*/
+    huge_page_size = vka_get_object_size(seL4_ARM_SuperSectionObject, 0); 
+    huge_page_object = seL4_ARM_SuperSectionObject;
+#endif 
+
+    if (size % (1 << huge_page_size)) { 
+        size += 1 << huge_page_size; 
+    }
+    size /= 1 << huge_page_size; 
+
+    owner->huge_vaddr = vspace_new_pages(&p_o->vspace, seL4_AllRights, size, 
+            huge_page_size);
+    
+
+    /*find the physical address of the page*/
+    for (int i = 0; i < size; i++) {
+        cookies = vspace_get_cookie(&p_o->vspace, owner->huge_vaddr + i * (1 << huge_page_size)); 
+        phy = vka_utspace_paddr(owner->vka, cookies, huge_page_object, huge_page_size);
+
+        printf("huge page vaddr %p phy %p\n", owner->huge_vaddr + i * (1 << huge_page_size), (void *)phy);
+    }
+
+}
 /*init covert bench for single core*/
 void init_single(m_env_t *env) {
     
@@ -259,10 +309,11 @@ void init_single(m_env_t *env) {
     trojan.affinity = spy.affinity = 0; 
 
     /*one trojan, one spy thread*/ 
+    printf("creating trojan\n"); 
     create_thread(&trojan); 
+    printf("creating spy\n"); 
     create_thread(&spy); 
 
-   
 }
 
 
@@ -307,12 +358,28 @@ int run_single_l2(m_env_t *env) {
     return BENCH_SUCCESS; 
 }
 
+
+void covert_pmu_counter_dump(void) {
+
+    sel4bench_counter_t value;
+
+    for (int i = 0; i < 6; i++) {
+
+        value = sel4bench_get_counter(i); 
+        printf("counter %d value %d\n", i, value);
+
+    }
+    sel4bench_reset_counters(BENCH_PMU_BITS);
+}
+
 int run_single_l1(m_env_t *env) {
     
     seL4_MessageInfo_t info;
     seL4_MessageInfo_t tag;
     struct bench_l1 *r_d;
     uint32_t n_p = (sizeof (struct bench_l1) / BENCH_PAGE_SIZE) + 1;
+    uint32_t share_phy; 
+
 
     printf("starting covert channel benchmark\n");
 
@@ -322,21 +389,30 @@ int run_single_l1(m_env_t *env) {
     printf("data points %d with random sequence\n", CONFIG_BENCH_DATA_POINTS);
 #endif 
 
-    map_shared_buf(&trojan, &spy, NUM_L1D_SHARED_PAGE);
+    map_shared_buf(&spy, &trojan, NUM_L1D_SHARED_PAGE, &share_phy);
     map_r_buf(env, n_p, &spy);
-    
-    tag = seL4_MessageInfo_new(seL4_NoFault, 0, 0, 2);
+    /*create huge pages*/ 
+#ifdef CONFIG_MANAGER_HUGE_PAGES
+    create_huge_pages(&trojan, BENCH_MORECORE_HUGE_SIZE); 
+    create_huge_pages(&spy, BENCH_MORECORE_HUGE_SIZE); 
+#endif 
+
+    tag = seL4_MessageInfo_new(seL4_NoFault, 0, 0, 4);
 
     /*spy*/
     seL4_SetMR(0,(seL4_Word)spy.t_vaddr);
     seL4_SetMR(1, (seL4_Word)spy.s_vaddr);
+    seL4_SetMR(2, share_phy);
+    seL4_SetMR(3, (seL4_Word)spy.huge_vaddr);
 
     seL4_Send(s_ep.cptr, tag);
     printf("spy is ready\n");   
  
-    
-    tag = seL4_MessageInfo_new(seL4_NoFault, 0, 0, 1);
+    /*trojan*/
+    tag = seL4_MessageInfo_new(seL4_NoFault, 0, 0, 3);
     seL4_SetMR(0, (seL4_Word)trojan.s_vaddr);
+    seL4_SetMR(1, share_phy);
+    seL4_SetMR(2, (seL4_Word)trojan.huge_vaddr);
     seL4_Send(t_ep.cptr, tag);
     
     info = seL4_Recv(t_ep.cptr, NULL);
@@ -354,7 +430,7 @@ int run_single_l1(m_env_t *env) {
     r_d =  (struct bench_l1 *)env->record_vaddr;
     printf("probing time start\n");
     
-    for (int i = 1; i < CONFIG_BENCH_DATA_POINTS; i++) {
+    for (int i = 0; i < CONFIG_BENCH_DATA_POINTS; i++) {
         printf("%d %u\n", r_d->sec[i], r_d->result[i]);
 
     }
@@ -416,12 +492,13 @@ int run_single_llc_kernel_schedule(m_env_t *env) {
     seL4_MessageInfo_t tag;
     struct bench_kernel_schedule *r_d;
     uint32_t n_p = (sizeof (struct bench_kernel_schedule) / BENCH_PAGE_SIZE) + 1;
+    uint32_t share_phy; 
 
     printf("starting covert channel benchmark, LLC, kernel deterministic scheduling\n");
 
     printf("data points %d with random sequence\n", NUM_KERNEL_SCHEDULE_DATA);
 
-    map_shared_buf(&trojan, &spy, NUM_KERNEL_SCHEDULE_SHARED_PAGE);
+    map_shared_buf(&trojan, &spy, NUM_KERNEL_SCHEDULE_SHARED_PAGE, &share_phy);
     map_r_buf(env, n_p, &spy);
     
     tag = seL4_MessageInfo_new(seL4_NoFault, 0, 0, 2);

@@ -18,18 +18,35 @@
 #define SAMPLE_LEN 1000
 
 #define L3_SINGLE_TROJAN_RANGE 2048
+#define TROJAN_BUFFER_SIZE  (2048 * 32)
+
+#ifdef CONFIG_MANAGER_HUGE_PAGES
+extern char *morecore_area;
+extern size_t morecore_size;
+#endif
 
 /*assuming 2048 sets, one line each*/
-volatile char trojan_buf [2048 * 32];  
+char volatile *trojan_buf;
 
-static void trojan_access(uint32_t secret) { 
+
+static void trojan_access( uint32_t secret) { 
 
     for (int i = 0; i < secret; i++) 
         access(trojan_buf + i * L1_CACHELINE);
 
 }
 
+#ifdef CONFIG_MANAGER_HUGE_PAGES
+static void update_morecore_area(void *vaddr) {
 
+
+    assert(morecore_area == NULL); 
+    assert(vaddr);
+    morecore_area = vaddr;
+    morecore_size = BENCH_MORECORE_HUGE_SIZE; 
+
+}
+#endif
 int l3_trojan_single(bench_covert_t *env) {
 
     uint32_t secret;
@@ -37,25 +54,33 @@ int l3_trojan_single(bench_covert_t *env) {
     seL4_MessageInfo_t info;
     
     /*creat the probing buffer*/
-    //l3pp_t l3 = l3_prepare();
-    //assert(l3); 
+    l3pp_t l3 = l3_prepare();
+    assert(l3); 
 
-    //int nsets = l3_getSets(l3);
+    int nsets = l3_getSets(l3);
 
 #ifdef CONFIG_DEBUG_BUILD
-    //printf("trojan: Got %d sets\n", nsets);
+    printf("trojan: Got %d sets\n", nsets);
 #endif
-
-   // uint16_t *results = malloc(sizeof (uint16_t) * nsets); 
-    //assert(results);
 
     info = seL4_Recv(env->r_ep, &badge);
     assert(seL4_MessageInfo_get_label(info) == seL4_NoFault);
 
     /*receive the shared address to record the secret*/
     uint32_t volatile *share_vaddr = (uint32_t *)seL4_GetMR(0);
-    uint32_t volatile *syn_vaddr = share_vaddr + 4;
+    uint32_t volatile *syn_vaddr = share_vaddr + 1;
     *share_vaddr = 0; 
+
+#ifdef CONFIG_MANAGER_HUGE_PAGES  
+    void *huge_vaddr = (void*)seL4_GetMR(2);
+    update_morecore_area(huge_vaddr);
+#endif
+
+    uint16_t *results = malloc(sizeof (uint16_t) * nsets); 
+    assert(results);
+
+    trojan_buf = (char *)malloc(TROJAN_BUFFER_SIZE); 
+    assert(trojan_buf);
 
     info = seL4_MessageInfo_new(seL4_NoFault, 0, 0, 1);
     seL4_SetMR(0, 0); 
@@ -77,8 +102,8 @@ int l3_trojan_single(bench_covert_t *env) {
         FENCE();
 
 #ifndef CONFIG_BENCH_DATA_SEQUENTIAL 
-     //   secret = random() % (nsets + 1); 
-        secret = random() % (L3_SINGLE_TROJAN_RANGE + 1); 
+       //secret = random() % (nsets + 1); 
+       secret = random() % (L3_SINGLE_TROJAN_RANGE + 1); 
 #endif
 
 #if 0 
@@ -89,12 +114,12 @@ int l3_trojan_single(bench_covert_t *env) {
 #endif
         /*do simple probe*/
         //l3_probe(l3, results); 
-        trojan_access(secret);
+       // trojan_access(secret);
         /*update the secret read by low*/ 
         *share_vaddr = secret; 
 #ifdef CONFIG_BENCH_DATA_SEQUENTIAL 
-//        if (++secret == nsets + 1)
-  //          secret = 0; 
+      //if (++secret == nsets + 1)
+        //   secret = 0; 
         if (++secret == L3_SINGLE_TROJAN_RANGE + 1)
             secret = 0;
 #endif 
@@ -115,6 +140,21 @@ int l3_spy_single(bench_covert_t *env) {
     seL4_Word badge;
     seL4_MessageInfo_t info;
     
+      
+    info = seL4_Recv(env->r_ep, &badge);
+    assert(seL4_MessageInfo_get_label(info) == seL4_NoFault);
+
+    /*the record address*/
+    struct bench_l1 *r_addr = (struct bench_l1 *)seL4_GetMR(0);
+    /*the shared address*/
+    uint32_t volatile *secret = (uint32_t *)seL4_GetMR(1);
+    uint32_t volatile *syn = secret + 1;
+    uint32_t share_phy = seL4_GetMR(2); 
+#ifdef CONFIG_MANAGER_HUGE_PAGES 
+    void *huge_vaddr = (void*)seL4_GetMR(3);
+    update_morecore_area(huge_vaddr);
+#endif
+    
     /*creat the probing buffer*/
     l3pp_t l3 = l3_prepare();
     assert(l3); 
@@ -127,7 +167,7 @@ int l3_spy_single(bench_covert_t *env) {
 
     uint16_t *results = malloc(sizeof (uint16_t) * nsets); 
     assert(results);
-    
+
     l3_unmonitorall(l3);
 
     /*monitor all sets*/
@@ -135,15 +175,28 @@ int l3_spy_single(bench_covert_t *env) {
         l3_monitor(l3, s);
     }
 
-    info = seL4_Recv(env->r_ep, &badge);
-    assert(seL4_MessageInfo_get_label(info) == seL4_NoFault);
+    /*unmonitor any possible set that can be used for syn, 
+     16 sets for the orginial seL4, 8 sets for the uncoloured*/
+    for (int i = 0; i < l3->ngroups; i++ ) 
+        l3_unmonitor(l3, i * l3->groupsize); 
 
-    /*the record address*/
-    struct bench_l1 *r_addr = (struct bench_l1 *)seL4_GetMR(0);
-    /*the shared address*/
-    uint32_t volatile *secret = (uint32_t *)seL4_GetMR(1);
-    uint32_t volatile *syn = secret + 4;
+    l3_probe(l3, results);
+    l3_probe(l3, results);
+
     *syn = TROJAN_SYN_FLAG;
+
+    /*calculate the shared cache set, unmonitor*/
+#if 0
+#ifdef CONFIG_CACHE_COLOURING 
+    uint32_t share_set = (share_phy >> 5) & 0x3ff; 
+#else 
+    uint32_t share_set = (share_phy >> 5) & 0x7ff;  
+#endif
+#ifdef CONFIG_DEBUG_BUILD
+ 
+    //printf("unmonitor set %d frame 0x%x\n", share_set, share_phy); 
+#endif
+#endif
 
     /*syn with trojan*/
     info = seL4_Recv(env->syn_ep, &badge);
@@ -162,8 +215,8 @@ int l3_spy_single(bench_covert_t *env) {
         /*reset the counter to zero*/
         sel4bench_reset_cycle_count();
         /*do simple probe*/
-        l3_probecount_simple(l3, results); 
-        
+        //l3_probecount_simple(l3, results); 
+        l3_probe(l3, results);
         r_addr->result[i] = 0; 
         for (int s = 0; s < nsets; s++) {
             r_addr->result[i] += results[s];

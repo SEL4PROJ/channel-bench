@@ -102,6 +102,7 @@ typedef struct bench_env {
     void *p_vaddr;
     void *t_vaddr;  /*vaddr for above buffers in bench thread vspace*/ 
     void *s_vaddr;  /*shared address between spy and trojan*/
+    void *huge_vaddr;  /*the starting point of huge pages*/
     /*the affinity of this thread*/ 
     uint32_t affinity; 
     char *name;    /*name of this thread*/ 

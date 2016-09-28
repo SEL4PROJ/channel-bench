@@ -104,6 +104,12 @@ menu    "Manager task for benchmarking tests"
             attack used as data61+ demo, then extened as the multicore benchmark
 
 
+       config MANAGER_HUGE_PAGES
+       bool "setting up huge pages for the benchmarking thread"
+       default n 
+       depends on APP_MANAGER
+       help 
+           manager sets huge pages for the benchmarking thread, size is defined in the bench_common.h, passing pointer to benchmarking thread for the morecore area. 
 
 endmenu
 

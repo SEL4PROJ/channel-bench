@@ -44,7 +44,7 @@
 /*system resources*/
 static m_env_t env; 
 
-#ifdef CONFIG_MANAGER_CACHE_FLUSH  
+#ifdef CONFIG_MANAGER_HUGE_PAGES
 /*use to create huge mappings and given to cache flush benchmark*/
 extern char *morecore_area;
 extern size_t morecore_size;
@@ -379,19 +379,19 @@ static void init_pmu_counters(void) {
     sel4bench_set_count_event(0, SEL4BENCH_EVENT_TLB_L1I_MISS); 
     sel4bench_set_count_event(1, SEL4BENCH_EVENT_TLB_L1D_MISS); 
     /*L1 I cache refill*/
-    //sel4bench_set_count_event(2, 0x1); 
+    sel4bench_set_count_event(2, 0x1); 
     /*L1 D cache refill*/
-    //sel4bench_set_count_event(3, 0x3); 
+    sel4bench_set_count_event(3, 0x3); 
 
     /*L2 cache refill*/ 
-    //sel4bench_set_count_event(4, 0x17);
+    sel4bench_set_count_event(4, 0x17);
    
     /*stall due to instruction micro tlb miss*/ 
-    sel4bench_set_count_event(2, 0x84); 
+    //sel4bench_set_count_event(2, 0x84); 
     /*stall due to data micro tlb miss*/ 
-    sel4bench_set_count_event(3, 0x85); 
+    //sel4bench_set_count_event(3, 0x85); 
     /*stall due to main tlb miss instruction side*/ 
-    sel4bench_set_count_event(4, 0x82);
+    //sel4bench_set_count_event(4, 0x82);
     /*stall due to main tlb miss data side*/
     sel4bench_set_count_event(5, 0x83);
 #endif 
@@ -458,7 +458,9 @@ static void init_pmu_counters(void) {
 #endif
 
     /*start the pmu counter*/ 
+
     sel4bench_start_counters(bit_counter); 
+    sel4bench_reset_counters(bit_counter);
 }
 
 
@@ -513,7 +515,7 @@ int main (void) {
     seL4_BootInfo *info = seL4_GetBootInfo(); 
     int err;
 
-#ifdef CONFIG_MANAGER_CACHE_FLUSH 
+#ifdef CONFIG_MANAGER_HUGE_PAGES
     /*init the more core area for the libc to use*/
     morecore_area = manager_morecore_area; 
     morecore_size = MANAGER_MORECORE_SIZE; 

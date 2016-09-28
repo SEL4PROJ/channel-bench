@@ -88,9 +88,6 @@ static void *sethead(l3pp_t l3, int set) {
     /*offset within a group (page)*/
     int offset = (set % l3->groupsize) * L3_CACHELINE;
 
-#ifdef CONFIG_DEBUG_BUILD 
-    printf("sethead with %d lines in a set\n", count);
-#endif 
     /*link all the lines in a set, forward, and backward, circular link list*/
     for (int i = 0; i < count; i++) {
         LNEXT(OFFSET(vl_get(list, i), offset)) = OFFSET(vl_get(list, (i + 1) % count), offset);
@@ -378,16 +375,21 @@ l3pp_t l3_prepare(void) {
     //buffer = mmap(NULL, bufsize, PROT_READ|PROT_WRITE, MAP_ANON|MAP_PRIVATE, -1, 0);
 
     l3->buffer = allocate(l3->l3info.bufsize, 4096);
+
     if (l3->buffer == NULL) {
         free(l3);
         return NULL;
     }
+#ifdef CONFIG_DEBUG_BUILD 
+    printf("probe buffer vaddr %p size 0x%x\n", l3->buffer, l3->l3info.bufsize);
+
+#endif 
 
     /*always return 1, probe map not triggered*/
     if (!ptemap(l3))
         probemap(l3);
 
-#ifdef DEBUG
+#if 0
     for (int i = 0; i < l3->ngroups; i++) {
         printf("%2d:", i);
         for (int j = 0; j < vl_len(l3->groups[i]); j++)
@@ -439,13 +441,15 @@ int l3_unmonitor(l3pp_t l3, int line) {
   if (!IS_MONITORED(l3->monitoredbitmap, line))
     return 0;
   UNSET_MONITORED(l3->monitoredbitmap, line);
-  for (int i = 0; i < l3->ngroups; i++)
-    if (l3->monitoredset[i] == line) {
-      --l3->ngroups;
-      l3->monitoredset[i] = l3->monitoredset[l3->ngroups];
-      l3->monitoredhead[i] = l3->monitoredhead[l3->ngroups];
-      break;
-    }
+  for (int i = 0; i < l3->nmonitored; i++) {
+      if (l3->monitoredset[i] == line) {
+
+          --l3->nmonitored;
+          l3->monitoredset[i] = l3->monitoredset[l3->nmonitored];
+          l3->monitoredhead[i] = l3->monitoredhead[l3->nmonitored];
+          break;
+      }
+  }
   return 1;
 }
 

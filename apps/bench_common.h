@@ -232,6 +232,9 @@ struct ipc_results {
 #define BENCH_COVERT_TIME_PAGES 21  /*ts structure defined in timestats.c*/
 #define BENCH_COVERT_BUF_PAGES  4096 /*trojan/probe buffers*/
 
+#define BENCH_MORECORE_HUGE_SIZE  (16 * 1024 * 1024) /* huge pages created by master for benchmarking thread */
+
+
 /*pmu counter result structure*/
 typedef struct {
 
