@@ -19,28 +19,38 @@
 #include "../mastik_common/l1i.h"
 #include "../ipc_test.h"
 
-//#define BTAC_ENTRIES  1024  /*512 entries but each probe does 2 branches*/
+#define INSTRUCTION_LENGTH  4
+#define BTAC_ENTRIES  512 
 
+#ifdef CONFIG_BENCH_BRANCH_ALIGN
+/*using branch instructions to do the probe*/
+#define BTAC_TROJAN_SETS    512 
+#define BTAC_SPY_SETS       512
+#else 
 /*total 256 sets */
 #define BTAC_TROJAN_SETS    256
 /*one sets contain 4 branch*/
 #define BTAC_SPY_SETS       256
+#endif
 
-#if 0
+
 extern void arm_branch_lines(void); 
 
 
-static void branch_probe(uint32_t n) {
+static void branch_probe_lines(uint32_t n) {
 
     /*probe on N number of branch instructions then return*/
     if (!n)
-        return; 
-    asm volatile (
-            "mov r1, %0\n"
-            "bl arm_branch_lines" : : "r" (n): "lr", "r0", "r1"); 
+        return;
+    uint32_t start = (uint32_t)arm_branch_lines; 
+
+    /*calculate where to start to probing if just one line, 
+     starting from arm_branch_line - 511 * 4*/
+    start += (BTAC_ENTRIES - n ) * INSTRUCTION_LENGTH; 
+
+    asm volatile ("blx %0" : : "r" (start): "lr"); 
 
 }
-#endif 
 
 int btb_trojan(bench_covert_t *env) {
 
@@ -87,6 +97,13 @@ int btb_trojan(bench_covert_t *env) {
 #ifndef CONFIG_BENCH_DATA_SEQUENTIAL 
         secret = random() % (BTAC_TROJAN_SETS + 1); 
 #endif
+
+#ifdef CONFIG_BENCH_BRANCH_ALIGN 
+        /*using the instructions to probe*/
+        branch_probe_lines(secret);
+
+#else
+        /*using L1 I cache sets to probe */
         for (int s = 0; s < I_MONITOR_MASK; s++ ) {
             monitored_mask[s] = 0;        
         }
@@ -102,7 +119,7 @@ int btb_trojan(bench_covert_t *env) {
 
         l1i_set_monitored_set(l1i_1, monitored_mask);
         l1i_probe(l1i_1, results); 
-
+#endif 
         //branch_probe(secret);
        /*update the secret read by low*/ 
         *share_vaddr = secret; 
@@ -126,7 +143,7 @@ int btb_spy(bench_covert_t *env) {
 
     seL4_Word badge;
     seL4_MessageInfo_t info;
-    //uint32_t start, after;
+    uint32_t start, after;
 
     uint64_t  monitored_mask[I_MONITOR_MASK] = {0};
 
@@ -171,18 +188,23 @@ int btb_spy(bench_covert_t *env) {
         FENCE(); 
         /*reset the counter to zero*/
         sel4bench_reset_cycle_count();
+
+#ifdef CONFIG_BENCH_BRANCH_ALIGN 
+        /*using instrcutions to probe*/
+        READ_COUNTER_ARMV7(start);
+        branch_probe_lines(BTAC_SPY_SETS);
+
+        READ_COUNTER_ARMV7(after);
+        r_addr->result[i] = after - start; 
+#else
+        /*using cache sets to probe*/
         l1i_probe(l1i_1, results); 
         r_addr->result[i] = 0; 
         for (int s = 0; s < BTAC_SPY_SETS; s++) {
             r_addr->result[i] += results[s];
         }
-    //    READ_COUNTER_ARMV7(start);
-        /*probing on half of the branch buffer*/
-      //  branch_probe(BTAC_SPY_ENTRIES);
-
-     //   READ_COUNTER_ARMV7(after);
-        //r_addr->result[i] = after - start; 
-        
+#endif 
+       
         /*result is the total probing cost
           secret is updated by trojan in the previous system tick*/
         r_addr->sec[i] = *secret; 

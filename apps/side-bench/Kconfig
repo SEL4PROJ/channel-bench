@@ -153,6 +153,12 @@ menu   "Timing Channel Benchmarks"
       help
            number of data points collected, used by both high and low
       
+      config BENCH_BRANCH_ALIGN
+      bool   "using 4bytes aligned instruction to do branch probe"
+      depends on BENCH_COVERT_BTB 
+      help  
+             using 512 branch instructions, each 4 bytes, to probe the branch target buffer 
+
       config BENCH_DATA_SEQUENTIAL
       bool "sending the secret in sequential order"
       default n

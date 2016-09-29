@@ -18,7 +18,7 @@ uint32_t l1i_probe_nop_time;
 
 #ifdef CONFIG_ARCH_ARM 
 #define SET(way, set) (((uint8_t *)l1->memory) + L1I_STRIDE * (way) + L1I_CACHELINE * (set))
-extern void arm_branch_lines(void); 
+extern void arm_branch_sets(void); 
 #endif 
 
 
@@ -60,7 +60,7 @@ l1iinfo_t l1i_prepare(uint64_t *monitored_sets) {
   l1iinfo_t l1 = (l1iinfo_t)malloc(sizeof(struct l1iinfo));
 
   /*using existing code for probing*/
-  l1->memory = arm_branch_lines; 
+  l1->memory = arm_branch_sets; 
 
   l1i_set_monitored_set(l1, monitored_sets);
   return l1;

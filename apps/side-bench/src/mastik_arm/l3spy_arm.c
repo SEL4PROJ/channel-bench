@@ -114,7 +114,7 @@ int l3_trojan_single(bench_covert_t *env) {
 #endif
         /*do simple probe*/
         //l3_probe(l3, results); 
-       // trojan_access(secret);
+        trojan_access(secret);
         /*update the secret read by low*/ 
         *share_vaddr = secret; 
 #ifdef CONFIG_BENCH_DATA_SEQUENTIAL 

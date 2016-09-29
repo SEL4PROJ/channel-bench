@@ -108,8 +108,8 @@ call8:
 /*altogether 1024 lines
  8 pages: 6 pages jump, 2 pages return*/
 .align 12 
-.global arm_branch_lines
-arm_branch_lines:
+.global arm_branch_sets
+arm_branch_sets:
 BPL_PAGE()
 BPL_PAGE()
 BPL_PAGE()
@@ -119,4 +119,42 @@ BPL_PAGE()
 BLR_PAGE()
 BLR_PAGE()
 
+
+/*using 4 bytes, 256 sets to probe the btb 
+ 512 branch instruction*/ 
+#define B_4BYTES() \
+      b .+4; 
+
+#define B_4BYTES_4() \
+        B_4BYTES() \
+        B_4BYTES() \
+        B_4BYTES() \
+        B_4BYTES() 
+
+#define B_4BYTES_16() \
+        B_4BYTES_4() \
+        B_4BYTES_4() \
+        B_4BYTES_4() \
+        B_4BYTES_4() 
+
+#define B_4BYTES_64() \
+        B_4BYTES_16() \
+        B_4BYTES_16() \
+        B_4BYTES_16() \
+        B_4BYTES_16() 
+
+#define B_4BYTES_256() \
+        B_4BYTES_64() \
+        B_4BYTES_64() \
+        B_4BYTES_64() \
+        B_4BYTES_64() 
+
+
+    /*512 lines*/
+.global arm_branch_lines
+arm_branch_lines:
+B_4BYTES_256()
+B_4BYTES_256()
+        bx lr   /*bx lr uses the return stack, 8 entries 32 bits
+                 a seperate cache */
 
