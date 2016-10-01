@@ -495,8 +495,11 @@ int run_single_llc_kernel_schedule(m_env_t *env) {
     uint32_t share_phy; 
 
     printf("starting covert channel benchmark, LLC, kernel deterministic scheduling\n");
-
-    printf("data points %d with random sequence\n", NUM_KERNEL_SCHEDULE_DATA);
+#ifdef CONFIG_BENCH_DATA_SEQUENTIAL 
+    printf("data points %d with sequential sequence\n", CONFIG_BENCH_DATA_POINTS);
+#else 
+    printf("data points %d with random sequence\n", CONFIG_BENCH_DATA_POINTS);
+#endif 
 
     map_shared_buf(&trojan, &spy, NUM_KERNEL_SCHEDULE_SHARED_PAGE, &share_phy);
     map_r_buf(env, n_p, &spy);
@@ -573,10 +576,12 @@ int run_single (m_env_t *env) {
 #ifdef CONFIG_BENCH_COVERT_LLC_KERNEL 
     return run_single_llc_kernel(env); 
 #endif 
-#ifdef CONFIG_BENCH_COVERT_LLC_KERNEL_SCHEDULE 
+#if defined (CONFIG_ARCH_X86) && (CONFIG_BENCH_COVERT_LLC_KERNEL_SCHEDULE) 
     return run_single_llc_kernel_schedule(env); 
 #endif 
-
+#if defined (CONFIG_ARCH_ARM) && (CONFIG_BENCH_COVERT_LLC_KERNEL_SCHEDULE) 
+    return run_single_l1(env);
+#endif 
 }
 
 static inline void mfence() {
