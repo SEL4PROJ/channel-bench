@@ -181,7 +181,7 @@ int l3_kd_spy(bench_covert_t *env) {
         
 #ifdef CONFIG_BENCH_DATA_SEQUENTIAL 
         if (++sec == KD_TROJAN_LINES + 1)
-            secret = 0; 
+            sec = 0; 
 #endif 
 
     }
