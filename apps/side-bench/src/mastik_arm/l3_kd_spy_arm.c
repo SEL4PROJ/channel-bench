@@ -15,15 +15,17 @@
 #include "../mastik_common/low.h"
 #include "../mastik_common/l1i.h"
 #include "../ipc_test.h"
+#include "l3_arm.h"
 
 
 /*256 cache sets on L1 I and L1 Data*/
-#define KD_TROJAN_LINES     256
-#define TIME_TICK_BREAK_CYCLES     10000
+//#define KD_TROJAN_LINES     256
+/*the 256 K buffer to access*/
+#define KD_TROJAN_LINES 256
 
 
 /*accessing N number of L1 D cache sets*/
-void static data_access(char *buf, uint32_t sets) {
+void data_access(char *buf, uint32_t sets) {
 
     for (int s = 0; s < sets; s++) {
         for (int i = 0; i < L1_ASSOCIATIVITY; i++) {
@@ -33,34 +35,6 @@ void static data_access(char *buf, uint32_t sets) {
     }
 
 } 
-
-
-uint32_t static timer_tick(void) {
-
-    /*waiting until a timer tick occured*/
-    uint32_t start, after;
-    uint64_t end, begin; 
-
-    do 
-    { 
-        READ_COUNTER_ARMV7(start);
-        READ_COUNTER_ARMV7(after); 
-
-        begin = start;
-        end = after;
-
-        /*overflow*/
-        if (start > after) 
-            end += 1LLU << 32; 
-        
-        /*a preemption occured*/
-        if (end - begin > TIME_TICK_BREAK_CYCLES) 
-            return (uint32_t)(end - begin);
-
-    } while (1);
-
-
-}
 
 
 int l3_kd_trojan(bench_covert_t *env) {
@@ -74,11 +48,25 @@ int l3_kd_trojan(bench_covert_t *env) {
     l1iinfo_t l1i_1 = l1i_prepare(monitored_mask);
     assert(l1i_1); 
 
+    /*creat the probing buffer*/
+    l3pp_t l3 = l3_prepare();
+    assert(l3); 
+
+    int nsets = l3_getSets(l3);
+
+#ifdef CONFIG_DEBUG_BUILD
+    printf("trojan: Got %d sets\n", nsets);
+#endif
+
+
     uint16_t *results = malloc(sizeof (uint16_t) * L1I_SETS); 
     assert(results);
     char *l1d_buf = malloc(L1_PROBE_BUFFER);
     assert(l1d_buf);
+    uint16_t *l3_kd_results = malloc(sizeof (uint16_t) * nsets); 
+    assert(l3_kd_results);
 
+ 
     info = seL4_Recv(env->r_ep, &badge);
     assert(seL4_MessageInfo_get_label(info) == seL4_NoFault);
 
@@ -98,17 +86,29 @@ int l3_kd_trojan(bench_covert_t *env) {
 
     secret = 0; 
 
-    for (int i = 0; i < CONFIG_BENCH_DATA_POINTS + 10; i++) {
+    for (int i = 0; i < CONFIG_BENCH_DATA_POINTS; i++) {
 
         FENCE(); 
 
-        /*wait for a new tick*/
-        timer_tick(); 
+        while (*syn_vaddr != TROJAN_SYN_FLAG) {
+            ;
+        }
+        FENCE();
 
 #ifndef CONFIG_BENCH_DATA_SEQUENTIAL 
         secret = random() % (KD_TROJAN_LINES + 1); 
 #endif
-
+#if 1 
+        /*using the LLC to probe*/
+        l3_unmonitorall(l3);
+        for (int s = 0; s < secret; s++) {
+            l3_monitor(l3, s);
+        }
+        /*do simple probe, monitor already touches the caches by linking the cache lines*/
+        //l3_probe(l3, l3_kd_results); 
+ 
+#endif
+#if 0
        /*using L1 I cache sets to probe */
         for (int s = 0; s < I_MONITOR_MASK; s++ ) {
             monitored_mask[s] = 0;        
@@ -127,14 +127,17 @@ int l3_kd_trojan(bench_covert_t *env) {
         l1i_probe(l1i_1, results); 
         /*L1 D cache access*/ 
         data_access(l1d_buf, secret); 
-
+#endif 
         //branch_probe(secret);
        /*update the secret read by low*/ 
-        //*share_vaddr = secret; 
+        *share_vaddr = secret; 
 #ifdef CONFIG_BENCH_DATA_SEQUENTIAL 
         if (++secret == KD_TROJAN_LINES + 1)
             secret = 0; 
 #endif 
+        /*spy go*/
+        *syn_vaddr = SPY_SYN_FLAG;
+
     }
 
     FENCE(); 
@@ -152,8 +155,8 @@ int l3_kd_spy(bench_covert_t *env) {
 
     seL4_Word badge;
     seL4_MessageInfo_t info;
-    uint32_t sec = 0;
-    
+    uint32_t volatile cur;
+    uint32_t volatile prev;
  
     info = seL4_Recv(env->r_ep, &badge);
     assert(seL4_MessageInfo_get_label(info) == seL4_NoFault);
@@ -165,24 +168,45 @@ int l3_kd_spy(bench_covert_t *env) {
     uint32_t volatile *syn = secret + 1;
 
 
+    *syn = TROJAN_SYN_FLAG;
+
+ 
     /*syn with trojan*/
     info = seL4_Recv(env->syn_ep, &badge);
     assert(seL4_MessageInfo_get_label(info) == seL4_NoFault);
-    
-    timer_tick(); 
+     /*reset the counter to zero*/
+    sel4bench_reset_cycle_count();
 
-    
+
+    READ_COUNTER_ARMV7(prev);
+       
     for (int i = 0; i < CONFIG_BENCH_DATA_POINTS; i++) {
 
         FENCE();
+#if 1
         /*measure the offline time*/
-        r_addr->result[i] = timer_tick();
-        r_addr->sec[i] = sec; 
+         while (*syn != SPY_SYN_FLAG) {
+             ;
+         }
+
+        FENCE();
+        READ_COUNTER_ARMV7(cur);
+        /*reset the counter to zero*/
+    //    sel4bench_reset_cycle_count();
+
+#endif   
+        if (prev > cur) {
+            uint64_t this = (uint64_t)cur + (1llu << 32);
+            r_addr->result[i] = this - prev;
+        }
+        else 
+            r_addr->result[i] = cur - prev; 
         
-#ifdef CONFIG_BENCH_DATA_SEQUENTIAL 
-        if (++sec == KD_TROJAN_LINES + 1)
-            sec = 0; 
-#endif 
+        r_addr->sec[i] = *secret; 
+        prev = cur; 
+
+        /*spy set the flag*/
+        *syn = TROJAN_SYN_FLAG; 
 
     }
 

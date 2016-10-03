@@ -123,7 +123,6 @@ int l3_trojan_single(bench_covert_t *env) {
         if (++secret == L3_SINGLE_TROJAN_RANGE + 1)
             secret = 0;
 #endif 
-        /*wait until spy set the flag*/
         *syn_vaddr = SPY_SYN_FLAG;
 
     }
