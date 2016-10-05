@@ -23,11 +23,13 @@
 #define BTAC_ENTRIES  512 
 
 #ifdef CONFIG_BENCH_BRANCH_ALIGN
-/*using branch instructions to do the probe*/
+/*using branch instructions to do the probe, 4 bytes aligned
+ */
 #define BTAC_TROJAN_SETS    512 
 #define BTAC_SPY_SETS       512
 #else 
-/*total 256 sets */
+/*total 256 sets 
+ using L1 I cache lines to do the probe*/
 #define BTAC_TROJAN_SETS    256
 /*one sets contain 4 branch*/
 #define BTAC_SPY_SETS       256

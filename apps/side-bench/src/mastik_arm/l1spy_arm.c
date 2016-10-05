@@ -13,6 +13,20 @@ sabre L1 D cache, 32B cache line, 4 ways, physically indexed, physically tagged
 #include "../mastik_common/l1.h"
 #include "../ipc_test.h"
 
+#define L1D_TROJAN_SETS 256
+
+
+/*accessing N number of L1 D cache sets*/
+static void data_access(char *buf, uint32_t sets) {
+
+    for (int s = 0; s < sets; s++) {
+        for (int i = 0; i < L1_ASSOCIATIVITY; i++) {
+
+            access(buf + s * L1_CACHELINE + i * L1_STRIDE);
+        }
+    }
+
+}
 
 int l1_trojan(bench_covert_t *env) {
 
@@ -31,7 +45,7 @@ int l1_trojan(bench_covert_t *env) {
 
   /*receive the shared address to record the secret*/
   uint32_t volatile *share_vaddr = (uint32_t *)seL4_GetMR(0);
-  uint32_t volatile *syn_vaddr = share_vaddr + 4;
+  uint32_t volatile *syn_vaddr = share_vaddr + 1;
   *share_vaddr = 0; 
   
   info = seL4_MessageInfo_new(seL4_NoFault, 0, 0, 1);
@@ -40,58 +54,37 @@ int l1_trojan(bench_covert_t *env) {
   
   /*ready to do the test*/
   seL4_Send(env->syn_ep, info);
+  secret = 0; 
 
-#ifdef CONFIG_BENCH_DATA_SEQUENTIAL 
-  for (int i = 0; i < CONFIG_BENCH_DATA_POINTS / L1_LINES ; i++) {
+  for (int i = 0; i < CONFIG_BENCH_DATA_POINTS; i++) {
 
-      for (secret = 0; secret < L1_LINES; secret++) {
+      FENCE(); 
 
-          FENCE(); 
-
-          while (*syn_vaddr != TROJAN_SYN_FLAG) {
-              ;
-          }
-          FENCE();
-          
-          for (int n = 0; n < secret; n++) 
-              access(data + n * L1_CACHELINE);
-
-          //l1i_trojan_branch_select(secret);
-          /*update the secret read by low*/ 
-          *share_vaddr = secret; 
-          /*wait until spy set the flag*/
-          *syn_vaddr = SPY_SYN_FLAG;
+      while (*syn_vaddr != TROJAN_SYN_FLAG) {
+          ;
       }
+      FENCE();
+
+#ifndef CONFIG_BENCH_DATA_SEQUENTIAL 
+      secret = random() % (L1D_TROJAN_SETS + 1); 
+#endif
+
+      data_access(data, secret);
       
+      *share_vaddr = secret; 
+#ifdef CONFIG_BENCH_DATA_SEQUENTIAL 
+      if (++secret == L1D_TROJAN_SETS + 1)
+          secret = 0; 
+#endif 
+      /*wait until spy set the flag*/
+      *syn_vaddr = SPY_SYN_FLAG;
+
   }
 
- FENCE(); 
-#else 
- for (int i = 0; i < CONFIG_BENCH_DATA_POINTS; i++) {
-
-     FENCE(); 
-
-     while (*syn_vaddr != TROJAN_SYN_FLAG) {
-         ;
-     }
-     FENCE();
-     secret = random() % L1_LINES; 
-
-     for (int n = 0; n < secret; n++) 
-         access(data + n * L1_CACHELINE);
-
-     /*update the secret read by low*/ 
-     *share_vaddr = secret; 
-     /*wait until spy set the flag*/
-     *syn_vaddr = SPY_SYN_FLAG;
-
-
- }
-
- FENCE(); 
-#endif 
  
-  while (1);
+ FENCE(); 
+
+ while (1);
  
   return 0;
 }
@@ -113,7 +106,7 @@ int l1_spy(bench_covert_t *env) {
   struct bench_l1 *r_addr = (struct bench_l1 *)seL4_GetMR(0);
   /*the shared address*/
   uint32_t volatile *secret = (uint32_t *)seL4_GetMR(1);
-  uint32_t volatile *syn = secret + 4;
+  uint32_t volatile *syn = secret + 1;
   *syn = TROJAN_SYN_FLAG;
 
   /*syn with trojan*/
