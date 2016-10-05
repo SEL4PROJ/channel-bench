@@ -17,6 +17,7 @@
 #include <simple/simple.h>
 
 #include "manager.h"
+#include "ipc.h"
 #include "../../covert.h"
 
 #ifdef  CONFIG_MANAGER_COVERT_BENCH
@@ -500,8 +501,8 @@ int run_single_llc_kernel_schedule(m_env_t *env) {
 #else 
     printf("data points %d with random sequence\n", CONFIG_BENCH_DATA_POINTS);
 #endif 
-
-    map_shared_buf(&trojan, &spy, NUM_KERNEL_SCHEDULE_SHARED_PAGE, &share_phy);
+    /*first the shared buffer, then the record buffer*/
+    map_shared_buf(&spy, &trojan, NUM_KERNEL_SCHEDULE_SHARED_PAGE, &share_phy);
     map_r_buf(env, n_p, &spy);
     
     tag = seL4_MessageInfo_new(seL4_NoFault, 0, 0, 2);
@@ -531,8 +532,10 @@ int run_single_llc_kernel_schedule(m_env_t *env) {
 
     r_d =  (struct bench_kernel_schedule *)env->record_vaddr;
     printf("online time start\n");
+
     for (int i = 3; i < NUM_KERNEL_SCHEDULE_DATA; i++) {
-        printf("%d %llu\n", r_d->prev_sec[i], r_d->prevs[i] - r_d->starts[i]);
+
+        printf("%d "CCNT_FORMAT"\n", r_d->prev_sec[i], r_d->prevs[i] - r_d->starts[i]);
 
     }
 
@@ -540,7 +543,7 @@ int run_single_llc_kernel_schedule(m_env_t *env) {
 
     printf("offline time start\n");
     for (int i = 3; i < NUM_KERNEL_SCHEDULE_DATA; i++) {
-        printf("%d %llu\n", r_d->cur_sec[i], r_d->curs[i] - r_d->prevs[i]);
+        printf("%d "CCNT_FORMAT"\n", r_d->cur_sec[i], r_d->curs[i] - r_d->prevs[i]);
     }
     printf("offline time end\n");
 
@@ -576,11 +579,8 @@ int run_single (m_env_t *env) {
 #ifdef CONFIG_BENCH_COVERT_LLC_KERNEL 
     return run_single_llc_kernel(env); 
 #endif 
-#if defined (CONFIG_ARCH_X86) && (CONFIG_BENCH_COVERT_LLC_KERNEL_SCHEDULE) 
+#ifdef CONFIG_BENCH_COVERT_LLC_KERNEL_SCHEDULE
     return run_single_llc_kernel_schedule(env); 
-#endif 
-#if defined (CONFIG_ARCH_ARM) && (CONFIG_BENCH_COVERT_LLC_KERNEL_SCHEDULE) 
-    return run_single_l1(env);
 #endif 
 }
 

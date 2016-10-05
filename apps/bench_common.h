@@ -395,7 +395,7 @@ typedef struct bench_covert {
 #define NUM_KERNEL_SCHEDULE_SHARED_PAGE  1
 #define NUM_L1D_SHARED_PAGE  1
 
-
+#ifdef CONFIG_ARCH_X86
 struct bench_kernel_schedule {
     uint64_t volatile prevs[NUM_KERNEL_SCHEDULE_DATA];
     uint64_t volatile starts[NUM_KERNEL_SCHEDULE_DATA];
@@ -403,7 +403,16 @@ struct bench_kernel_schedule {
     uint32_t volatile prev_sec[NUM_KERNEL_SCHEDULE_DATA];
     uint32_t volatile cur_sec[NUM_KERNEL_SCHEDULE_DATA];
 };
-
+#else
+/*arm platform*/
+struct bench_kernel_schedule {
+    uint32_t volatile prevs[NUM_KERNEL_SCHEDULE_DATA];
+    uint32_t volatile starts[NUM_KERNEL_SCHEDULE_DATA];
+    uint32_t volatile curs[NUM_KERNEL_SCHEDULE_DATA];
+    uint32_t volatile prev_sec[NUM_KERNEL_SCHEDULE_DATA];
+    uint32_t volatile cur_sec[NUM_KERNEL_SCHEDULE_DATA];
+};
+#endif 
 struct bench_l1 {
     /*L1 data/instruction cache 64 sets, the result contains the 
      total cost on probing L1 D/I cache*/
