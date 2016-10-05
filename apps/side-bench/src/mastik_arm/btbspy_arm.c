@@ -39,7 +39,7 @@
 extern void arm_branch_lines(void); 
 
 
-static void branch_probe_lines(uint32_t n) {
+void branch_probe_lines(uint32_t n) {
 
     /*probe on N number of branch instructions then return*/
     if (!n)

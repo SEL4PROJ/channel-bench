@@ -155,6 +155,7 @@ menu   "Timing Channel Benchmarks"
       
       config BENCH_BRANCH_ALIGN
       bool   "using 4bytes aligned instruction to do branch probe"
+      default n
       depends on BENCH_COVERT_BTB 
       help  
              using 512 branch instructions, each 4 bytes, to probe the branch target buffer 
