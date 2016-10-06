@@ -73,7 +73,7 @@ int btb_trojan(bench_covert_t *env) {
 
     /*receive the shared address to record the secret*/
     uint32_t volatile *share_vaddr = (uint32_t *)seL4_GetMR(0);
-    uint32_t volatile *syn_vaddr = share_vaddr + 4;
+    uint32_t volatile *syn_vaddr = share_vaddr + 1;
     *share_vaddr = 0; 
 
     info = seL4_MessageInfo_new(seL4_NoFault, 0, 0, 1);
@@ -171,7 +171,7 @@ int btb_spy(bench_covert_t *env) {
     struct bench_l1 *r_addr = (struct bench_l1 *)seL4_GetMR(0);
     /*the shared address*/
     uint32_t volatile *secret = (uint32_t *)seL4_GetMR(1);
-    uint32_t volatile *syn = secret + 4;
+    uint32_t volatile *syn = secret + 1;
     *syn = TROJAN_SYN_FLAG;
 
     /*syn with trojan*/
