@@ -31,7 +31,6 @@ uint32_t starts[NUM_KERNEL_SCHEDULE_DATA];
 uint32_t curs[NUM_KERNEL_SCHEDULE_DATA];
 uint32_t prevs[NUM_KERNEL_SCHEDULE_DATA];
 
-#if 0
 /*accessing N number of L1 D cache sets*/
 void data_access(char *buf, uint32_t sets) {
 
@@ -44,7 +43,6 @@ void data_access(char *buf, uint32_t sets) {
 
 } 
 
-#endif
 
 int l3_kd_trojan(bench_covert_t *env) {
 
@@ -105,6 +103,7 @@ int l3_kd_trojan(bench_covert_t *env) {
             READ_COUNTER_ARMV7(cur); 
         }
 
+        
 #ifndef CONFIG_BENCH_DATA_SEQUENTIAL 
         secret = random() % (KD_TROJAN_LINES + 1); 
 #endif

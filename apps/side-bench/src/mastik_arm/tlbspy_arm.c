@@ -56,56 +56,35 @@ int tlb_trojan(bench_covert_t *env) {
 
   /*ready to do the test*/
   seL4_Send(env->syn_ep, info);
-#ifdef CONFIG_BENCH_DATA_SEQUENTIAL 
-  for (int i = 0; i < CONFIG_BENCH_DATA_POINTS / (TLB_ENTRIES + 1); i++) {
+  secret = 0; 
 
-      for (secret = 0; secret <= TLB_ENTRIES; secret++) {
+  for (int i = 0; i < CONFIG_BENCH_DATA_POINTS; i++) {
 
-          FENCE(); 
+      FENCE(); 
 
-          while (*syn_vaddr != TROJAN_SYN_FLAG) {
-              ;
-          }
-          FENCE();
-
-          tlb_access(buf, secret);
-          
-          /*update the secret read by low*/ 
-          *share_vaddr = secret; 
-          /*wait until spy set the flag*/
-          *syn_vaddr = SPY_SYN_FLAG;
+      while (*syn_vaddr != TROJAN_SYN_FLAG) {
+          ;
       }
-      
-  }
-
- FENCE(); 
-
-
-
-#else 
- for (int i = 0; i < CONFIG_BENCH_DATA_POINTS; i++) {
+      FENCE();
+#ifndef CONFIG_BENCH_DATA_SEQUENTIAL 
+      secret = random() % (TLB_ENTRIES + 1); 
+#endif
 
 
+      tlb_access(buf, secret);
 
-     FENCE(); 
-
-     while (*syn_vaddr != TROJAN_SYN_FLAG) {
-         ;
-     }
-     FENCE();
-     secret = random() % (TLB_ENTRIES + 1); 
-
-     tlb_access(buf,secret);
-     /*update the secret read by low*/ 
-     *share_vaddr = secret; 
-     /*wait until spy set the flag*/
-     *syn_vaddr = SPY_SYN_FLAG;
-
-      
-  }
-
- FENCE(); 
+      /*update the secret read by low*/ 
+      *share_vaddr = secret; 
+#ifdef CONFIG_BENCH_DATA_SEQUENTIAL 
+      if (++secret == TLB_ENTRIES + 1)
+          secret = 0; 
 #endif 
+ 
+      *syn_vaddr = SPY_SYN_FLAG;
+  }
+
+
+ FENCE(); 
  
   while (1);
  
