@@ -34,6 +34,7 @@ int tlb_trojan(bench_covert_t *env) {
   seL4_Word badge;
   seL4_MessageInfo_t info;
   char *buf = malloc ((TLB_ENTRIES * 4096) + 4096);
+  uint32_t cur, prev; 
 
   assert(buf); 
   int temp = (int)buf; 
@@ -61,9 +62,13 @@ int tlb_trojan(bench_covert_t *env) {
   for (int i = 0; i < CONFIG_BENCH_DATA_POINTS; i++) {
 
       FENCE(); 
+      READ_COUNTER_ARMV7(cur);
+      prev = cur;
 
-      while (*syn_vaddr != TROJAN_SYN_FLAG) {
-          ;
+      while (cur - prev < KERNEL_SCHEDULE_TICK_LENGTH) {
+          prev = cur; 
+
+            READ_COUNTER_ARMV7(cur); 
       }
       FENCE();
 #ifndef CONFIG_BENCH_DATA_SEQUENTIAL 
@@ -79,8 +84,6 @@ int tlb_trojan(bench_covert_t *env) {
       if (++secret == TLB_ENTRIES + 1)
           secret = 0; 
 #endif 
- 
-      *syn_vaddr = SPY_SYN_FLAG;
   }
 
 
@@ -95,7 +98,10 @@ int tlb_spy(bench_covert_t *env) {
   seL4_Word badge;
   seL4_MessageInfo_t info;
   uint32_t start, after;
-  
+  uint32_t prev, cur; 
+  uint32_t volatile pmu_start[BENCH_PMU_COUNTERS]; 
+  uint32_t volatile pmu_end[BENCH_PMU_COUNTERS]; 
+
   char *buf = malloc ((TLB_ENTRIES * 4096) + 4096);
   assert(buf);
  
@@ -124,29 +130,42 @@ int tlb_spy(bench_covert_t *env) {
   for (int i = 0; i < CONFIG_BENCH_DATA_POINTS; i++) {
       
       FENCE(); 
-    
-      while (*syn != SPY_SYN_FLAG) 
-      {
-          ;
+      READ_COUNTER_ARMV7(cur);
+      prev = cur;
+
+      while (cur - prev < KERNEL_SCHEDULE_TICK_LENGTH) {
+          prev = cur; 
+
+            READ_COUNTER_ARMV7(cur); 
       }
-     
+
       FENCE(); 
-      /*reset the counter to zero*/
-      sel4bench_reset_cycle_count();
+#ifdef CONFIG_MANAGER_PMU_COUNTER 
+      sel4bench_get_counters(BENCH_PMU_BITS, pmu_start);  
+#endif 
       READ_COUNTER_ARMV7(start);
       //start = sel4bench_get_cycle_count();
 
       tlb_access(buf, 64);
       
       READ_COUNTER_ARMV7(after);
+#ifdef CONFIG_MANAGER_PMU_COUNTER 
+      sel4bench_get_counters(BENCH_PMU_BITS, pmu_end);  
+#endif 
+
       //after = sel4bench_get_cycle_count();
       r_addr->result[i] = after - start; 
       /*result is the total probing cost
         secret is updated by trojan in the previous system tick*/
-      r_addr->sec[i] = *secret; 
+      r_addr->sec[i] = *secret;
+
+#ifdef CONFIG_MANAGER_PMU_COUNTER 
+      /*loading the pmu counter value */
+      for (int counter = 0; counter < BENCH_PMU_COUNTERS; counter++ )
+          r_addr->pmu[i][counter] = pmu_end[counter] - pmu_start[counter]; 
+
+#endif 
       /*spy set the flag*/
-      *syn = TROJAN_SYN_FLAG; 
-     
   }
  
 

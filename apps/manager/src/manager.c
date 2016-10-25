@@ -376,24 +376,21 @@ static void init_pmu_counters(void) {
 
 #ifdef CONFIG_ARM_CORTEX_A9  
     /*set up the pmu counter events*/
-    sel4bench_set_count_event(0, SEL4BENCH_EVENT_TLB_L1I_MISS); 
-    sel4bench_set_count_event(1, SEL4BENCH_EVENT_TLB_L1D_MISS); 
-    /*L1 I cache refill*/
-    sel4bench_set_count_event(2, 0x1); 
-    /*L1 D cache refill*/
-    sel4bench_set_count_event(3, 0x3); 
 
-    /*L2 cache refill*/ 
-    sel4bench_set_count_event(4, 0x17);
-   
-    /*stall due to instruction micro tlb miss*/ 
-    //sel4bench_set_count_event(2, 0x84); 
-    /*stall due to data micro tlb miss*/ 
-    //sel4bench_set_count_event(3, 0x85); 
-    /*stall due to main tlb miss instruction side*/ 
-    //sel4bench_set_count_event(4, 0x82);
-    /*stall due to main tlb miss data side*/
-    sel4bench_set_count_event(5, 0x83);
+    /*L1 D cache refill*/ 
+    sel4bench_set_count_event(0, 0x3);
+    /*level 1 data tlb refill*/
+    sel4bench_set_count_event(1, 0x5);
+
+    /*level 2 cache access*/ 
+    sel4bench_set_count_event(2, 0x16);
+    
+    /*L1 I cache refill*/ 
+    sel4bench_set_count_event(3, 0x1);
+
+    /*L1 I tlb refill*/
+    sel4bench_set_count_event(4, 0x2);
+
 #endif 
 
 #ifdef CONFIG_ARM_CORTEXT_A15 

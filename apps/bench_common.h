@@ -218,8 +218,10 @@ struct ipc_results {
 #endif 
 
 #ifdef CONFIG_ARM_CORTEX_A9
-#define BENCH_PMU_BITS 0x3f 
-#define BENCH_PMU_COUNTERS 6 
+//#define BENCH_PMU_BITS 0x3f 
+//#define BENCH_PMU_COUNTERS 6 
+#define BENCH_PMU_BITS 0x1f 
+#define BENCH_PMU_COUNTERS 5 
 #endif 
 
 #ifdef CONFIG_ARM_CORTEX_A15
@@ -394,6 +396,9 @@ typedef struct bench_covert {
 #define KERNEL_SCHEDULE_TICK_LENTH   1000000
 #define NUM_KERNEL_SCHEDULE_SHARED_PAGE  1
 #define NUM_L1D_SHARED_PAGE  1
+/*ARM V7 tick length 1ms 800 MHZ*/
+#define KERNEL_SCHEDULE_TICK_LENGTH    10000
+
 
 #ifdef CONFIG_ARCH_X86
 struct bench_kernel_schedule {
@@ -418,6 +423,9 @@ struct bench_l1 {
      total cost on probing L1 D/I cache*/
     uint32_t volatile result[CONFIG_BENCH_DATA_POINTS];
     uint32_t volatile sec[CONFIG_BENCH_DATA_POINTS];
+#ifdef CONFIG_MANAGER_PMU_COUNTER 
+    uint32_t volatile pmu[CONFIG_BENCH_DATA_POINTS][BENCH_PMU_COUNTERS]; 
+#endif 
 };
 
 #ifdef CONFIG_ARCH_X86

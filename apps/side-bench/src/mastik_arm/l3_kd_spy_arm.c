@@ -23,7 +23,6 @@
 /*the 256 K buffer to access*/
 #define KD_TROJAN_LINES 256
 
-#define KERNEL_SCHEDULE_TICK_LENGTH    10000
 
 uint32_t prev_sec[NUM_KERNEL_SCHEDULE_DATA];
 uint32_t cur_sec[NUM_KERNEL_SCHEDULE_DATA];

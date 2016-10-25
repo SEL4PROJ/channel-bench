@@ -437,6 +437,22 @@ int run_single_l1(m_env_t *env) {
     }
     printf("probing time end\n");
 
+
+#ifdef CONFIG_MANAGER_PMU_COUNTER 
+
+    for (int counter = 0; counter < BENCH_PMU_COUNTERS; counter++) {
+
+        /*print out the pmu counter one by one */
+        printf("pmu counter %d start\n",  counter); 
+        for (int i = 0; i < CONFIG_BENCH_DATA_POINTS; i++) {
+            printf("%d %u\n", r_d->sec[i], r_d->pmu[i][counter]);
+        }
+
+        printf("pmu counter %d end\n", counter);
+
+    }
+#endif 
+
     printf("done covert benchmark\n");
     return BENCH_SUCCESS; 
 }
