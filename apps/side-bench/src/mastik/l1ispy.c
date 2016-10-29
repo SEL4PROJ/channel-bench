@@ -5,7 +5,7 @@
 #include <sel4/sel4.h>
 
 #include "../mastik_common/low.h"
-#include "l1i.h"
+#include "../mastik_common/l1i.h"
 #include "../../../bench_common.h"
 
 #define TS_THRESHOLD 10000

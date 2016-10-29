@@ -12,6 +12,7 @@
 #include <sel4/sel4.h>
 #include <sel4utils/vspace.h>
 #include <sel4utils/process.h>
+#include <sel4utils/mapping.h>
 #include <vka/object.h>
 #include <vka/capops.h>
 #include <simple/simple.h>
@@ -230,7 +231,7 @@ void map_shared_buf(bench_env_t *owner, bench_env_t *share,
     /*find the physical address of the page*/
     cookies = vspace_get_cookie(&p_o->vspace, owner->s_vaddr); 
 
-    *phy = vka_utspace_paddr(owner->vka, cookies, seL4_ARM_SmallPageObject, seL4_PageBits);
+    *phy = vka_utspace_paddr(owner->vka, cookies, seL4_ARCH_4KPage, seL4_PageBits);
 
     uint32_t v = (uint32_t)owner->s_vaddr;
 
@@ -360,18 +361,6 @@ int run_single_l2(m_env_t *env) {
 }
 
 
-void covert_pmu_counter_dump(void) {
-
-    sel4bench_counter_t value;
-
-    for (int i = 0; i < 6; i++) {
-
-        value = sel4bench_get_counter(i); 
-        printf("counter %d value %d\n", i, value);
-
-    }
-    sel4bench_reset_counters(BENCH_PMU_BITS);
-}
 
 int run_single_l1(m_env_t *env) {
     
@@ -439,7 +428,7 @@ int run_single_l1(m_env_t *env) {
 
 
 #ifdef CONFIG_MANAGER_PMU_COUNTER 
-
+    printf("enabled %d pmu counters\n", BENCH_PMU_COUNTERS);
     for (int counter = 0; counter < BENCH_PMU_COUNTERS; counter++) {
 
         /*print out the pmu counter one by one */

@@ -6,7 +6,7 @@
 #include <assert.h>
 #include <stdlib.h>
 
-#include "vlist.h"
+#include "../mastik_common/vlist.h"
 #include "cachemap.h"
 #include "pp.h"
 #include "../mastik_common/low.h"

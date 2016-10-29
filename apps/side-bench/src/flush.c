@@ -24,7 +24,7 @@
 #ifdef CONFIG_ARCH_X86 
 #include "./mastik_common/low.h"
 #include "./mastik_common/l1.h"
-#include "./mastik/vlist.h"
+#include "./mastik_common/vlist.h"
 #include "./mastik/cachemap.h"
 #include "./mastik/pp.h"
 #endif

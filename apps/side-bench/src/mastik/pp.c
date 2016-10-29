@@ -3,7 +3,7 @@
 #include <assert.h>
 #include <stdint.h>
 
-#include "vlist.h"
+#include "../mastik_common/vlist.h"
 #include "pp.h"
 #include "../mastik_common/low.h"
 

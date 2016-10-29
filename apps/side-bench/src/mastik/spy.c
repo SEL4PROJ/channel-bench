@@ -7,7 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sel4/sel4.h>
-#include "vlist.h"
+#include "../mastik_common/vlist.h"
 #include "cachemap.h"
 #include "pp.h"
 #include "../mastik_common/low.h"
