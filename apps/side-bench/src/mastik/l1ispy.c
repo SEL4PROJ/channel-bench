@@ -146,7 +146,8 @@ for (int i = 0; i < CONFIG_BENCH_DATA_POINTS; i++) {
 int l1i_trojan(bench_covert_t *env) {
 
   uint16_t results[64];
-  l1iinfo_t l1i_1 = l1i_prepare(~0LLU);
+  uint64_t l1i_prepare_sets = ~0LLU; 
+  l1iinfo_t l1i_1 = l1i_prepare(&l1i_prepare_sets);
   uint32_t total_sec = L1I_SETS, secret;
   uint64_t monitored_sets;  
   seL4_Word badge;
@@ -163,58 +164,27 @@ int l1i_trojan(bench_covert_t *env) {
   seL4_SetMR(0, 0); 
   seL4_Send(env->r_ep, info);
 
-  /*warm up the platform*/
-  for (int i = 0; i < NUM_L1I_WARMUP_ROUNDS; i++) {
-      secret = random() % total_sec;
-      
-      monitored_sets = 0ull;
-      for (int n = 0; n < secret; n++) 
-          monitored_sets |= 1ull << n;
-
-      /*set up the l1i buffer according to the monitored sets*/
-      l1i_set_monitored_set(l1i_1, monitored_sets); 
-      /*do the probe*/
-      l1i_probe(l1i_1, results);
-  }
+  
   /*ready to do the test*/
   seL4_Send(env->syn_ep, info);
   
-  /*giving some number of system ticks to syn trojan and spy */
-
-  for (int i = 0; i < 100; i++) {
-      secret = random() % total_sec;
-      newTimeSlice();
-      
-      monitored_sets = 0ull;
-      for (int n = 0; n < secret; n++) 
-          monitored_sets |= 1ull << n;
-
-      /*set up the l1i buffer according to the monitored sets*/
-      l1i_set_monitored_set(l1i_1, monitored_sets); 
-      /*do the probe*/
-      l1i_probe(l1i_1, results);
-     
-  }
 
 for (int i = 0; i < CONFIG_BENCH_DATA_POINTS; i++) {
       secret = random() % total_sec; 
       
       /*waiting for a system tick*/
       newTimeSlice();
-      /*update the secret read by low*/ 
-      *share_vaddr = secret; 
-
+     
       monitored_sets = 0ull;
-      for (int n = 0; n < secret; n++) 
+      for (int n = 0; n <= secret; n++) 
           monitored_sets |= 1ull << n;
 
       /*set up the l1i buffer according to the monitored sets*/
-      l1i_set_monitored_set(l1i_1, monitored_sets); 
+      l1i_set_monitored_set(l1i_1, &monitored_sets); 
       /*do the probe*/
       l1i_probe(l1i_1, results);
-     // for (int p = 0; p < 32768; p += 64) 
-       //   clflush(l1i_1->memory + p);
-      
+      /*update the secret read by low*/ 
+      *share_vaddr = secret; 
   }
   while (1);
  
@@ -274,13 +244,9 @@ int l1i_spy(bench_covert_t *env) {
 int l1i_spy(bench_covert_t *env) {
   seL4_Word badge;
   seL4_MessageInfo_t info;
-
+  uint64_t prepare_sets = ~0LLU; 
   /*spy using different virtual address to establish the probing buffer*/
-  l1iinfo_t l1i_1 = l1i_prepare(~0LLU);
-  l1i_1 = l1i_prepare(~0LLU);
-  l1i_1 = l1i_prepare(~0LLU);
-  l1i_1 = l1i_prepare(~0LLU);
-
+  l1iinfo_t l1i_1 = l1i_prepare(&prepare_sets);
 
 
   uint16_t *results = malloc(l1i_nsets(l1i_1)*sizeof(uint16_t));
@@ -306,8 +272,7 @@ int l1i_spy(bench_covert_t *env) {
 
       newTimeSlice();
   
-      /*using the nops to test the benchmark*/
-      l1i_probe_1(l1i_1, results);
+      l1i_probe(l1i_1, results);
       /*result is the total probing cost
         secret is updated by trojan in the previous system tick*/
       r_addr->result[i] = 0; 
@@ -316,9 +281,6 @@ int l1i_spy(bench_covert_t *env) {
       for (int j = 0; j < l1i_nsets(l1i_1); j++) 
           r_addr->result[i] += results[j];
 
-      for (int p = 0; p < 32768; p += 64) 
-          clflush(l1i_1->memory + p);
-      
   }
 
   /*send result to manager, spy is done*/

@@ -379,8 +379,6 @@ typedef struct bench_covert {
 /*number of cache sets visits for trojan to warm up the platform
  total 4096 cache sets, trying 0x16 rounds on each sets*/
 #define NUM_KD_WARMUP_ROUNDS   0x16000
-#define NUM_L1D_WARMUP_ROUNDS  0x1000
-#define NUM_L1I_WARMUP_ROUNDS  0x1000
 
 #ifndef CONFIG_BENCH_DATA_POINTS 
 #define CONFIG_BENCH_DATA_POINTS  1

@@ -9,6 +9,7 @@
 #include "../../../bench_common.h"
 
 
+
 #define TS_THRESHOLD 10000
 
 static void  newTimeSlice(){
@@ -22,7 +23,18 @@ static void  newTimeSlice(){
   }
 }
 
+static void access_buffer(char *buffer, uint32_t sets) {
 
+    uint32_t offset; 
+
+    for (int i = 0; i <= sets; i++) {
+        for (int j = 0; j < L1_ASSOCIATIVITY; j++) { 
+            offset = i * L1_CACHELINE + j * L1_STRIDE; 
+            access(buffer + offset);
+        }
+    }
+
+}
 
 int l1_trojan(bench_covert_t *env) {
   /*buffer size 32K L1 cache size
@@ -45,40 +57,21 @@ int l1_trojan(bench_covert_t *env) {
   seL4_SetMR(0, 0); 
   seL4_Send(env->r_ep, info);
 
-  /*warm up the platform*/
-  for (int i = 0; i < NUM_L1D_WARMUP_ROUNDS; i++) {
-      secret = random() % L1_LINES;
-      
-      for (int n = 0; n < secret; n++) 
-	access(data + n * L1_CACHELINE);
-
-  }
   /*ready to do the test*/
   seL4_Send(env->syn_ep, info);
-
-  /*giving some number of system ticks to syn trojan and spy */
-
-  for (int i = 0; i < 100; i++) {
-      secret = random() % L1_LINES;
-      /*waiting for a system tick*/
-      newTimeSlice();
-      
-      for (int n = 0; n < secret; n++) 
-	access(data + n * L1_CACHELINE);
-
-  }
+  
 
   for (int i = 0; i < CONFIG_BENCH_DATA_POINTS; i++) {
 
-      secret = random() % L1_LINES;
-      /*waiting for a system tick*/
+     /*waiting for a system tick*/
       newTimeSlice();
+      secret = random() % L1_SETS;
+     
+      access_buffer(data, secret);
+      
       /*update the secret read by low*/ 
       *share_vaddr = secret; 
-      
-      for (int n = 0; n < secret; n++) 
-	access(data + n * L1_CACHELINE);
-
+     
   }
   while (1);
 
@@ -114,7 +107,7 @@ int l1_spy(bench_covert_t *env) {
 
     newTimeSlice();
     l1_probe(l1_1, results);
-
+    
     /*result is the total probing cost
      secret is updated by trojan in the previous system tick*/
     r_addr->result[i] = 0; 
