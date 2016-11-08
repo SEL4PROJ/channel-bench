@@ -22,6 +22,7 @@
 #define INSTRUCTION_LENGTH  4
 #define BTAC_ENTRIES  512 
 
+
 #ifdef CONFIG_BENCH_BRANCH_ALIGN
 /*using branch instructions to do the probe, 4 bytes aligned
  */
@@ -146,6 +147,9 @@ int btb_spy(bench_covert_t *env) {
     seL4_Word badge;
     seL4_MessageInfo_t info;
     uint32_t start, after;
+    uint32_t volatile pmu_start[BENCH_PMU_COUNTERS]; 
+    uint32_t volatile pmu_end[BENCH_PMU_COUNTERS]; 
+
 
     uint64_t  monitored_mask[I_MONITOR_MASK] = {0};
 
@@ -190,23 +194,32 @@ int btb_spy(bench_covert_t *env) {
         FENCE(); 
         /*reset the counter to zero*/
         sel4bench_reset_cycle_count();
+#ifdef CONFIG_MANAGER_PMU_COUNTER 
+        sel4bench_get_counters(BENCH_PMU_BITS, pmu_start);  
+#endif 
 
+        READ_COUNTER_ARMV7(start);
 #ifdef CONFIG_BENCH_BRANCH_ALIGN 
         /*using instrcutions to probe*/
-        READ_COUNTER_ARMV7(start);
         branch_probe_lines(BTAC_SPY_SETS);
-
-        READ_COUNTER_ARMV7(after);
-        r_addr->result[i] = after - start; 
 #else
         /*using cache sets to probe*/
-        l1i_probe(l1i_1, results); 
-        r_addr->result[i] = 0; 
-        for (int s = 0; s < BTAC_SPY_SETS; s++) {
-            r_addr->result[i] += results[s];
-        }
+       l1i_probe(l1i_1, results); 
 #endif 
-       
+
+        READ_COUNTER_ARMV7(after);
+#ifdef CONFIG_MANAGER_PMU_COUNTER 
+        sel4bench_get_counters(BENCH_PMU_BITS, pmu_end);  
+#endif 
+
+        r_addr->result[i] = after - start; 
+
+#ifdef CONFIG_MANAGER_PMU_COUNTER 
+      /*loading the pmu counter value */
+        for (int counter = 0; counter < BENCH_PMU_COUNTERS; counter++ )
+            r_addr->pmu[i][counter] = pmu_end[counter] - pmu_start[counter]; 
+
+#endif 
         /*result is the total probing cost
           secret is updated by trojan in the previous system tick*/
         r_addr->sec[i] = *secret; 

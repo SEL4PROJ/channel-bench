@@ -85,6 +85,24 @@ static int probelist_clflush(void *pp, int segments, int seglen, uint16_t *resul
   return p == pp;
 }
 
+/*the caller calculate the time*/
+static int probelist_arm(void *pp, int segments, int seglen, uint16_t *results) {
+  void *p = pp;
+  uint32_t s, res; 
+  while (segments--) {
+    for (int i = seglen; i--; ) {
+      // Under normal circumstances, p is never NULL. 
+      // We need this test to ensure the optimiser does not kill the whole loop...
+      if (p == NULL)
+	break;
+      p = LNEXT(p);
+    }
+  }
+  return p == pp;
+}
+
+
+
 static int probelist(void *pp, int segments, int seglen, uint16_t *results) {
   void *p = pp;
   uint32_t s, res; 
@@ -190,7 +208,7 @@ void l1_randomise(l1info_t l1) {
 int l1_probe(l1info_t l1, uint16_t *results) {
 #ifdef CONFIG_BENCH_CACHE_FLUSH
   return probelist_flush(l1->fwdlist, l1->nsets, L1_ASSOCIATIVITY, results);
-#else
+#else 
   return probelist(l1->fwdlist, l1->nsets, L1_ASSOCIATIVITY, results);
 #endif 
 }

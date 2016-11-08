@@ -97,38 +97,14 @@ void l1i_randomise(l1iinfo_t l1) {
 }
 
 typedef void (*fptr)(void);
-void l1i_probe_1(l1iinfo_t l1, uint16_t *results) {
-    uint32_t start, res; 
 
-    for (int i = 0; i < l1->nsets; i++) {
 #ifdef CONFIG_ARCH_X86
-        start = rdtscp();
-        // Using assembly because I am not sure I can trust the compiler
-        //asm volatile ("callq %0": : "r" (SET(0, l1->monitored[i])):);
-
-        /*for the total number of monitored cache sets 
-          do a probe, monitored contains the cache set number*/
-        (*((fptr)SET(0, l1->monitored[i])))();
-        res = rdtscp() - start;
-#endif
-#ifdef CONFIG_ARCH_ARM 
-        READ_COUNTER_ARMV7(start); 
-        fptr head = (fptr)SET(0, l1->monitored[i]);
-        /*jump to the start of this set*/
-        asm volatile ("blx %0" : : "r" (head) :"lr");
-
-        READ_COUNTER_ARMV7(res);
-        res -= start;
-#endif 
-        results[i] = res > UINT16_MAX ? UINT16_MAX : res;
-    }
-}
 void l1i_probe(l1iinfo_t l1, uint16_t *results) {
 
     uint32_t start, res; 
 
     for (int i = 0; i < l1->nsets; i++) {
-#ifdef CONFIG_ARCH_X86
+
         start = rdtscp();
         // Using assembly because I am not sure I can trust the compiler
         //asm volatile ("callq %0": : "r" (SET(0, l1->monitored[i])):);
@@ -137,20 +113,23 @@ void l1i_probe(l1iinfo_t l1, uint16_t *results) {
           do a probe, monitored contains the cache set number*/
         (*((fptr)SET(0, l1->monitored[i])))();
         res = rdtscp() - start;
-#endif 
-#ifdef CONFIG_ARCH_ARM 
-        READ_COUNTER_ARMV7(start); 
-        fptr head = (fptr)SET(0, l1->monitored[i]);
-        /*jump to the start of this set*/
-        asm volatile ("blx %0" : : "r" (head) :"lr");
-
-        READ_COUNTER_ARMV7(res);
-        res -= start;
-
-#endif
         results[i] = res > UINT16_MAX ? UINT16_MAX : res;
     }
 }
+
+#endif 
+
+#ifdef CONFIG_ARCH_ARM 
+/*taking the time measurements at the caller side*/
+void l1i_probe(l1iinfo_t l1, uint16_t *results) {
+
+    for (int i = 0; i < l1->nsets; i++) {
+        fptr head = (fptr)SET(0, l1->monitored[i]);
+        /*jump to the start of this set*/
+        asm volatile ("blx %0" : : "r" (head) :"lr");
+    }
+}
+#endif 
 
 #ifdef CONFIG_ARCH_X86
 uint32_t l1i_probe_nop(void) {

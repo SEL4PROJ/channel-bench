@@ -35,7 +35,7 @@ simulate-ia32:
 
 vmimage: manager-harddisk-image                
 copy-image:
-	scp images/kernel-ia32-pc99 images/manager-image-ia32-pc99 images/manager-image-arm-imx6 saison:benchmark-debug/ 
+	scp images/kernel-ia32-pc99 images/manager-image-ia32-pc99 images/manager-image-arm-imx6 bob:benchmark-debug/ 
 
 
 

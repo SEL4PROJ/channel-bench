@@ -13,35 +13,74 @@
 #include "../mastik_common/low.h"
 #include "../ipc_test.h"
 
-#define TLB_ENTRIES  128
+#define TLB_ENTRIES  128 
+#ifdef RANDOM_TLB_ENTRIES 
+#define ATTACK_PAGES  (128 * 5)
+#else 
+#define ATTACK_PAGES 128 
+#endif 
 
+static inline void tlb_access(char *buf, uint32_t *seq, uint32_t s) {
 
-static inline void tlb_access(char *buf, uint32_t s) {
+    /*access s tlb entries by visiting one line in each page
+     using random ordered page list and a random cache line in a page*/
 
-    /*access s tlb entries by visiting one line in each page*/
-    for (int i = 0; i < s; i ++) {
-        char *addr = buf + (i * 4096);
+    for (int i = 0; i < s; i++) { 
+#ifdef RANDOM_TLB_ENTRIES 
+        /*having a large working set, and randomly select S entires*/
+        char *addr = buf + (seq[i] * 4096); 
+#else 
+        char *addr = buf + s * 4096; 
+#endif 
+        //addr += random() % PAGE_CACHELINES * L1_CACHELINE;   
         access(addr);
-        //*addr = 0xff;
-       // asm volatile (""::"r"(addr): "memory");
     }
 
 }
+
+#ifdef RANDOM_TLB_ENTRIES 
+static inline void init_seq (uint32_t *seq, uint32_t s) {
+
+    /*init the buffer with a sequence of size s*/
+    for (int i = 0; i < s; i++) 
+        seq[i] = i; 
+
+}
+
+static inline void random_seq (uint32_t *seq, uint32_t s) {
+    uint32_t temp, p; 
+
+    for (int i = 0; i < s; i++) {
+        p = random() % (s - i ) + i;  
+        temp = seq[p]; 
+        seq[p] = seq[i]; 
+        seq[i] = temp;
+    }
+
+}
+#endif 
 
 int tlb_trojan(bench_covert_t *env) {
 
   uint32_t secret;
   seL4_Word badge;
   seL4_MessageInfo_t info;
-  char *buf = malloc ((TLB_ENTRIES * 4096) + 4096);
+  char *buf = malloc ((ATTACK_PAGES  * 4096) + 4096);
+  uint32_t *seq = (uint32_t*)malloc (ATTACK_PAGES  * sizeof (uint32_t));
+
   uint32_t cur, prev; 
 
   assert(buf); 
+  assert(seq); 
+
   int temp = (int)buf; 
   temp &= ~0xfff;
   temp += 0x1000; 
   buf = (char *)temp; 
- 
+
+#ifdef RANDOM_TLB_ENTRIES 
+  init_seq(seq, ATTACK_PAGES); 
+#endif 
   info = seL4_Recv(env->r_ep, &badge);
   assert(seL4_MessageInfo_get_label(info) == seL4_NoFault);
 
@@ -61,22 +100,25 @@ int tlb_trojan(bench_covert_t *env) {
 
   for (int i = 0; i < CONFIG_BENCH_DATA_POINTS; i++) {
 
+#ifdef RANDOM_TLB_ENTRIES 
+      random_seq(seq, ATTACK_PAGES); 
+#endif 
       FENCE(); 
       READ_COUNTER_ARMV7(cur);
       prev = cur;
 
+
       while (cur - prev < KERNEL_SCHEDULE_TICK_LENGTH) {
           prev = cur; 
 
-            READ_COUNTER_ARMV7(cur); 
+          READ_COUNTER_ARMV7(cur); 
       }
       FENCE();
 #ifndef CONFIG_BENCH_DATA_SEQUENTIAL 
       secret = random() % (TLB_ENTRIES + 1); 
 #endif
 
-
-      tlb_access(buf, secret);
+      tlb_access(buf, seq, secret);
 
       /*update the secret read by low*/ 
       *share_vaddr = secret; 
@@ -102,14 +144,20 @@ int tlb_spy(bench_covert_t *env) {
   uint32_t volatile pmu_start[BENCH_PMU_COUNTERS]; 
   uint32_t volatile pmu_end[BENCH_PMU_COUNTERS]; 
 
-  char *buf = malloc ((TLB_ENTRIES * 4096) + 4096);
+  char *buf = malloc ((ATTACK_PAGES  * 4096) + 4096);
   assert(buf);
- 
+
+  uint32_t *seq = (uint32_t*)malloc (ATTACK_PAGES * sizeof (uint32_t));
+  assert(seq); 
+
   int temp = (int)buf; 
   temp &= ~0xfff;
   temp += 0x1000; 
   buf = (char *)temp; 
  
+#ifdef RANDOM_TLB_ENTRIES 
+  init_seq(seq, ATTACK_PAGES); 
+#endif 
 
   info = seL4_Recv(env->r_ep, &badge);
   assert(seL4_MessageInfo_get_label(info) == seL4_NoFault);
@@ -128,12 +176,13 @@ int tlb_spy(bench_covert_t *env) {
  
 
   for (int i = 0; i < CONFIG_BENCH_DATA_POINTS; i++) {
-      
+#ifdef RANDOM_TLB_ENTRIES 
+      random_seq(seq, ATTACK_PAGES); 
+#endif 
       FENCE(); 
       READ_COUNTER_ARMV7(cur);
       prev = cur;
-
-      while (cur - prev < KERNEL_SCHEDULE_TICK_LENGTH) {
+       while (cur - prev < KERNEL_SCHEDULE_TICK_LENGTH) {
           prev = cur; 
 
             READ_COUNTER_ARMV7(cur); 
@@ -146,7 +195,7 @@ int tlb_spy(bench_covert_t *env) {
       READ_COUNTER_ARMV7(start);
       //start = sel4bench_get_cycle_count();
 
-      tlb_access(buf, 64);
+      tlb_access(buf, seq, 64);
       
       READ_COUNTER_ARMV7(after);
 #ifdef CONFIG_MANAGER_PMU_COUNTER 

@@ -13,8 +13,11 @@ sabre L1 D cache, 32B cache line, 4 ways, physically indexed, physically tagged
 #include "../mastik_common/l1.h"
 #include "../ipc_test.h"
 
+#ifdef CONFIG_ARM_CORTEX_A9 
 #define L1D_TROJAN_SETS 256
-
+#else 
+#define L1D_TROJAN_SETS  128
+#endif 
 
 /*accessing N number of L1 D cache sets*/
 static void data_access(char *buf, uint32_t sets) {
@@ -92,6 +95,10 @@ int l1_trojan(bench_covert_t *env) {
 int l1_spy(bench_covert_t *env) {
   seL4_Word badge;
   seL4_MessageInfo_t info;
+  uint32_t start, after;
+  uint32_t volatile pmu_start[BENCH_PMU_COUNTERS]; 
+  uint32_t volatile pmu_end[BENCH_PMU_COUNTERS]; 
+
 
   uint64_t  monitored_mask[4] = {~0LLU, ~0LLU, ~0LLU, ~0LLU};
 
@@ -127,8 +134,28 @@ int l1_spy(bench_covert_t *env) {
 
       /*reset the counter to zero*/
       sel4bench_reset_cycle_count();
+
+#ifdef CONFIG_MANAGER_PMU_COUNTER 
+      sel4bench_get_counters(BENCH_PMU_BITS, pmu_start);  
+#endif 
+      //READ_COUNTER_ARMV7(start);
       /*start */
       l1_probe(l1_1, results);
+
+     // READ_COUNTER_ARMV7(after);
+#ifdef CONFIG_MANAGER_PMU_COUNTER 
+      sel4bench_get_counters(BENCH_PMU_BITS, pmu_end);  
+#endif
+      //r_addr->result[i] = after - start; 
+
+
+#ifdef CONFIG_MANAGER_PMU_COUNTER 
+      /*loading the pmu counter value */
+      for (int counter = 0; counter < BENCH_PMU_COUNTERS; counter++ )
+          r_addr->pmu[i][counter] = pmu_end[counter] - pmu_start[counter]; 
+
+#endif 
+
 
       /*result is the total probing cost
         secret is updated by trojan in the previous system tick*/
