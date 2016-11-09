@@ -88,8 +88,10 @@ static void create_thread(bench_env_t *t) {
     assert(error == 0);
     
     /*assign the affinity*/ 
+#if (CONFIG_MAX_NUM_NODES > 1)
     error = seL4_TCB_SetAffinity(process->thread.tcb.cptr, t->affinity);
-    assert(error == 0); 
+    assert(error == 0);
+#endif 
 #ifdef CONFIG_DEBUG_BUILD
     seL4_DebugNameThread(process->thread.tcb.cptr, t->name);
 #endif

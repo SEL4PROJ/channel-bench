@@ -28,36 +28,44 @@
 #endif /*CONFIG_ARCH_X86*/
 
 #ifdef CONFIG_ARCH_ARM
-/*number of cache lines per page*/
-#define PAGE_CACHELINES   128
 
-#ifdef CONFIG_ARM_CORTEX_A9 
+/*the actual cortex a53 hikey platform, wrong config in kernel*/
+#ifdef CONFIG_ARM_CORTEX_A57 
+/*number of cache lines per page*/
+#define PAGE_CACHELINES   64
+
+/*32 K buffer*/
 #define L1_ASSOCIATIVITY 4
-#define L1_SETS 256
-#define L1_LINES  1024
-#define L1_CACHELINE 32
+#define L1_SETS  128
+#define L1_LINES  512
+#define L1_CACHELINE 64
 #define L1_STRIDE (L1_CACHELINE * L1_SETS)
 #define L1_PROBE_BUFFER (L1_STRIDE * L1_ASSOCIATIVITY + PAGE_SIZE)
 
-#define L1I_ASSOCIATIVITY 4
+#define L1I_ASSOCIATIVITY 2
 #define L1I_SETS 256
-#define L1I_CACHELINE 32
+#define L1I_CACHELINE 64
 #define L1I_STRIDE (L1I_CACHELINE * L1I_SETS)
 
 
 #define L3_THRESHOLD 150
 #define L3_ASSOCIATIVITY 16
-#define L3_SIZE (1*1024*1024)
-#define L3_CACHELINE 32
+#define L3_SIZE (512*1024) /*2 L2 cache, one in each cluster, not shared between cluster*/
+#define L3_CACHELINE 64
 // The number of cache sets in each slice.
-#define L3_SETS_PER_SLICE 2048
+#define L3_SETS_PER_SLICE 512
 
 // The number of cache sets in each page
-#define L3_SETS_PER_PAGE 128
+#define L3_SETS_PER_PAGE 64
 
 #endif 
 
-#ifdef CONFIG_PLAT_KZM 
+
+
+
+#ifdef CONFIG_ARM_CORTEX_A9 
+/*number of cache lines per page*/
+#define PAGE_CACHELINES   128
 
 #define L1_ASSOCIATIVITY 4
 #define L1_SETS 256
@@ -81,8 +89,6 @@
 
 // The number of cache sets in each page
 #define L3_SETS_PER_PAGE 128
-
-
 
 #endif 
 

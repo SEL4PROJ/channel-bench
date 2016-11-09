@@ -12,6 +12,6 @@ components-$(CONFIG_APP_SIDE_BENCH)        += side-bench
 side-bench: common libsel4 libmuslc libsel4vka libcpio libelf \
                                              libsel4allocman \
         libplatsupport libsel4platsupport libsel4muslcsys \
-         libsel4simple libsel4vspace libsel4utils libutils \
-          libsel4bench libsel4simple-stable 
+         libsel4debug libsel4simple-default libsel4simple libsel4vspace libsel4utils libutils \
+          libsel4bench 
 

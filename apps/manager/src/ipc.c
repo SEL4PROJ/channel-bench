@@ -7,7 +7,13 @@
 #include <sel4utils/process.h>
 #include <vka/object.h>
 #include <vka/capops.h>
+#if 0
+#ifdef CONFIG_KERNEL_STABLE 
 #include <simple-stable/simple-stable.h>
+#else 
+#include <simple-default/simpe-default.h>
+#endif
+#endif 
 #include <sel4platsupport/platsupport.h>
 #include "ipc.h"
 #include "../../bench_common.h"
@@ -210,10 +216,11 @@ void create_benchmark_process(bench_env_t *t) {
             t->vspace, argc, argv, 0);
     assert(error == 0);
 
+#if (CONFIG_MAX_NUM_NODES > 1)
     /*assign the affinity*/ 
     error = seL4_TCB_SetAffinity(process->thread.tcb.cptr, t->affinity);
     assert(error == 0); 
-
+#endif 
 
 #if 0 
    /*a never returned ep*/
@@ -704,13 +711,14 @@ static void multi_bench_ipc(bench_env_t *t1, bench_env_t *t2) {
 
 
     /*t1 and t2 on the same core*/
-    for (int i = 1; i < CONFIG_MAX_NUM_CORES; i++) {
+    for (int i = 1; i < CONFIG_MAX_NUM_NODES; i++) {
 
         printf("assign T1 to core %d T2 to core %d\n", i, i); 
         printf("=========================================\n"); 
         t1->affinity = t2->affinity = i; 
-
+#ifdef CONFIG_CACHE_COLOURING 
         seL4_KernelImage_Sensitive(t1->kernel);
+#endif 
         ipc_benchmark(t1, t2); 
     }
 #if 0
@@ -740,14 +748,17 @@ void multi_bench_kernel_latency(bench_env_t *t1, bench_env_t *t2) {
     printf("=========================================\n"); 
     t1->affinity = t2->affinity = 1;
 
+#ifdef CONFIG_CACHE_COLOURING
     seL4_KernelImage_Sensitive(t1->kernel);
-
+#endif
     for (int i = 0; i < NLATENCY; i++) {
-
         /*set the latency*/ 
-        printf("set the caller kernel latency to %d\n", low);
-        seL4_KernelImage_HoldTime(t1->kernel, low, high);
+        printf("set the caller kernel latency to %d %d \n", low, high);
 
+#ifdef CONFIG_CACHE_COLOURING
+        
+        seL4_KernelImage_HoldTime(t1->kernel, low, high);
+#endif
         ipc_kernel_latency_inter(t1, t2); 
 
         low += 10000; 

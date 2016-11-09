@@ -38,10 +38,11 @@ menu "seL4 Libraries"
     source "libs/libsel4platsupport/Kconfig"
     source "libs/libsel4bench/Kconfig"
     source "libs/libsel4simple/Kconfig"
-    source "libs/libsel4simple-stable/Kconfig"
+    source "libs/libsel4simple-default/Kconfig"
     source "libs/libutils/Kconfig"
     source "libs/libplatsupport/Kconfig"
     source "libs/libsel4cachecolour/Kconfig"
+    source "libs/libsel4debug/Kconfig"
 endmenu
 
 menu "Tools"

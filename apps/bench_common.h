@@ -229,6 +229,12 @@ struct ipc_results {
 #define BENCH_PMU_COUNTERS 2 
 #endif 
 
+/*currently do not support any pmu debugging on v8a*/
+#ifdef CONFIG_ARCH_ARM_V8A
+#define BENCH_PMU_BITS  0x1
+#define BENCH_PMU_COUNTERS 1 
+#endif 
+
 
 #define BENCH_PMU_PAGES    1
 #define BENCH_COVERT_TIME_PAGES 21  /*ts structure defined in timestats.c*/
