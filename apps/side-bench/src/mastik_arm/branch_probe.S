@@ -1,4 +1,5 @@
 /*the branch attack that probes N number of branch instructions*/
+#include <autoconf.h>
 
 #if 0
 /*code for flushing the return stack on arm*/
@@ -44,12 +45,36 @@ call8:
 .align 5 ;
 #endif 
 
+
+#ifdef CONFIG_ARM_CORTEX_A9
+
 /*simplify the probing, arranging them into cache sets
  L1 has 256 sets, 4 ways, one way == 8 KB*/
 /*jumping to the next way */
 #define BPL() \
     b .+8192;\
 .align 5; 
+
+#define BLR() \
+      bx lr;\
+.align 5;
+
+
+#endif 
+
+#ifdef CONFIG_ARM_CORTEX_A57
+/*L1 has 256 sets, 2 ways, 64 b/line, one way = 16384*/
+/*jumping to the next way*/
+#define BPL() \
+    b .+16384;\
+.align 6; 
+
+/*return to caller*/
+#define BLR() \
+      bx lr;\
+.align 6;
+
+#endif
 
 #define BPL_4() \
         BPL() \
@@ -69,14 +94,6 @@ call8:
         BPL_16() \
         BPL_16()
 
-
-#define BPL_PAGE() \
-        BPL_64() \
-        BPL_64() 
-
-#define BLR() \
-      bx lr;\
-.align 5;
 
 
 #define BLR_4() \
@@ -99,12 +116,31 @@ call8:
         BLR_16() \
         BLR_16() 
 
+#ifdef CONFIG_ARM_CORTEX_A9
+#define BPL_PAGE() \
+        BPL_64() \
+        BPL_64() 
+
 
 #define BLR_PAGE() \
         BLR_64() \
         BLR_64() 
+#endif 
 
 
+#ifdef CONFIG_ARM_CORTEX_A57
+
+
+#define BPL_PAGE() \
+        BPL_64() 
+
+#define BLR_PAGE() \
+        BLR_64() 
+
+
+#endif
+
+#if 0
 /*altogether 1024 lines
  8 pages: 6 pages jump, 2 pages return*/
 .align 12 
@@ -118,6 +154,22 @@ BPL_PAGE()
 BPL_PAGE()
 BLR_PAGE()
 BLR_PAGE()
+#endif 
+
+/*altogether 512 lines
+ 8 pages: 4 pages jump, 4 pages return*/
+.align 12 
+.global arm_branch_sets
+arm_branch_sets:
+BPL_PAGE()
+BPL_PAGE()
+BPL_PAGE()
+BPL_PAGE()
+BLR_PAGE()
+BLR_PAGE()
+BLR_PAGE()
+BLR_PAGE()
+
 
 
 /*using 4 bytes, 256 sets to probe the btb 

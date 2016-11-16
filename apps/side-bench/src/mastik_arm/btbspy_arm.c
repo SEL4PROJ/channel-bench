@@ -19,9 +19,11 @@
 #include "../mastik_common/l1i.h"
 #include "../ipc_test.h"
 
-#define INSTRUCTION_LENGTH  4
-#define BTAC_ENTRIES  512 
 
+#define INSTRUCTION_LENGTH  4
+
+#ifdef CONFIG_ARM_CORTEXT_A9
+#define BTAC_ENTRIES  512 
 
 #ifdef CONFIG_BENCH_BRANCH_ALIGN
 /*using branch instructions to do the probe, 4 bytes aligned
@@ -35,6 +37,27 @@
 /*one sets contain 4 branch*/
 #define BTAC_SPY_SETS       256
 #endif
+#endif 
+
+#ifdef CONFIG_ARM_CORTEX_A57
+#define BTAC_ENTRIES  256 
+
+#ifdef CONFIG_BENCH_BRANCH_ALIGN
+/*using branch instructions to do the probe, 4 bytes aligned
+ */
+#define BTAC_TROJAN_SETS    256 
+#define BTAC_SPY_SETS       256
+#else 
+/*total 256 sets 
+ using L1 I cache lines to do the probe*/
+#define BTAC_TROJAN_SETS    256
+/*one sets contain 4 branch*/
+#define BTAC_SPY_SETS       256
+#endif
+#endif 
+
+
+
 
 
 extern void arm_branch_lines(void); 
