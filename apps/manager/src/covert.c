@@ -422,7 +422,7 @@ int run_single_l1(m_env_t *env) {
     
     for (int i = 0; i < CONFIG_BENCH_DATA_POINTS; i++) {
         printf("%d %u\n", r_d->sec[i], r_d->result[i]);
-
+        fflush(stdout);
     }
     printf("probing time end\n");
 
@@ -435,6 +435,7 @@ int run_single_l1(m_env_t *env) {
         printf("pmu counter %d start\n",  counter); 
         for (int i = 0; i < CONFIG_BENCH_DATA_POINTS; i++) {
             printf("%d %u\n", r_d->sec[i], r_d->pmu[i][counter]);
+            fflush(stdout);
         }
 
         printf("pmu counter %d end\n", counter);
