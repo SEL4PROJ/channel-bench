@@ -212,7 +212,7 @@ int l3_spy_single(bench_covert_t *env) {
 
         FENCE(); 
         /*reset the counter to zero*/
-        sel4bench_reset_cycle_count();
+        //sel4bench_reset_cycle_count();
         /*do simple probe*/
         //l3_probecount_simple(l3, results); 
         l3_probe(l3, results);

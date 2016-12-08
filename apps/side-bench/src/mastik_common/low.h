@@ -30,7 +30,7 @@
 #ifdef CONFIG_ARCH_ARM
 
 /*the actual cortex a53 hikey platform, wrong config in kernel*/
-#ifdef CONFIG_ARM_CORTEX_A57 
+#ifdef CONFIG_ARM_CORTEX_A53
 /*number of cache lines per page*/
 #define PAGE_CACHELINES   64
 

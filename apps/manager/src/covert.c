@@ -326,7 +326,7 @@ int run_single_l2(m_env_t *env) {
 
 #if 0  
     seL4_MessageInfo_t info; 
-    seL4_MessageInfo_t tag = seL4_MessageInfo_new(seL4_NoFault, 0, 0, 0); 
+    seL4_MessageInfo_t tag = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 0); 
     int size;
 
     assert(ts); 
@@ -336,7 +336,7 @@ int run_single_l2(m_env_t *env) {
         /*spy can now start*/
         seL4_Send(s_ep.cptr, tag);
         info = seL4_Recv(s_ep.cptr, NULL); 
-        if (seL4_MessageInfo_get_label(info) != seL4_NoFault)
+        if (seL4_MessageInfo_get_label(info) != seL4_Fault_NullFault)
             return BENCH_FAILURE; 
 
         /*end of test*/
@@ -389,7 +389,7 @@ int run_single_l1(m_env_t *env) {
     create_huge_pages(&spy, BENCH_MORECORE_HUGE_SIZE); 
 #endif 
 
-    tag = seL4_MessageInfo_new(seL4_NoFault, 0, 0, 4);
+    tag = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 4);
 
     /*spy*/
     seL4_SetMR(0,(seL4_Word)spy.t_vaddr);
@@ -401,20 +401,20 @@ int run_single_l1(m_env_t *env) {
     printf("spy is ready\n");   
  
     /*trojan*/
-    tag = seL4_MessageInfo_new(seL4_NoFault, 0, 0, 3);
+    tag = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 3);
     seL4_SetMR(0, (seL4_Word)trojan.s_vaddr);
     seL4_SetMR(1, share_phy);
     seL4_SetMR(2, (seL4_Word)trojan.huge_vaddr);
     seL4_Send(t_ep.cptr, tag);
     
     info = seL4_Recv(t_ep.cptr, NULL);
-    if (seL4_MessageInfo_get_label(info) != seL4_NoFault)
+    if (seL4_MessageInfo_get_label(info) != seL4_Fault_NullFault)
        return BENCH_FAILURE;
 
     printf("trojan is ready\n");
     
     info = seL4_Recv(s_ep.cptr, NULL);
-    if (seL4_MessageInfo_get_label(info) != seL4_NoFault)
+    if (seL4_MessageInfo_get_label(info) != seL4_Fault_NullFault)
         return BENCH_FAILURE;
     
     printf("benchmark result ready\n");
@@ -452,41 +452,41 @@ int run_single_l1(m_env_t *env) {
 int run_single_llc_kernel(m_env_t *env) {
 
     seL4_MessageInfo_t info; 
-    seL4_MessageInfo_t tag = seL4_MessageInfo_new(seL4_NoFault, 0, 0, 0); 
+    seL4_MessageInfo_t tag = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 0); 
     printf("start covert benchmark, single core, LLC through a shared kernel with seL4_Poll\n"); 
 
 
     printf("Starting L3 spy setup\n");
     seL4_Send(s_ep.cptr, tag);
     info = seL4_Recv(s_ep.cptr, NULL);
-    if (seL4_MessageInfo_get_label(info) != seL4_NoFault)
+    if (seL4_MessageInfo_get_label(info) != seL4_Fault_NullFault)
         return BENCH_FAILURE;
 
     printf("Starting L3 Trojan setup\n");
     seL4_Send(t_ep.cptr, tag);
 
     info = seL4_Recv(t_ep.cptr, NULL);
-    if (seL4_MessageInfo_get_label(info) != seL4_NoFault)
+    if (seL4_MessageInfo_get_label(info) != seL4_Fault_NullFault)
         return BENCH_FAILURE;
 
     printf("Starting test 1\n");
     seL4_Send(s_ep.cptr, tag);
     seL4_Send(t_ep.cptr, tag);
     info = seL4_Recv(s_ep.cptr, NULL);
-    if (seL4_MessageInfo_get_label(info) != seL4_NoFault)
+    if (seL4_MessageInfo_get_label(info) != seL4_Fault_NullFault)
         return BENCH_FAILURE;
     info = seL4_Recv(t_ep.cptr, NULL);
-    if (seL4_MessageInfo_get_label(info) != seL4_NoFault)
+    if (seL4_MessageInfo_get_label(info) != seL4_Fault_NullFault)
         return BENCH_FAILURE;
 
     printf("Starting test 2\n");
     seL4_Send(s_ep.cptr, tag);
     seL4_Send(t_ep.cptr, tag);
     info = seL4_Recv(s_ep.cptr, NULL);
-    if (seL4_MessageInfo_get_label(info) != seL4_NoFault)
+    if (seL4_MessageInfo_get_label(info) != seL4_Fault_NullFault)
         return BENCH_FAILURE;
     info = seL4_Recv(t_ep.cptr, NULL);
-    if (seL4_MessageInfo_get_label(info) != seL4_NoFault)
+    if (seL4_MessageInfo_get_label(info) != seL4_Fault_NullFault)
         return BENCH_FAILURE;
 
     printf("done covert benchmark\n");
@@ -512,7 +512,7 @@ int run_single_llc_kernel_schedule(m_env_t *env) {
     map_shared_buf(&spy, &trojan, NUM_KERNEL_SCHEDULE_SHARED_PAGE, &share_phy);
     map_r_buf(env, n_p, &spy);
     
-    tag = seL4_MessageInfo_new(seL4_NoFault, 0, 0, 2);
+    tag = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 2);
 
     /*spy*/
     seL4_SetMR(0,(seL4_Word)spy.t_vaddr);
@@ -521,18 +521,18 @@ int run_single_llc_kernel_schedule(m_env_t *env) {
     seL4_Send(s_ep.cptr, tag);
     printf("spy is ready\n");   
     
-    tag = seL4_MessageInfo_new(seL4_NoFault, 0, 0, 1);
+    tag = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 1);
     seL4_SetMR(0, (seL4_Word)trojan.s_vaddr);
     seL4_Send(t_ep.cptr, tag);
 
     info = seL4_Recv(t_ep.cptr, NULL);
-    if (seL4_MessageInfo_get_label(info) != seL4_NoFault)
+    if (seL4_MessageInfo_get_label(info) != seL4_Fault_NullFault)
        return BENCH_FAILURE;
 
     printf("trojan is ready\n");
 
     info = seL4_Recv(s_ep.cptr, NULL);
-    if (seL4_MessageInfo_get_label(info) != seL4_NoFault)
+    if (seL4_MessageInfo_get_label(info) != seL4_Fault_NullFault)
         return BENCH_FAILURE;
     
     printf("benchmark result ready\n");
@@ -618,14 +618,14 @@ void covert_sleep(unsigned int sec) {
 int run_multi(m_env_t *env) {
 
     seL4_MessageInfo_t info; 
-    seL4_MessageInfo_t tag = seL4_MessageInfo_new(seL4_NoFault, 0, 0, 0); 
+    seL4_MessageInfo_t tag = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 0); 
     
     printf("start multicore side channel benchmark\n"); 
     
     seL4_Send(s_ep.cptr, tag);
     
     info = seL4_Recv(s_ep.cptr, NULL); 
-    if (seL4_MessageInfo_get_label(info) != seL4_NoFault)
+    if (seL4_MessageInfo_get_label(info) != seL4_Fault_NullFault)
         return BENCH_FAILURE; 
     
     printf("spy ready\n");
@@ -634,7 +634,7 @@ int run_multi(m_env_t *env) {
     seL4_Send(s_ep.cptr, tag);
         
     info = seL4_Recv(s_ep.cptr, NULL); 
-    if (seL4_MessageInfo_get_label(info) != seL4_NoFault)
+    if (seL4_MessageInfo_get_label(info) != seL4_Fault_NullFault)
         return BENCH_FAILURE; 
 
     /*do not return*/
@@ -646,7 +646,7 @@ int run_multi(m_env_t *env) {
 /*prepare the running enviroment for benchmarking on single core*/
 void prepare_single(m_env_t *env) {
 
-    seL4_MessageInfo_t info = seL4_MessageInfo_new(seL4_NoFault, 0, 0, 
+    seL4_MessageInfo_t info = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 
             BENCH_COVERT_MSG_LEN);
     cspacepath_t src;
     seL4_CPtr n_ep; 

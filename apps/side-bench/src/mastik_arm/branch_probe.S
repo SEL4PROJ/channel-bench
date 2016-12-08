@@ -62,7 +62,7 @@ call8:
 
 #endif 
 
-#ifdef CONFIG_ARM_CORTEX_A57
+#ifdef CONFIG_ARM_CORTEX_A53
 /*L1 has 256 sets, 2 ways, 64 b/line, one way = 16384*/
 /*jumping to the next way*/
 #define BPL() \
@@ -128,7 +128,7 @@ call8:
 #endif 
 
 
-#ifdef CONFIG_ARM_CORTEX_A57
+#ifdef CONFIG_ARM_CORTEX_A53
 
 
 #define BPL_PAGE() \

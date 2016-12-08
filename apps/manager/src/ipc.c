@@ -45,7 +45,7 @@ static m_env_t *ipc_env;
 static inline 
 void send_msg_to(seL4_CPtr ep, seL4_Word w) {
 
-    seL4_MessageInfo_t info = seL4_MessageInfo_new(seL4_NoFault, 0, 0, 1);
+    seL4_MessageInfo_t info = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 1);
     
     seL4_SetMR(0, w); 
     seL4_Send(ep, info);

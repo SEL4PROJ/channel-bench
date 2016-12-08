@@ -133,7 +133,7 @@ int l1_spy(bench_covert_t *env) {
       FENCE(); 
 
       /*reset the counter to zero*/
-      sel4bench_reset_cycle_count();
+      //sel4bench_reset_cycle_count();
 
 #ifdef CONFIG_MANAGER_PMU_COUNTER 
       sel4bench_get_counters(BENCH_PMU_BITS, pmu_start);  

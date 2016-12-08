@@ -96,7 +96,7 @@ void *map_frames_to(sel4utils_process_t *pro, seL4_CPtr *caps, int n, int size) 
 static inline 
 void send_msg_to(seL4_CPtr ep, seL4_Word w) {
 
-    seL4_MessageInfo_t info = seL4_MessageInfo_new(seL4_NoFault, 0, 0, 1);
+    seL4_MessageInfo_t info = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 1);
     
     seL4_SetMR(0, w); 
     seL4_Send(ep, info);
@@ -111,7 +111,7 @@ seL4_Word wait_msg_from(seL4_CPtr ep) {
     seL4_MessageInfo_t info = seL4_Recv(ep, &badge);
     int result = seL4_GetMR(0);
 
-    if (seL4_MessageInfo_get_label(info) != seL4_NoFault) {
+    if (seL4_MessageInfo_get_label(info) != seL4_Fault_NullFault) {
         sel4utils_print_fault_message(info, CONFIG_BENCH_THREAD_NAME);
         result = BENCH_FAILURE;
     }
