@@ -30,7 +30,7 @@ static inline void tlb_access(char *buf, uint32_t *seq, uint32_t s) {
         /*having a large working set, and randomly select S entires*/
         char *addr = buf + (seq[i] * 4096); 
 #else 
-        char *addr = buf + s * 4096; 
+        char *addr = buf + i * 4096; 
 #endif 
         //addr += random() % PAGE_CACHELINES * L1_CACHELINE;   
         access(addr);
