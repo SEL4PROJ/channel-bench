@@ -23,6 +23,7 @@
 #endif
 
 #ifdef CONFIG_PLAT_HIKEY
+#define TLB_ENTRIES  512
 #define ATTACK_PAGES 512
 #define PROBE_PAGES 256
 #endif
