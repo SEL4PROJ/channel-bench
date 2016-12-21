@@ -13,12 +13,19 @@
 #include "../mastik_common/low.h"
 #include "../ipc_test.h"
 
+#ifdef CONFIG_PLAT_SABRE
 #define TLB_ENTRIES  128 
 #ifdef RANDOM_TLB_ENTRIES 
 #define ATTACK_PAGES  (128 * 5)
 #else 
 #define ATTACK_PAGES 128 
 #endif 
+#endif
+
+#ifdef CONFIG_PLAT_HIKEY
+#define ATTACK_PAGES 512
+#define PROBE_PAGES 256
+#endif
 
 static inline void tlb_access(char *buf, uint32_t *seq, uint32_t s) {
 
@@ -195,7 +202,7 @@ int tlb_spy(bench_covert_t *env) {
       READ_COUNTER_ARMV7(start);
       //start = sel4bench_get_cycle_count();
 
-      tlb_access(buf, seq, 64);
+      tlb_access(buf, seq, PROBE_PAGES);
       
       READ_COUNTER_ARMV7(after);
 #ifdef CONFIG_MANAGER_PMU_COUNTER 
