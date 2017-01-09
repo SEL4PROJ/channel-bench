@@ -468,7 +468,9 @@ static void *main_continued (void* arg) {
 
     /*init the benchmakring functions*/
     sel4bench_init();
-    printf("Done pmu\n");
+
+
+
 #ifdef CONFIG_MANAGER_PMU_COUNTER 
     init_pmu_counters(); 
 #endif 

@@ -63,7 +63,7 @@ int wait_init_msg_from(seL4_CPtr endpoint) {
     
     info = seL4_Recv(endpoint, &badge); 
 
-    assert(seL4_MessageInfo_get_label(info) == seL4_NoFault); 
+    assert(seL4_MessageInfo_get_label(info) == seL4_Fault_NullFault); 
     assert(seL4_MessageInfo_get_length(info) == 1); 
 
     if (seL4_GetMR(0) == BENCH_INIT_MSG) 
@@ -83,7 +83,7 @@ static inline void *wait_vaddr_from(seL4_CPtr endpoint)
     info = seL4_Recv(endpoint, &badge);
 
     /* check the label and length*/
-    assert(seL4_MessageInfo_get_label(info) == seL4_NoFault);
+    assert(seL4_MessageInfo_get_label(info) == seL4_Fault_NullFault);
     assert(seL4_MessageInfo_get_length(info) == 1);
 
     return (void *)seL4_GetMR(0);
@@ -99,7 +99,7 @@ static inline seL4_CPtr wait_ep_from(seL4_CPtr endpoint)
     info = seL4_Recv(endpoint, &badge);
 
     /* check the label and length*/
-    assert(seL4_MessageInfo_get_label(info) == seL4_NoFault);
+    assert(seL4_MessageInfo_get_label(info) == seL4_Fault_NullFault);
     assert(seL4_MessageInfo_get_length(info) == 1);
 
     return (seL4_CPtr)seL4_GetMR(0);
@@ -108,7 +108,7 @@ static inline seL4_CPtr wait_ep_from(seL4_CPtr endpoint)
 /*send benchmark result to the root task*/
 static inline void send_result_to(seL4_CPtr endpoint, seL4_Word w) {
 
-    seL4_MessageInfo_t info = seL4_MessageInfo_new(seL4_NoFault, 0, 0, 1);
+    seL4_MessageInfo_t info = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 1);
 
     seL4_SetMR(0, w); 
     seL4_Send(endpoint, info);
@@ -212,7 +212,7 @@ int run_bench_covert(char **argv) {
 #endif 
     info = seL4_Recv(covert_env.r_ep, &badge); 
 
-    if (seL4_MessageInfo_get_label(info) != seL4_NoFault)
+    if (seL4_MessageInfo_get_label(info) != seL4_Fault_NullFault)
         return BENCH_FAILURE; 
 
     if (seL4_MessageInfo_get_length(info) != BENCH_COVERT_MSG_LEN)

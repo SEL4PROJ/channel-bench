@@ -20,21 +20,11 @@
 #include "manager.h"
 #include "util/ansi.h"
 
-#if defined(CCNT32BIT)
 static ccnt_t get_result(seL4_CPtr ep) {
 //    seL4_Wait(ep, NULL);
  //   return seL4_GetMR(0);
     return 0;
 }
-#elif defined(CCNT64BIT)
-static ccnt_t get_result(seL4_CPtr ep) {
-    //seL4_Wait(ep, NULL);
-    //return ( ((ccnt_t)seL4_GetMR(0)) << 32ull) | ((ccnt_t)seL4_GetMR(1));
-    return 0ull;
-}
-#else
-#error Unknown ccnt size
-#endif
 /*FIXME the ep and reply ep need to be freed*/
 #undef IPC_BENCH_PRINTOUT
 

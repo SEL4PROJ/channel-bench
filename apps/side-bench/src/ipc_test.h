@@ -11,12 +11,10 @@ typedef seL4_Word (*ipc_bench_func)(seL4_CPtr ep, seL4_CPtr result_ep);
 
 #ifdef CONFIG_ARCH_X86
 #define CCNT64BIT
-#define CCNT_FORMAT "%llu"
 typedef uint64_t ccnt_t;
 #else
 #define CCNT32BIT
 typedef uint32_t ccnt_t;
-#define CCNT_FORMAT "%u"
 #endif
 
 struct bench_results {

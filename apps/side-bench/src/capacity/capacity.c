@@ -32,7 +32,7 @@
 static void reply_error(seL4_CPtr r_ep) {
 
     /*len == 2 is an error msg*/
-    seL4_MessageInfo_t tag = seL4_MessageInfo_new(seL4_NoFault, 0, 0, 2); 
+    seL4_MessageInfo_t tag = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 2); 
 
     seL4_SetMR(0,0); 
     seL4_SetMR(1,0);
@@ -46,7 +46,7 @@ env: running enviornment
 record: data collection*/
 int capacity_single(bench_covert_t *env) {
     ts_t ts = NULL; 
-    seL4_MessageInfo_t send = seL4_MessageInfo_new(seL4_NoFault, 0, 0, 1);
+    seL4_MessageInfo_t send = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 1);
     seL4_MessageInfo_t recv;
     pageset_t ps = NULL;
     int size = 0;
@@ -83,7 +83,7 @@ int capacity_single(bench_covert_t *env) {
             /*syn with manager*/ 
             recv = seL4_Recv(env->r_ep, NULL); 
 
-            if (seL4_MessageInfo_get_label(recv) != seL4_NoFault) {
+            if (seL4_MessageInfo_get_label(recv) != seL4_Fault_NullFault) {
                 reply_error(env->r_ep);
                 return BENCH_FAILURE; 
             } 
@@ -129,7 +129,7 @@ int capacity_single(bench_covert_t *env) {
                 /*syn with manager*/ 
                 recv = seL4_Recv(env->r_ep, NULL); 
 
-                if (seL4_MessageInfo_get_label(recv) != seL4_NoFault) {
+                if (seL4_MessageInfo_get_label(recv) != seL4_Fault_NullFault) {
                     reply_error(env->r_ep);
                     return BENCH_FAILURE; 
                 } 
@@ -173,7 +173,7 @@ int capacity_single(bench_covert_t *env) {
     /*never return, manager does not reply, 0 msg len, the end of test*/
 
     recv = seL4_Recv(env->r_ep, NULL);
-    send = seL4_MessageInfo_new(seL4_NoFault, 0, 0, 0);
+    send = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 0);
     seL4_Send(env->r_ep, send); 
     recv = seL4_Recv(env->r_ep, NULL);
     assert(1);

@@ -86,7 +86,7 @@ static inline void overhead(void) {
 /*send msg to the root task*/
 static inline void send_msg_to(seL4_CPtr endpoint, seL4_Word w) {
 
-    seL4_MessageInfo_t info = seL4_MessageInfo_new(seL4_NoFault, 0, 0, 1);
+    seL4_MessageInfo_t info = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 1);
 
     seL4_SetMR(0, w); 
     seL4_Send(endpoint, info);
@@ -101,7 +101,7 @@ static inline seL4_CPtr wait_msg_from(seL4_CPtr endpoint)
     info = seL4_Recv(endpoint, &badge);
 
     /* check the label and length*/
-    assert(seL4_MessageInfo_get_label(info) == seL4_NoFault);
+    assert(seL4_MessageInfo_get_label(info) == seL4_Fault_NullFault);
     assert(seL4_MessageInfo_get_length(info) == 1);
 
     return (seL4_CPtr)seL4_GetMR(0);

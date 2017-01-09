@@ -199,31 +199,31 @@ int l3_spy(bench_covert_t *env) {
   seL4_MessageInfo_t info;
 
   info = seL4_Recv(ep, &badge);
-  assert(seL4_MessageInfo_get_label(info) == seL4_NoFault);
+  assert(seL4_MessageInfo_get_label(info) == seL4_Fault_NullFault);
 
   cachemap_t cm = map();
   printf("Test at %p, buffer at %p\n", test, buffer);
   vlist_t probed = search(cm);
 
-  info = seL4_MessageInfo_new(seL4_NoFault, 0, 0, 1);
+  info = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 1);
   seL4_SetMR(0, 0); 
   seL4_Send(ep, info);
 
   info = seL4_Recv(ep, &badge);
-  assert(seL4_MessageInfo_get_label(info) == seL4_NoFault);
+  assert(seL4_MessageInfo_get_label(info) == seL4_Fault_NullFault);
 
   realspy(probed);
 
-  info = seL4_MessageInfo_new(seL4_NoFault, 0, 0, 1);
+  info = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 1);
   seL4_SetMR(0, 0); 
   seL4_Send(ep, info);
 
   info = seL4_Recv(ep, &badge);
-  assert(seL4_MessageInfo_get_label(info) == seL4_NoFault);
+  assert(seL4_MessageInfo_get_label(info) == seL4_Fault_NullFault);
 
   realtrojan();
 
-  info = seL4_MessageInfo_new(seL4_NoFault, 0, 0, 1);
+  info = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 1);
   seL4_SetMR(0, 0); 
   seL4_Send(ep, info);
   return 0;
@@ -237,31 +237,31 @@ int l3_trojan(bench_covert_t *env) {
     seL4_MessageInfo_t info;
 
     info = seL4_Recv(ep, &badge);
-    assert(seL4_MessageInfo_get_label(info) == seL4_NoFault);
+    assert(seL4_MessageInfo_get_label(info) == seL4_Fault_NullFault);
 
     cachemap_t cm = map();
     printf("Test at %p, buffer at %p\n", test, buffer);
     vlist_t probed = search(cm);
 
-    info = seL4_MessageInfo_new(seL4_NoFault, 0, 0, 1);
+    info = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 1);
     seL4_SetMR(0, 0); 
     seL4_Send(ep, info);
 
     info = seL4_Recv(ep, &badge);
-    assert(seL4_MessageInfo_get_label(info) == seL4_NoFault);
+    assert(seL4_MessageInfo_get_label(info) == seL4_Fault_NullFault);
 
     realtrojan();
 
-    info = seL4_MessageInfo_new(seL4_NoFault, 0, 0, 1);
+    info = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 1);
     seL4_SetMR(0, 0); 
     seL4_Send(ep, info);
 
     info = seL4_Recv(ep, &badge);
-    assert(seL4_MessageInfo_get_label(info) == seL4_NoFault);
+    assert(seL4_MessageInfo_get_label(info) == seL4_Fault_NullFault);
 
     realspy(probed);
 
-    info = seL4_MessageInfo_new(seL4_NoFault, 0, 0, 1);
+    info = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 1);
     seL4_SetMR(0, 0); 
     seL4_Send(ep, info);
     return 0;

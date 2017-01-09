@@ -24,13 +24,13 @@ int trojan_single(char *t_buf, int line, seL4_CPtr syn_ep) {
     volatile page_t *page = (volatile page_t *)((intptr_t)t_buf + line * 64);
     register int s = 0xff; //s = 0; read from this cache line
     int size;
-    seL4_MessageInfo_t send = seL4_MessageInfo_new(seL4_NoFault, 0, 0, 1);
+    seL4_MessageInfo_t send = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 1);
     seL4_MessageInfo_t recv;
 
     do {
     
         recv = seL4_Recv(syn_ep, NULL); 
-        if (seL4_MessageInfo_get_label(recv) != seL4_NoFault)
+        if (seL4_MessageInfo_get_label(recv) != seL4_Fault_NullFault)
             return BENCH_FAILURE; 
 
         /*waiting on signal from receiver*/
@@ -59,7 +59,7 @@ int trojan_single(char *t_buf, int line, seL4_CPtr syn_ep) {
 void tr_callslave(seL4_CPtr syn_ep, int size) {
 
     /*calling torjan, the size of this run*/
-    seL4_MessageInfo_t send = seL4_MessageInfo_new(seL4_NoFault, 0, 0, 1);
+    seL4_MessageInfo_t send = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 1);
     seL4_SetMR(0,size); 
     seL4_Send(syn_ep, send);
     seL4_MessageInfo_t recv = seL4_Recv(syn_ep, NULL);

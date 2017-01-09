@@ -278,7 +278,7 @@ void create_huge_pages(bench_env_t *owner, uint32_t size) {
 #ifdef CONFIG_ARCH_X86
     /*4M*/
     huge_page_size = seL4_LargePageBits;
-    huge_page_object = seL4_IA32_LargePage;
+    huge_page_object = seL4_X86_LargePageObject;
 #endif 
 
 #ifdef CONFIG_ARCH_ARM 

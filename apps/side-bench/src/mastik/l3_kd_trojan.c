@@ -376,7 +376,7 @@ int l3_kd_trojan(bench_covert_t *env) {
     int total_sec, secret;
  
     info = seL4_Recv(ep, &badge);
-    assert(seL4_MessageInfo_get_label(info) == seL4_NoFault);
+    assert(seL4_MessageInfo_get_label(info) == seL4_Fault_NullFault);
 
     /*receive the shared address to record the secret*/
     uint32_t volatile *share_vaddr = (uint32_t *)seL4_GetMR(0);
@@ -384,7 +384,7 @@ int l3_kd_trojan(bench_covert_t *env) {
     
     cachemap_t cm = map();
 
-    info = seL4_MessageInfo_new(seL4_NoFault, 0, 0, 1);
+    info = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 1);
     seL4_SetMR(0, 0); 
     seL4_Send(ep, info);
 
@@ -481,12 +481,12 @@ int l3_kd_trojan(bench_covert_t *env) {
   for (;;) {
     /*waiting on msg to start*/
       info = seL4_Recv(ep, &badge);
-      assert(seL4_MessageInfo_get_label(info) == seL4_NoFault);
+      assert(seL4_MessageInfo_get_label(info) == seL4_Fault_NullFault);
       measure();
 
 //      attack(cm);
 
-      info = seL4_MessageInfo_new(seL4_NoFault, 0, 0, 1);
+      info = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 1);
       seL4_SetMR(0, 0); 
       seL4_Send(ep, info);
 

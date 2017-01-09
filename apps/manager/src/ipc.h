@@ -3,16 +3,6 @@
 
 #include "../../bench_common.h"
 
-#ifdef CONFIG_ARCH_X86
-#define CCNT64BIT
-#define CCNT_FORMAT "%llu"
-typedef uint64_t ccnt_t;
-#else
-#define CCNT32BIT
-typedef uint32_t ccnt_t;
-#define CCNT_FORMAT "%u"
-#endif
-
 #if 0
 /*benchmark running sequence number*/
 #define IPC_BENCH_CALL_START 0 
