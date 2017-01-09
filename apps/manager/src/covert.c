@@ -765,7 +765,28 @@ void launch_bench_covert (m_env_t *env) {
     spy.vka = trojan.vka = &env->vka; 
     env->ipc_vka = &env->vka;
 #endif
+    {
+        vka_object_t kernel_image_obj, kernel_mem_obj; 
+        cspacepath_t src_path, dest_path;
+        seL4_CPtr kernel_image_copy, kernel_mem_copy; 
 
+        ret = vka_alloc_kernel_image(&env->vka, &kernel_image_obj); 
+        assert(ret == 0); 
+        vka_cspace_make_path(&env->vka, kernel_image_obj.cptr, &src_path);
+        ret = vka_cspace_alloc(&env->vka, &kernel_image_copy); 
+        assert(ret == 0); 
+        vka_cspace_make_path(&env->vka, kernel_image_copy, &dest_path); 
+        ret = vka_cnode_copy(&dest_path, &src_path, seL4_AllRights); 
+   
+        ret = vka_alloc_kernel_mem(&env->vka, &kernel_mem_obj); 
+        assert(ret == 0); 
+        vka_cspace_make_path(&env->vka, kernel_mem_obj.cptr, &src_path);
+        ret = vka_cspace_alloc(&env->vka, &kernel_mem_copy); 
+        assert(ret == 0); 
+        vka_cspace_make_path(&env->vka, kernel_mem_copy, &dest_path);
+        ret = vka_cnode_copy(&dest_path, &src_path, seL4_AllRights); 
+    }
+    
     /*ep for communicate*/
     ret = vka_alloc_endpoint(env->ipc_vka, &syn_ep);
     assert(ret == 0);
