@@ -765,10 +765,12 @@ void launch_bench_covert (m_env_t *env) {
     spy.vka = trojan.vka = &env->vka; 
     env->ipc_vka = &env->vka;
 #endif
+#ifdef CONFIG_MULTI_KERNEL_IMAGES
     {
         vka_object_t kernel_image_obj, kernel_mem_obj; 
         cspacepath_t src_path, dest_path;
         seL4_CPtr kernel_image_copy, kernel_mem_copy; 
+        seL4_CPtr ik_image; 
 
         ret = vka_alloc_kernel_image(&env->vka, &kernel_image_obj); 
         assert(ret == 0); 
@@ -785,8 +787,11 @@ void launch_bench_covert (m_env_t *env) {
         assert(ret == 0); 
         vka_cspace_make_path(&env->vka, kernel_mem_copy, &dest_path);
         ret = vka_cnode_copy(&dest_path, &src_path, seL4_AllRights); 
+        ik_image = simple_get_ik_image(&env->simple); 
+        printf("ik image cap is %d\n", ik_image);
+
     }
-    
+#endif 
     /*ep for communicate*/
     ret = vka_alloc_endpoint(env->ipc_vka, &syn_ep);
     assert(ret == 0);
