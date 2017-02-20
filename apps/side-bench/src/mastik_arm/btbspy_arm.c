@@ -22,7 +22,7 @@
 
 #define INSTRUCTION_LENGTH  4
 
-#ifdef CONFIG_ARM_CORTEX_A9
+#ifdef CONFIG_PLAT_SABRE
 #define BTAC_ENTRIES  512 
 
 #ifdef CONFIG_BENCH_BRANCH_ALIGN
@@ -39,8 +39,8 @@
 #endif
 #endif 
 
-#ifdef CONFIG_ARM_CORTEX_A53
-#define BTAC_ENTRIES  256 
+#ifdef CONFIG_PLAT_HIKEY
+#define BTAC_ENTRIES        256 
 
 #ifdef CONFIG_BENCH_BRANCH_ALIGN
 /*using branch instructions to do the probe, 4 bytes aligned
@@ -56,9 +56,22 @@
 #endif
 #endif 
 
-
-
-
+#ifdef CONFIG_ARM_CORTEX_A57
+#define BTAC_ENTRIES        2048
+#define BTAC_ENTRIES        4098
+#ifdef CONFIG_BENCH_BRANCH_ALIGN
+/*using branch instructions to do the probe, 4 bytes aligned
+ */
+#define BTAC_TROJAN_SETS    256 
+#define BTAC_SPY_SETS       256
+#else 
+/*total 256 sets 
+ using L1 I cache lines to do the probe*/
+#define BTAC_TROJAN_SETS    256
+/*one sets contain 4 branch*/
+#define BTAC_SPY_SETS       256
+#endif
+#endif 
 
 extern void arm_branch_lines(void); 
 
@@ -73,9 +86,11 @@ void branch_probe_lines(uint32_t n) {
     /*calculate where to start to probing if just one line, 
      starting from arm_branch_line - 511 * 4*/
     start += (BTAC_ENTRIES - n ) * INSTRUCTION_LENGTH; 
-
+#ifdef CONFIG_ARCH_AARCH64
+    asm volatile ("blr %0" : : "r" (start): "x30"); 
+#else
     asm volatile ("blx %0" : : "r" (start): "lr"); 
-
+#endif
 }
 
 int btb_trojan(bench_covert_t *env) {

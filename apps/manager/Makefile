@@ -24,7 +24,7 @@ OFILES := archive.o
 # Libraries required to build the target                                   
 LIBS = c sel4 cpio elf sel4muslcsys sel4vka sel4allocman \
 platsupport sel4platsupport sel4vspace \
-sel4utils sel4debug sel4simple utils sel4bench                       
+sel4utils sel4debug sel4simple utils sel4bench              
 
 
 ifdef CONFIG_KERNEL_STABLE 
@@ -36,7 +36,6 @@ endif
 ifdef CONFIG_LIB_SEL4_CACHECOLOURING
 LIBS += sel4cachecolour
 endif 
-
 
 # extra cflag for manager
 CFLAGS += -Werror -g -Wno-unused-function

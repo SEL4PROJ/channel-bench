@@ -126,7 +126,11 @@ void l1i_probe(l1iinfo_t l1, uint16_t *results) {
     for (int i = 0; i < l1->nsets; i++) {
         fptr head = (fptr)SET(0, l1->monitored[i]);
         /*jump to the start of this set*/
+#ifdef CONFIG_ARCH_AARCH64
+        asm volatile ("blr %0" : : "r" (head) :"x30");
+#else
         asm volatile ("blx %0" : : "r" (head) :"lr");
+#endif
     }
 }
 #endif 

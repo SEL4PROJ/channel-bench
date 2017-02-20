@@ -76,6 +76,19 @@ call8:
 
 #endif
 
+#ifdef CONFIG_ARM_CORTEX_A57
+/*L1 has 256 sets, 3 ways, 64 b/line, one way = 16384*/
+/*jumping to the next way*/
+#define BPL() \
+    b .+16384;\
+.align 6; 
+
+/*return to caller (aarch64)*/
+#define BLR() \
+      ret;\
+.align 6;
+#endif
+
 #define BPL_4() \
         BPL() \
         BPL() \
@@ -120,8 +133,6 @@ call8:
 #define BPL_PAGE() \
         BPL_64() \
         BPL_64() 
-
-
 #define BLR_PAGE() \
         BLR_64() \
         BLR_64() 
@@ -129,15 +140,19 @@ call8:
 
 
 #ifdef CONFIG_ARM_CORTEX_A53
-
-
 #define BPL_PAGE() \
         BPL_64() 
 
 #define BLR_PAGE() \
         BLR_64() 
+#endif
 
+#ifdef CONFIG_ARM_CORTEX_A57
+#define BPL_PAGE() \
+        BPL_64() 
 
+#define BLR_PAGE() \
+        BLR_64() 
 #endif
 
 #if 0
@@ -174,8 +189,9 @@ BLR_PAGE()
 
 /*using 4 bytes, 256 sets to probe the btb 
  512 branch instruction*/ 
+#ifndef CONFIG_ARCH_AARCH64
 #define B_4BYTES() \
-      b .+4; 
+        b .+4; 
 
 #define B_4BYTES_4() \
         B_4BYTES() \
@@ -201,12 +217,52 @@ BLR_PAGE()
         B_4BYTES_64() \
         B_4BYTES_64() 
 
-
-    /*512 lines*/
 .global arm_branch_lines
 arm_branch_lines:
-B_4BYTES_256()
-B_4BYTES_256()
-        bx lr   /*bx lr uses the return stack, 8 entries 32 bits
-                 a seperate cache */
+        B_4BYTES_256()
+        B_4BYTES_256()
 
+        /*512 lines*/
+        bx lr
+#else
+#define B_8BYTES() \
+        b .+8; 
+
+#define B_8BYTES_4() \
+        B_8BYTES() \
+        B_8BYTES() \
+        B_8BYTES() \
+        B_8BYTES() 
+
+#define B_8BYTES_16() \
+        B_8BYTES_4() \
+        B_8BYTES_4() \
+        B_8BYTES_4() \
+        B_8BYTES_4() 
+
+#define B_8BYTES_64() \
+        B_8BYTES_16() \
+        B_8BYTES_16() \
+        B_8BYTES_16() \
+        B_8BYTES_16() 
+
+#define B_8BYTES_256() \
+        B_8BYTES_64() \
+        B_8BYTES_64() \
+        B_8BYTES_64() \
+        B_8BYTES_64() 
+
+#define B_8BYTES_1K() \
+        B_8BYTES_256() \
+        B_8BYTES_256() \
+        B_8BYTES_256() \
+        B_8BYTES_256() \
+
+.global arm_branch_lines
+arm_branch_lines:
+        B_8BYTES_1K()
+        B_8BYTES_1K()
+
+        /* 2K lines */
+        ret
+#endif

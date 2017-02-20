@@ -381,11 +381,21 @@ struct bench_results {
         : "r8", "lr"); \
 } while(0)
 
+
+#ifdef CONFIG_ARCH_AARCH64
+#define READ_COUNTER_ARMV7(var) do { \
+    asm volatile("mrs %0, PMCCNTR_EL0\n" \
+        : "=r"(var) \
+    ); \
+} while(0)
+
+#else
 #define READ_COUNTER_ARMV7(var) do { \
     asm volatile("mrc p15, 0, %0, c9, c13, 0\n" \
         : "=r"(var) \
     ); \
 } while(0)
+#endif
 
 #define READ_COUNTER_X86(var) do { \
     uint32_t low, high; \

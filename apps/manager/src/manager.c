@@ -427,9 +427,9 @@ static void init_pmu_counters(void) {
 #endif
 
 #ifdef CONFIG_ARCH_X86
-    //sel4bench_set_count_event(0, SEL4BENCH_EVENT_CACHE_L1I_MISS);
-    //sel4bench_set_count_event(1, SEL4BENCH_EVENT_CACHE_L1D_MISS); 
-#if 1
+    sel4bench_set_count_event(0, SEL4BENCH_EVENT_CACHE_L1I_MISS);
+    sel4bench_set_count_event(1, SEL4BENCH_EVENT_CACHE_L1D_MISS); 
+#if 0
     /*dtlb store group*/
     sel4bench_set_count_event(0, 0x0149); //dtlb store miss, any tlb level, cause a page walk
     sel4bench_set_count_event(1, 0x1049); // Cycles PMH is busy with this walk
@@ -458,8 +458,9 @@ static void init_pmu_counters(void) {
     sel4bench_set_count_event(3, 0x18bc); 
 #endif
     //sel4bench_set_count_event(2, 0x0185); //itlb miss
-    //sel4bench_set_count_event(2, SEL4BENCH_EVENT_TLB_L1I_MISS); 
-    //sel4bench_set_count_event(3, SEL4BENCH_EVENT_TLB_L1D_MISS); 
+    sel4bench_set_count_event(2, SEL4BENCH_EVENT_TLB_L1I_MISS);
+    sel4bench_set_count_event(3, SEL4BENCH_EVENT_TLB_L1D_MISS);       //TLB L1D miss on store
+    sel4bench_set_count_event(4, SEL4BENCH_IA32_EVENT_MEMORY_ACCESS); //Does TLB L1D miss on load. Is misnamed cuz lazy
 #endif
 
     /*start the pmu counter*/ 

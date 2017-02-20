@@ -13,9 +13,9 @@ sabre L1 D cache, 32B cache line, 4 ways, physically indexed, physically tagged
 #include "../mastik_common/l1.h"
 #include "../ipc_test.h"
 
-#ifdef CONFIG_ARM_CORTEX_A9 
+#if defined(CONFIG_PLAT_SABRE) || defined(CONFIG_PLAT_TX1)
 #define L1D_TROJAN_SETS 256
-#else 
+#elif defined(CONFIG_PLAT_HIKEY)
 #define L1D_TROJAN_SETS  128
 #endif 
 
@@ -28,7 +28,6 @@ static void data_access(char *buf, uint32_t sets) {
             access(buf + s * L1_CACHELINE + i * L1_STRIDE);
         }
     }
-
 }
 
 int l1_trojan(bench_covert_t *env) {
@@ -98,7 +97,6 @@ int l1_spy(bench_covert_t *env) {
   uint32_t start, after;
   uint32_t volatile pmu_start[BENCH_PMU_COUNTERS]; 
   uint32_t volatile pmu_end[BENCH_PMU_COUNTERS]; 
-
 
   uint64_t  monitored_mask[4] = {~0LLU, ~0LLU, ~0LLU, ~0LLU};
 

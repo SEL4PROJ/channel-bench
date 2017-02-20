@@ -18,14 +18,21 @@
 #ifdef RANDOM_TLB_ENTRIES 
 #define ATTACK_PAGES  (128 * 5)
 #else 
-#define ATTACK_PAGES 128 
+#define ATTACK_PAGES 128
 #endif 
+#define PROBE_PAGES 64
 #endif
 
 #ifdef CONFIG_PLAT_HIKEY
 #define TLB_ENTRIES  512
 #define ATTACK_PAGES 512
 #define PROBE_PAGES 256
+#endif
+
+#ifdef CONFIG_PLAT_TX1
+#define TLB_ENTRIES  1024
+#define ATTACK_PAGES 1024
+#define PROBE_PAGES 512
 #endif
 
 static inline void tlb_access(char *buf, uint32_t *seq, uint32_t s) {

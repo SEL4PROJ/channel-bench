@@ -22,6 +22,8 @@
 
 #include <stdint.h>
 #include <sel4bench/sel4bench.h>
+#include <autoconf.h>
+
 /*elf file name of benchmark thread*/ 
 #define CONFIG_BENCH_THREAD_NAME    "side-bench"
 
@@ -217,8 +219,8 @@ struct ipc_results {
 #endif 
 
 #ifdef CONFIG_ARCH_X86 
-#define BENCH_PMU_BITS 0xf
-#define BENCH_PMU_COUNTERS 4 
+#define BENCH_PMU_BITS 0x1f
+#define BENCH_PMU_COUNTERS 5
 #endif 
 
 #ifdef CONFIG_ARM_CORTEX_A9
@@ -324,7 +326,14 @@ typedef struct bench_covert {
 #define BENCH_COVERT_BRANCH_SPY          18
 #define BENCH_COVERT_LLC_SINGLE_TROJAN   19 
 #define BENCH_COVERT_LLC_SINGLE_SPY      20
+
+#ifdef CONFIG_ARCH_X86
+#define BENCH_COVERT_BP_TROJAN		     21
+#define BENCH_COVERT_BP_SPY		        22
+#define BENCH_COVERT_FUNS                23
+#else
 #define BENCH_COVERT_FUNS                21
+#endif /* CONFIG_ARCH_X86 */
 
 
 /*the benchmarking tets for the function correctness */
@@ -386,6 +395,10 @@ typedef struct bench_covert {
 #define BENCH_COVERT_TROJAN    BENCH_MPI_VICTIM
 #endif 
 
+#ifdef CONFIG_BENCH_COVERT_BP
+#define BENCH_COVERT_TROJAN      BENCH_COVERT_BP_TROJAN
+#define BENCH_COVERT_SPY         BENCH_COVERT_BP_SPY
+#endif
 
 /*used by kernel determinsitic scheduling benchmark*/
 #ifdef CONFIG_LIB_SEL4_CACHECOLOURING

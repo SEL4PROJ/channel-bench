@@ -9,90 +9,109 @@
 /*the cache architecture configuration on benchmarking platforms*/
 
 #ifdef CONFIG_ARCH_X86
-#define L1_ASSOCIATIVITY 8
-#define L1_SETS 64
-#define L1_CACHELINE 64
-#define L1_LINES 512
-#define L1_STRIDE (L1_CACHELINE * L1_SETS)
-#define L1_PROBE_BUFFER  (PAGE_SIZE * (L1_ASSOCIATIVITY+1)) 
+#define L1_ASSOCIATIVITY   8
+#define L1_SETS            64
+#define L1_CACHELINE       64
+#define L1_LINES           512
+#define L1_STRIDE          (L1_CACHELINE * L1_SETS)
+#define L1_PROBE_BUFFER    (PAGE_SIZE * (L1_ASSOCIATIVITY+1))          //BUFFER is 32KB after 4K alignment
 
+#define L1I_ASSOCIATIVITY  8
+#define L1I_SETS           64
+#define L1I_CACHELINE      64
 
-#define L1I_ASSOCIATIVITY 8
-#define L1I_SETS 64
-#define L1I_CACHELINE 64
+#define L3_THRESHOLD       140
+#define L3_ASSOCIATIVITY   16
+#define L3_SIZE            (6*1024*1024)
 
-#define L3_THRESHOLD 140
-#define L3_ASSOCIATIVITY 16
-#define L3_SIZE (6*1024*1024)
+#endif /* CONFIG_ARCH_X86 */
 
-#endif /*CONFIG_ARCH_X86*/
-
-#ifdef CONFIG_ARCH_ARM
-
-/*the actual cortex a53 hikey platform, wrong config in kernel*/
-#ifdef CONFIG_ARM_CORTEX_A53
+#ifdef CONFIG_PLAT_TX1
 /*number of cache lines per page*/
-#define PAGE_CACHELINES   64
+#define PAGE_CACHELINES    64
 
 /*32 K buffer*/
-#define L1_ASSOCIATIVITY 4
-#define L1_SETS  128
-#define L1_LINES  512
-#define L1_CACHELINE 64
-#define L1_STRIDE (L1_CACHELINE * L1_SETS)
-#define L1_PROBE_BUFFER (L1_STRIDE * L1_ASSOCIATIVITY + PAGE_SIZE)
+#define L1_ASSOCIATIVITY   2
+#define L1_SETS            256
+#define L1_LINES           512
+#define L1_CACHELINE       64
+#define L1_STRIDE          (L1_CACHELINE * L1_SETS)
+#define L1_PROBE_BUFFER    (L1_STRIDE * L1_ASSOCIATIVITY + PAGE_SIZE)
 
-#define L1I_ASSOCIATIVITY 2
-#define L1I_SETS 256
-#define L1I_CACHELINE 64
-#define L1I_STRIDE (L1I_CACHELINE * L1I_SETS)
+#define L1I_ASSOCIATIVITY  3
+#define L1I_SETS           256
+#define L1I_LINES          768
+#define L1I_CACHELINE      64
+#define L1I_STRIDE         (L1I_CACHELINE * L1I_SETS)
 
-
-#define L3_THRESHOLD 150
-#define L3_ASSOCIATIVITY 16
-#define L3_SIZE (512*1024) /*2 L2 cache, one in each cluster, not shared between cluster*/
-#define L3_CACHELINE 64
+//L3 defined kept in for l3_arm.c
+#define L3_THRESHOLD       150
+#define L3_ASSOCIATIVITY   16
+#define L3_SIZE            (512*1024) /*2 L2 cache, one in each cluster, not shared between cluster*/
+#define L3_CACHELINE       64
 // The number of cache sets in each slice.
-#define L3_SETS_PER_SLICE 512
+#define L3_SETS_PER_SLICE  512
 
 // The number of cache sets in each page
-#define L3_SETS_PER_PAGE 64
+#define L3_SETS_PER_PAGE   64
+#endif /* CONFIG_PLAT_TX1 */
 
-#endif 
-
-
-
-
-#ifdef CONFIG_ARM_CORTEX_A9 
+#ifdef CONFIG_PLAT_HIKEY
 /*number of cache lines per page*/
-#define PAGE_CACHELINES   128
+#define PAGE_CACHELINES    64
 
-#define L1_ASSOCIATIVITY 4
-#define L1_SETS 256
-#define L1_LINES  1024
-#define L1_CACHELINE 32
-#define L1_STRIDE (L1_CACHELINE * L1_SETS)
-#define L1_PROBE_BUFFER (L1_STRIDE * L1_ASSOCIATIVITY + PAGE_SIZE)
+/*32 K buffer*/
+#define L1_ASSOCIATIVITY   4
+#define L1_SETS            128
+#define L1_LINES           512
+#define L1_CACHELINE       64
+#define L1_STRIDE          (L1_CACHELINE * L1_SETS)
+#define L1_PROBE_BUFFER    (L1_STRIDE * L1_ASSOCIATIVITY + PAGE_SIZE)
 
-#define L1I_ASSOCIATIVITY 4
-#define L1I_SETS 256
-#define L1I_CACHELINE 32
-#define L1I_STRIDE (L1I_CACHELINE * L1I_SETS)
+#define L1I_ASSOCIATIVITY  2
+#define L1I_SETS           256
+#define L1I_CACHELINE      64
+#define L1I_STRIDE         (L1I_CACHELINE * L1I_SETS)
 
-
-#define L3_THRESHOLD 150
-#define L3_ASSOCIATIVITY 16
-#define L3_SIZE (1*1024*1024)
-#define L3_CACHELINE 32
+#define L3_THRESHOLD       150
+#define L3_ASSOCIATIVITY   16
+#define L3_SIZE            (512*1024) /*2 L2 cache, one in each cluster, not shared between cluster*/
+#define L3_CACHELINE       64
 // The number of cache sets in each slice.
-#define L3_SETS_PER_SLICE 2048
+#define L3_SETS_PER_SLICE  512
 
 // The number of cache sets in each page
-#define L3_SETS_PER_PAGE 128
+#define L3_SETS_PER_PAGE   64
 
-#endif 
+#endif /* CONFIG_PLAT_HIKEY */
 
-#endif 
+#ifdef CONFIG_PLAT_SABRE 
+/*number of cache lines per page*/
+#define PAGE_CACHELINES    128
+
+#define L1_ASSOCIATIVITY   4
+#define L1_SETS            256
+#define L1_LINES           1024
+#define L1_CACHELINE       32
+#define L1_STRIDE          (L1_CACHELINE * L1_SETS)
+#define L1_PROBE_BUFFER    (L1_STRIDE * L1_ASSOCIATIVITY + PAGE_SIZE)
+
+#define L1I_ASSOCIATIVITY  4
+#define L1I_SETS           256
+#define L1I_CACHELINE      32
+#define L1I_STRIDE         (L1I_CACHELINE * L1I_SETS)
+
+#define L3_THRESHOLD       150
+#define L3_ASSOCIATIVITY   16
+#define L3_SIZE            (1*1024*1024)
+#define L3_CACHELINE       32
+// The number of cache sets in each slice.
+#define L3_SETS_PER_SLICE  2048
+
+// The number of cache sets in each page
+#define L3_SETS_PER_PAGE   128
+
+#endif /* CONFIG_PLAT_SABRE  */
 
 
 #ifdef CONFIG_ARCH_ARM 
@@ -143,7 +162,7 @@ static inline void walk(void *p, int count) {
 
 }
 
-#endif
+#endif /* CONFIG_ARCH_ARM  */
 #ifdef CONFIG_ARCH_X86
 static inline int access(void *v) {
   int rv;
@@ -195,7 +214,7 @@ static inline void walk(void *p, int count) {
     "jnz 1b\n"
     : "+r" (p), "+r" (count)::"rsi");
 }
-#else
+#else /* CONFIG_ARCH_X86_64 */
 static inline void walk(void *p, int count) {
   if (p == NULL)
     return;
@@ -209,7 +228,7 @@ static inline void walk(void *p, int count) {
     "jnz 1b\n"
     : "+r" (p), "+r" (count)::"esi");
 }
-#endif
+#endif /* CONFIG_ARCH_X86_64 */
 
 
 struct cpuidRegs {
@@ -251,6 +270,5 @@ struct cacheInfo {
 inline void cpuid(struct cpuidRegs *regs) {
   asm volatile ("cpuid": "+a" (regs->eax), "+b" (regs->ebx), "+c" (regs->ecx), "+d" (regs->edx));
 }
-
-#endif 
-#endif //__LOW_H__
+#endif /* CONFIG_ARCH_X86 */
+#endif /*_LOW_H_*/

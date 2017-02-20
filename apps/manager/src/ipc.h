@@ -40,12 +40,19 @@
     (var) = (((uint64_t)high) << 32ull) | ((uint64_t)low); \
 } while(0)
 
+#ifdef CONFIG_ARCH_AARCH64
+#define READ_COUNTER_ARMV7(var) do { \
+    asm volatile("mrs %0, PMCCNTR_EL0\n" \
+        : "=r"(var) \
+    ); \
+} while(0)
+#else
 #define READ_COUNTER_ARMV7(var) do { \
     asm volatile("mrc p15, 0, %0, c9, c13, 0\n" \
         : "=r"(var) \
     ); \
 } while(0)
-
+#endif
 
 #if defined(CONFIG_ARCH_ARM_V6)
 #define READ_COUNTER_BEFORE READ_COUNTER_ARMV6

@@ -53,14 +53,14 @@ void map_init_frames(m_env_t *env, void *vaddr, uint32_t s, bench_env_t *t) {
 
     /*using simple*/
     simple_t *simple = &env->simple; 
-    uint32_t offset =(uint32_t) vaddr - (uint32_t)&__executable_start; 
+    seL4_Word offset =(seL4_Word) vaddr - (seL4_Word)&__executable_start; 
 
     if (!s)
         return; 
 
     /*page aligned*/
     assert(!(s % BENCH_PAGE_SIZE)); 
-    assert(!((uint32_t)vaddr % BENCH_PAGE_SIZE)); 
+    assert(!((seL4_Word)vaddr % BENCH_PAGE_SIZE)); 
     assert(simple);
 
     /*reserve an area in vspace*/ 
@@ -119,7 +119,8 @@ void create_huge_pages(bench_env_t *owner, uint32_t size) {
     uint32_t huge_page_size;
     sel4utils_process_t *p_o = &owner->process;
 
-    uint32_t cookies, phy, huge_page_object; 
+    uint32_t cookies, huge_page_object;
+    seL4_Word phy;
 
 #ifdef CONFIG_ARCH_X86
     /*4M*/
@@ -127,8 +128,12 @@ void create_huge_pages(bench_env_t *owner, uint32_t size) {
     huge_page_object = seL4_X86_LargePageObject;
 #endif 
 
-#ifdef CONFIG_ARCH_ARM 
-    /*16M*/
+#ifdef CONFIG_ARCH_AARCH64
+    /*2M, Can be changed to be 1G with seL4_HugePageBits*/ 
+    huge_page_size = vka_get_object_size(seL4_ARM_LargePageObject, 0); 
+    huge_page_object = seL4_ARM_LargePageObject;
+#else
+    /*16M*/ 
     huge_page_size = vka_get_object_size(seL4_ARM_SuperSectionObject, 0); 
     huge_page_object = seL4_ARM_SuperSectionObject;
 #endif 
@@ -422,6 +427,9 @@ int run_single (m_env_t *env) {
     return run_single_l1(env);
 #endif 
 #ifdef CONFIG_BENCH_COVERT_BTB 
+    return run_single_l1(env); 
+#endif
+#ifdef CONFIG_BENCH_COVERT_BP
     return run_single_l1(env); 
 #endif
     /*the LLC single core covert channel*/
