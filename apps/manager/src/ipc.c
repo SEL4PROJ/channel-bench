@@ -157,7 +157,6 @@ void process_pmu_results (ipc_test_pmu_t *results) {
 }
 
 
-
 void ipc_destroy_process(bench_env_t *t1, bench_env_t *t2) {
 
     /*destory the two processes used by ipc benchmarks*/

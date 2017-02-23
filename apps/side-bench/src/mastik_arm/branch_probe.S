@@ -46,7 +46,7 @@ call8:
 #endif 
 
 
-#ifdef CONFIG_ARM_CORTEX_A9
+#ifdef CONFIG_PLAT_SABRE
 
 /*simplify the probing, arranging them into cache sets
  L1 has 256 sets, 4 ways, one way == 8 KB*/
@@ -62,7 +62,7 @@ call8:
 
 #endif 
 
-#ifdef CONFIG_ARM_CORTEX_A53
+#ifdef CONFIG_PLAT_HIKEY
 /*L1 has 256 sets, 2 ways, 64 b/line, one way = 16384*/
 /*jumping to the next way*/
 #define BPL() \
@@ -76,7 +76,7 @@ call8:
 
 #endif
 
-#ifdef CONFIG_ARM_CORTEX_A57
+#ifdef CONFIG_PLAT_TX1
 /*L1 has 256 sets, 3 ways, 64 b/line, one way = 16384*/
 /*jumping to the next way*/
 #define BPL() \
@@ -129,7 +129,7 @@ call8:
         BLR_16() \
         BLR_16() 
 
-#ifdef CONFIG_ARM_CORTEX_A9
+#ifdef CONFIG_PLAT_SABRE
 #define BPL_PAGE() \
         BPL_64() \
         BPL_64() 
@@ -139,7 +139,7 @@ call8:
 #endif 
 
 
-#ifdef CONFIG_ARM_CORTEX_A53
+#ifdef CONFIG_PLAT_HIKEY
 #define BPL_PAGE() \
         BPL_64() 
 
@@ -147,7 +147,7 @@ call8:
         BLR_64() 
 #endif
 
-#ifdef CONFIG_ARM_CORTEX_A57
+#ifdef CONFIG_PLAT_TX1
 #define BPL_PAGE() \
         BPL_64() 
 
@@ -180,6 +180,12 @@ BPL_PAGE()
 BPL_PAGE()
 BPL_PAGE()
 BPL_PAGE()
+#ifdef CONFIG_PLAT_TX1
+BPL_PAGE()
+BPL_PAGE()
+BPL_PAGE()
+BPL_PAGE()
+#endif
 BLR_PAGE()
 BLR_PAGE()
 BLR_PAGE()
@@ -189,9 +195,8 @@ BLR_PAGE()
 
 /*using 4 bytes, 256 sets to probe the btb 
  512 branch instruction*/ 
-#ifndef CONFIG_ARCH_AARCH64
 #define B_4BYTES() \
-        b .+4; 
+      b .+4; 
 
 #define B_4BYTES_4() \
         B_4BYTES() \
@@ -217,52 +222,20 @@ BLR_PAGE()
         B_4BYTES_64() \
         B_4BYTES_64() 
 
+
+    /*512 lines*/
 .global arm_branch_lines
 arm_branch_lines:
-        B_4BYTES_256()
-        B_4BYTES_256()
+B_4BYTES_256()
+B_4BYTES_256()
 
-        /*512 lines*/
-        bx lr
-#else
-#define B_8BYTES() \
-        b .+8; 
+#ifdef CONFIG_PLAT_TX1
 
-#define B_8BYTES_4() \
-        B_8BYTES() \
-        B_8BYTES() \
-        B_8BYTES() \
-        B_8BYTES() 
+#endif
 
-#define B_8BYTES_16() \
-        B_8BYTES_4() \
-        B_8BYTES_4() \
-        B_8BYTES_4() \
-        B_8BYTES_4() 
-
-#define B_8BYTES_64() \
-        B_8BYTES_16() \
-        B_8BYTES_16() \
-        B_8BYTES_16() \
-        B_8BYTES_16() 
-
-#define B_8BYTES_256() \
-        B_8BYTES_64() \
-        B_8BYTES_64() \
-        B_8BYTES_64() \
-        B_8BYTES_64() 
-
-#define B_8BYTES_1K() \
-        B_8BYTES_256() \
-        B_8BYTES_256() \
-        B_8BYTES_256() \
-        B_8BYTES_256() \
-
-.global arm_branch_lines
-arm_branch_lines:
-        B_8BYTES_1K()
-        B_8BYTES_1K()
-
-        /* 2K lines */
+#ifdef CONFIG_ARCH_AARCH64
         ret
+#else
+        bx lr   /*bx lr uses the return stack, 8 entries 32 bits
+                 a seperate cache */
 #endif

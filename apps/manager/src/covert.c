@@ -108,8 +108,6 @@ void map_p_buf(bench_env_t *t, uint32_t size) {
 
 }
 
-
-
 void create_huge_pages(bench_env_t *owner, uint32_t size) {
 
 
