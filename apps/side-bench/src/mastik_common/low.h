@@ -50,7 +50,7 @@
 #define L3_SIZE            (512*1024) /*2 L2 cache, one in each cluster, not shared between cluster*/
 #define L3_CACHELINE       64
 // The number of cache sets in each slice.
-#define L3_SETS_PER_SLICE  512
+#define L3_SETS_PER_SLICE  2048
 
 // The number of cache sets in each page
 #define L3_SETS_PER_PAGE   64
