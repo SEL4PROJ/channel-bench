@@ -22,7 +22,7 @@
 
 #define L3_THRESHOLD       140
 #define L3_ASSOCIATIVITY   16
-#define L3_SIZE            (6*1024*1024)
+#define L3_SIZE            (8*1024*1024)
 
 #endif /* CONFIG_ARCH_X86 */
 
@@ -44,10 +44,9 @@
 #define L1I_CACHELINE      64
 #define L1I_STRIDE         (L1I_CACHELINE * L1I_SETS)
 
-//L3 defined kept in for l3_arm.c
 #define L3_THRESHOLD       150
 #define L3_ASSOCIATIVITY   16
-#define L3_SIZE            (512*1024) /*2 L2 cache, one in each cluster, not shared between cluster*/
+#define L3_SIZE            (2*1024*1024) /* 2MB */
 #define L3_CACHELINE       64
 // The number of cache sets in each slice.
 #define L3_SETS_PER_SLICE  2048
@@ -75,7 +74,7 @@
 
 #define L3_THRESHOLD       150
 #define L3_ASSOCIATIVITY   16
-#define L3_SIZE            (512*1024) /*2 L2 cache, one in each cluster, not shared between cluster*/
+#define L3_SIZE            (512*1024) /* 512KB */
 #define L3_CACHELINE       64
 // The number of cache sets in each slice.
 #define L3_SETS_PER_SLICE  512
