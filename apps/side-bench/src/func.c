@@ -15,7 +15,6 @@ int funcs_sender(bench_covert_t *env) {
   seL4_Word badge;
   seL4_MessageInfo_t info;
 
-  printf("s\n");
 
   info = seL4_Recv(env->r_ep, &badge);
   assert(seL4_MessageInfo_get_label(info) == seL4_Fault_NullFault);

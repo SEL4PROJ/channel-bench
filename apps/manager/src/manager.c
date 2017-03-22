@@ -515,7 +515,6 @@ int main (void) {
     
     seL4_BootInfo *info = seL4_GetBootInfo(); 
     int err;
-
 #ifdef CONFIG_MANAGER_HUGE_PAGES
     /*init the more core area for the libc to use*/
     morecore_area = manager_morecore_area; 

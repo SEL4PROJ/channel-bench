@@ -196,8 +196,7 @@ void launch_bench_func_test(m_env_t *env){
     
     printf("creating sender\n"); 
     create_thread(&sender); 
- 
-    while (1) ;
+    
     printf("creating receiver\n"); 
     create_thread(&receiver);
 
