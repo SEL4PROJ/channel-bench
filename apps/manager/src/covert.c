@@ -40,68 +40,6 @@ static char t_buf[CACHESIZE] __attribute__((aligned (BENCH_PAGE_SIZE)));
 /*ep for syn and reply*/
 static vka_object_t syn_ep, t_ep, s_ep; 
 
-static void create_thread(bench_env_t *t) {
-
-    sel4utils_process_t *process = &t->process; 
-    cspacepath_t src;
-    seL4_CPtr ep_arg, reply_ep_arg;
-    int argc = 3;
-    char arg_str0[15] = {0}; 
-    char arg_str1[15] = {0}; 
-    char arg_str2[15] = {0}; 
-
-    char *argv[3] = {arg_str0, arg_str1, arg_str2}; 
-    
-    int error __attribute__((unused)); 
-
-    printf("creating benchmarking thread\n");
-    /*configure process*/ 
-    error = sel4utils_configure_process(process, 
-            t->vka, t->vspace, t->prio, 
-            t->image); 
-            
-    assert(error == 0); 
-
-
-    vka_cspace_make_path(t->ipc_vka, t->ep.cptr, &src);  
-    ep_arg = sel4utils_copy_cap_to_process(process, src);
-    assert(ep_arg); 
-
-    vka_cspace_make_path(t->ipc_vka, t->reply_ep.cptr, &src);  
-    reply_ep_arg = sel4utils_copy_cap_to_process(process, src);
-    assert(reply_ep_arg);
-
-    sprintf(arg_str0, "%d", t->test_num); 
-    sprintf(arg_str1, "%d", ep_arg); 
-    sprintf(arg_str2, "%d", reply_ep_arg); 
-#if CONFIG_CACHE_COLOURING
-    /*configure kernel image*/
-    printf("bind kernel image \n");
-    bind_kernel_image(t->kernel,
-            process->pd.cptr, process->thread.tcb.cptr);
-#endif
-
-    printf("spawn process\n");
-   /*start process*/ 
-    error = sel4utils_spawn_process_v(process, t->vka, 
-            t->vspace, argc, argv, 0);
-    assert(error == 0);
-    
-    /*assign the affinity*/ 
-#if (CONFIG_MAX_NUM_NODES > 1)
-    error = seL4_TCB_SetAffinity(process->thread.tcb.cptr, t->affinity);
-    assert(error == 0);
-#endif 
-#ifdef CONFIG_DEBUG_BUILD
-    seL4_DebugNameThread(process->thread.tcb.cptr, t->name);
-#endif
-
-    printf("process is ready\n"); 
-    error = seL4_TCB_Resume(process->thread.tcb.cptr);
-    assert(error == 0);
-   
-}
-
 /*mapping a buffer from env to the thread t, 
 vaddr in vspace of env, s size in bytes*/
 void map_init_frames(m_env_t *env, void *vaddr, uint32_t s, bench_env_t *t) {
@@ -167,98 +105,6 @@ void map_p_buf(bench_env_t *t, uint32_t size) {
     t->p_vaddr = vspace_new_pages(&p->vspace, seL4_AllRights, 
             n_p, PAGE_BITS_4K);
     assert(t->p_vaddr != NULL); 
-
-}
-
-/*map the record buffer to thread*/
-void map_r_buf(m_env_t *env, uint32_t n_p, bench_env_t *t) {
-
-    reservation_t v_r;
-    void  *e_v;  
-    cspacepath_t src, dest;
-    int ret; 
-    sel4utils_process_t *p = &t->process; 
-    
-    if (!n_p)
-        return; 
-
-    /*pages for spy record, ts structure*/
-    t->t_vaddr = vspace_new_pages(&p->vspace, seL4_AllRights, 
-            n_p, PAGE_BITS_4K);
-    assert(t->t_vaddr != NULL); 
-
-    uint32_t v = (uint32_t)t->t_vaddr; 
-
-    /*reserve an area in vspace of the manager*/ 
-    v_r = vspace_reserve_range(&env->vspace, n_p * BENCH_PAGE_SIZE, 
-            seL4_AllRights, 1, &e_v);
-    assert(v_r.res != NULL);
-
-    env->record_vaddr = e_v; 
-
-    for (int i = 0; i < n_p; i++, v+= BENCH_PAGE_SIZE) {
-
-        /*copy those frame caps*/ 
-        vka_cspace_make_path(t->vka, vspace_get_cap(&p->vspace, 
-                    (void*)v), &src);
-        ret = vka_cspace_alloc(&env->vka, &t->t_frames[i]); 
-        assert(ret == 0); 
-        vka_cspace_make_path(&env->vka, t->t_frames[i], &dest); 
-        ret = vka_cnode_copy(&dest, &src, seL4_AllRights); 
-        assert(ret == 0); 
-    }
-    /*map in*/
-    ret = vspace_map_pages_at_vaddr(&env->vspace, t->t_frames, 
-            NULL, e_v, n_p, PAGE_BITS_4K, v_r);
-    assert(ret == 0); 
-
-}
-
-void map_shared_buf(bench_env_t *owner, bench_env_t *share, 
-        uint32_t n_p, uint32_t *phy) {
-
-    /*allocate buffer from owner that shared between two threads*/
-    reservation_t v_r;
-    void  *e_v;
-    cspacepath_t src, dest;
-    int ret;
-    sel4utils_process_t *p_o = &owner->process, *p_s = &share->process;
-    uint32_t cookies; 
-
-    /*pages for spy record, ts structure*/
-    owner->s_vaddr = vspace_new_pages(&p_o->vspace, seL4_AllRights,
-            n_p, PAGE_BITS_4K);
-    assert(owner->s_vaddr != NULL);
-
-    /*find the physical address of the page*/
-    cookies = vspace_get_cookie(&p_o->vspace, owner->s_vaddr); 
-
-    *phy = vka_utspace_paddr(owner->vka, cookies, seL4_ARCH_4KPage, seL4_PageBits);
-
-    uint32_t v = (uint32_t)owner->s_vaddr;
-
-    /*reserve the area in shared process*/
-    v_r = vspace_reserve_range(&p_s->vspace, n_p * BENCH_PAGE_SIZE,
-            seL4_AllRights, 1, &e_v);
-    assert(v_r.res != NULL);
-
-    share->s_vaddr = e_v;
-
-    for (int i = 0; i < n_p; i++, v+= BENCH_PAGE_SIZE) {
-
-        /*copy those frame caps*/
-        vka_cspace_make_path(owner->vka, vspace_get_cap(&p_o->vspace,
-                    (void*)v), &src);
-        ret = vka_cspace_alloc(share->vka, &share->s_frames[i]);
-        assert(ret == 0);
-        vka_cspace_make_path(share->vka, share->s_frames[i], &dest);
-        ret = vka_cnode_copy(&dest, &src, seL4_AllRights);
-        assert(ret == 0);
-    }
-    /*map in*/
-    ret = vspace_map_pages_at_vaddr(&p_s->vspace, share->s_frames,
-            NULL, e_v, n_p, PAGE_BITS_4K, v_r);
-    assert(ret == 0);
 
 }
 
@@ -566,7 +412,6 @@ int run_single_llc_kernel_schedule(m_env_t *env) {
 /*running the single core attack*/ 
 int run_single (m_env_t *env) {
 
-
 #ifdef CONFIG_BENCH_COVERT_L2
     return run_single_l2(env); 
 #endif     
@@ -594,27 +439,7 @@ int run_single (m_env_t *env) {
 static inline void mfence() {
   asm volatile("mfence");
 }
-void covert_sleep(unsigned int sec) {
 
-    unsigned long long s_tick = (unsigned long long)sec * MASTIK_FEQ;  
-    unsigned long long cur, tar; 
-
-    /*a self implmeneted sleep function*/
-#ifdef CONFIG_ARCH_X86
-    cur = rdtscp_64();
-#else 
-    cur = sel4bench_get_cycle_count(); 
-#endif 
-    tar = cur + s_tick; 
-    while (cur < tar) {
-#ifdef CONFIG_ARCH_X86
-        cur = rdtscp_64();
-#else 
-        cur = sel4bench_get_cycle_count(); 
-#endif 
-    }
-
-}
 int run_multi(m_env_t *env) {
 
     seL4_MessageInfo_t info; 
@@ -651,6 +476,7 @@ void prepare_single(m_env_t *env) {
     cspacepath_t src;
     seL4_CPtr n_ep; 
 
+    printf("Preparing the running environment for benchmarking threads....\n"); 
 #ifdef CONFIG_CACHE_COLOURING 
     map_p_buf(&trojan, CACHESIZE);
     map_p_buf(&spy, EBSIZE);
@@ -666,23 +492,28 @@ void prepare_single(m_env_t *env) {
     vka_cspace_make_path(trojan.vka, trojan.notification_ep.cptr, &src);  
     n_ep = sel4utils_copy_cap_to_process(&trojan.process, src);
     assert(n_ep); 
-    
+   
+    printf("Sending Trojan env message...."); 
     /*trojan, probming buffer, 0, notification ep*/
     seL4_SetMR(0,(seL4_Word)trojan.p_vaddr); 
     seL4_SetMR(1, 0);
     seL4_SetMR(2, n_ep);
  
     seL4_Send(t_ep.cptr, info);
+    printf("done\n"); 
 
     vka_cspace_make_path(spy.vka, spy.notification_ep.cptr, &src);  
     n_ep = sel4utils_copy_cap_to_process(&spy.process, src);
     assert(n_ep); 
-
+    printf("Sending Spy env message...."); 
     /*spy, probming buffer, recording buffer, notification ep*/
     seL4_SetMR(0, (seL4_Word)spy.p_vaddr); 
     seL4_SetMR(1, (seL4_Word)spy.t_vaddr);
     seL4_SetMR(2, n_ep);
     seL4_Send(s_ep.cptr, info);
+    printf("done\n"); 
+
+    printf("\t\t\t\t environment is set up\n\n");
 
 }
 
@@ -765,12 +596,16 @@ void launch_bench_covert (m_env_t *env) {
     spy.vka = trojan.vka = &env->vka; 
     env->ipc_vka = &env->vka;
 #endif
+
 #ifdef CONFIG_MULTI_KERNEL_IMAGES
     {
-        vka_object_t kernel_image_obj, kernel_mem_obj; 
+        /*testing the kernel image APIs*/
+        vka_object_t kernel_image_obj, kernel_mem_obj;
         cspacepath_t src_path, dest_path;
         seL4_CPtr kernel_image_copy, kernel_mem_copy; 
         seL4_CPtr ik_image; 
+        seL4_MessageInfo_t tag, output_tag;
+        seL4_CPtr *kernel_mems; 
 
         ret = vka_alloc_kernel_image(&env->vka, &kernel_image_obj); 
         assert(ret == 0); 
@@ -778,17 +613,61 @@ void launch_bench_covert (m_env_t *env) {
         ret = vka_cspace_alloc(&env->vka, &kernel_image_copy); 
         assert(ret == 0); 
         vka_cspace_make_path(&env->vka, kernel_image_copy, &dest_path); 
-        ret = vka_cnode_copy(&dest_path, &src_path, seL4_AllRights); 
+        /*cannot copy a kernel image cap without created a clone*/
+    //    ret = vka_cnode_copy(&dest_path, &src_path, seL4_AllRights); 
    
-        ret = vka_alloc_kernel_mem(&env->vka, &kernel_mem_obj); 
+        /*assign a ASID to the kernel image*/
+        ret =  seL4_X86_ASIDPool_Assign(seL4_CapInitThreadASIDPool, kernel_image_obj.cptr); 
         assert(ret == 0); 
+
+        /*cannot copy a kernel image cap after assign an ASID*/
+     //   ret = vka_cnode_copy(&dest_path, &src_path, seL4_AllRights); 
+        
+        printf("creating %d kernel memory object for generating a kernel clone \n", (uint32_t)env->bootinfo->kernelImageSize);
+       
+        kernel_mems = malloc (sizeof (seL4_CPtr) * env->bootinfo->kernelImageSize);
+        assert(kernel_mems != NULL); 
+
+        /*creating multiple kernel memory objects*/
+        for (int mems = 0; mems < env->bootinfo->kernelImageSize; mems++) {
+
+            ret = vka_alloc_kernel_mem(&env->vka, &kernel_mem_obj); 
+            assert(ret == 0);
+            kernel_mems[mems] = kernel_mem_obj.cptr; 
+
+        }
+        
+  
+        /*calling kernel clone with the kernel image and master kernel*/
+        tag = seL4_MessageInfo_new(X86KernelImageClone, 0, 1, env->bootinfo->kernelImageSize + 1);
+        seL4_SetCap(0, simple_get_ik_image(&env->simple)); 
+
+        seL4_SetMR(0, env->bootinfo->kernelImageSize);
+        
+        for (int mems = 0; mems < env->bootinfo->kernelImageSize; mems++) {
+            seL4_SetMR(mems + 1, kernel_mems[mems]);
+        }
+
+        output_tag = seL4_Call(kernel_image_obj.cptr, tag); 
+        ret = seL4_MessageInfo_get_label(output_tag);
+        assert(ret == 0);
+        printf("the kernel image clone is done \n");
+       
         vka_cspace_make_path(&env->vka, kernel_mem_obj.cptr, &src_path);
         ret = vka_cspace_alloc(&env->vka, &kernel_mem_copy); 
         assert(ret == 0); 
         vka_cspace_make_path(&env->vka, kernel_mem_copy, &dest_path);
+        /*can copy a kernel memory cap without generated a kernel image
+         with the memory*/
         ret = vka_cnode_copy(&dest_path, &src_path, seL4_AllRights); 
+
+        assert(ret == 0);
+
+        /*the master kernel image*/
         ik_image = simple_get_ik_image(&env->simple); 
         printf("ik image cap is %d\n", ik_image);
+        trojan.kernel = spy.kernel = kernel_image_obj.cptr; 
+        //trojan.kernel = spy.kernel = ik_image;
 
     }
 #endif 

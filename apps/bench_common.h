@@ -240,6 +240,9 @@ struct ipc_results {
 #define BENCH_COVERT_TIME_PAGES 21  /*ts structure defined in timestats.c*/
 #define BENCH_COVERT_BUF_PAGES  4096 /*trojan/probe buffers*/
 
+/*the page used for functional test correctness*/
+#define BENCH_FUNC_TEST_PAGES    1
+
 #define BENCH_MORECORE_HUGE_SIZE  (16 * 1024 * 1024) /* huge pages created by master for benchmarking thread */
 
 
@@ -318,6 +321,11 @@ typedef struct bench_covert {
 #define BENCH_COVERT_LLC_SINGLE_TROJAN   19 
 #define BENCH_COVERT_LLC_SINGLE_SPY      20
 #define BENCH_COVERT_FUNS                21
+
+
+/*the benchmarking tets for the function correctness */
+#define BENCH_FUNC_RECEIVER              80 
+#define BENCH_FUNC_SENDER                81 
 
 #define BENCH_COVERT_MSG_LEN  3 /*msg len for init env*/
 /*matching the test number according to the config*/ 
@@ -452,6 +460,9 @@ static inline uint64_t rdtscp_64(void) {
 
 /*sandy bridge machine frequency 3.4GHZ*/
 #define MASTIK_FEQ  (3400000000ull)
+
+/*the sandy bridge frequency in microsecond 3.4MHZ*/
+#define CPU_FEQ_MICROSEC (3400000ull) 
 
 
 #define COMPILER_BARRIER do { asm volatile ("" ::: "memory"); } while(0);

@@ -35,6 +35,7 @@ bench_covert_t covert_env;
 extern char *morecore_area;
 extern size_t morecore_size;
 #endif 
+#ifdef CONFIG_BENCH_COVERT_SINGLE
 static int (*covert_bench_fun[BENCH_COVERT_FUNS])(bench_covert_t *) = {NULL, 
     NULL, NULL,  
     NULL, NULL, 
@@ -47,7 +48,7 @@ static int (*covert_bench_fun[BENCH_COVERT_FUNS])(bench_covert_t *) = {NULL,
     btb_trojan, btb_spy,
     l3_trojan_single, l3_spy_single,
 };
-
+#endif
 /* dummy global for libsel4muslcsys */
 char _cpio_archive[1];
 
@@ -263,6 +264,30 @@ void run_bench_mastik(char **argv) {
 }
 
 #endif
+#ifdef CONFIG_MANAGER_FUNC_TESTS
+ 
+int run_bench_func_tests(char **argv) {
+    
+
+    covert_env.opt = atol(argv[0]); 
+    covert_env.syn_ep = (seL4_CPtr)atol(argv[1]);
+    covert_env.r_ep = (seL4_CPtr)atol(argv[2]);
+    
+#ifdef CONFIG_DEBUG_BUILD
+    platsupport_serial_setup_simple(NULL, NULL, NULL); 
+#endif 
+    
+    /*run bench*/
+    if (covert_env.opt == BENCH_FUNC_RECEIVER)
+        funcs_receiver(&covert_env); 
+        
+    if (covert_env.opt == BENCH_FUNC_SENDER)
+        funcs_sender(&covert_env);
+   
+    return 0;
+}
+#endif
+
 int main (int argc, char **argv) {
 
 
@@ -282,6 +307,9 @@ int main (int argc, char **argv) {
 #endif 
 #ifdef CONFIG_MASTIK_ATTACK
     run_bench_mastik(argv);
+#endif 
+#ifdef CONFIG_MANAGER_FUNC_TESTS 
+    run_bench_func_tests(argv);
 #endif 
 
     /*finished testing, halt*/

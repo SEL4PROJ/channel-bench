@@ -482,6 +482,9 @@ static void *main_continued (void* arg) {
 #ifdef CONFIG_MANAGER_COVERT_BENCH
     launch_bench_covert(&env); 
 #endif 
+#ifdef CONFIG_MANAGER_FUNC_TESTS 
+    launch_bench_func_test(&env); 
+#endif 
 
     /*halt cpu*/
     printf("Finished benchmark, now halting...\n"); 
@@ -524,6 +527,7 @@ int main (void) {
 #else 
     simple_default_init_bootinfo(&env.simple, info); 
 #endif
+    env.bootinfo = info; 
 
 #ifdef CONFIG_CACHE_COLOURING
     /*allocator, vka, and vspace*/
