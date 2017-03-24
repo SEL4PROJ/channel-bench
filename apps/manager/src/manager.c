@@ -136,7 +136,7 @@ void init_env (m_env_t *env) {
     allocman_make_vka(&env->vka, allocman); 
 
     /*create a vspace*/
-    error = sel4utils_bootstrap_vspace_with_bootinfo_leaky(&env->vspace, &vdata, simple_get_pd(&env->simple), &env->vka, seL4_GetBootInfo()); 
+    error = sel4utils_bootstrap_vspace_with_bootinfo_leaky(&env->vspace, &vdata, simple_get_pd(&env->simple), &env->vka, platsupport_get_bootinfo()); 
     assert(error == BENCH_SUCCESS); 
 
     /*fill allocator with virtual memory*/ 
@@ -513,7 +513,7 @@ static void create_kernel_pd(seL4_BootInfo *info, m_env_t *env) {
 int main (void) {
 
     
-    seL4_BootInfo *info = seL4_GetBootInfo(); 
+    seL4_BootInfo *info = platsupport_get_bootinfo(); 
     int err;
 #ifdef CONFIG_MANAGER_HUGE_PAGES
     /*init the more core area for the libc to use*/
