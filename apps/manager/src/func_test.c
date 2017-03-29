@@ -62,6 +62,40 @@ static int copy_kcaps(bench_ki_t *kimage) {
 #ifdef CONFIG_MULTI_KERNEL_IMAGES 
  
 
+static int destroy_ki(m_env_t *env, bench_ki_t *kimage) {
+    cspacepath_t src;
+    int ret; 
+    vka_cspace_make_path(&env->vka, kimage->ki.cptr, &src);  
+  
+    /*revoke first*/ 
+    ret = vka_cnode_revoke(&src); 
+    if (ret) 
+        return ret; 
+
+    return  vka_cnode_delete(&src); 
+ 
+}
+
+
+
+static int destroy_ki_via_kmem(m_env_t *env, bench_ki_t *kimage) {
+
+    /*delete the kmem first
+     then delete the kimage*/
+    cspacepath_t src;
+    int ret; 
+
+    for (int i = 0; i < kimage->k_size; i++)  {
+        vka_cspace_make_path(&env->vka, kimage->kmems[i].cptr, &src);  
+
+        ret = vka_cnode_delete(&src); 
+        if (ret) 
+            return ret; 
+    }
+
+    return  destroy_ki(env, kimage); 
+}
+
 static int create_ki(m_env_t *env, bench_ki_t *kimage) {
 
     vka_object_t *ki = &kimage->ki;
@@ -120,7 +154,74 @@ static int create_ki(m_env_t *env, bench_ki_t *kimage) {
 }
 
 
+static int test_destroy(m_env_t *env) {
+    /*deleting the kernel that used as the current kernel in other cores, 
+     expecting other core running the idle threads*/
+    int ret; 
+    int __attribute__((unused)) i = 0;
+    
+    ret = destroy_ki_via_kmem(env, kimages); 
+    if (ret) 
+        return ret; 
+
+    ret = destroy_ki_via_kmem(env, kimages + 1); 
+    if (ret) 
+        return ret; 
+
+    ret = destroy_ki(env, kimages); 
+    if (ret) 
+        return ret; 
+
+   
+    ret = destroy_ki(env, kimages + 1);
+    if (ret) 
+        return ret; 
+#if (CONFIG_MAX_NUM_NODES > 1)
+
+    /*wait for 1ms letting the kernel does the schedule*/ 
+    sw_sleep(1); 
+
+    /*check the threads are alive, sperate core*/
+
+    /*also including two threads on different core, cross-core IPC*/
+    
+    while(1) {
+        if (alive(env) == BENCH_SUCCESS) 
+            printf("alive %d\n", i); 
+        else 
+            printf("dead %d\n", i); 
+        i++;
+    }
+
+#else 
+    /*two threads same core, IPC*/
+    wait_msg(r_ep.cptr); 
+    printf("receiver finished\n");
+    /*sender*/
+    wait_msg(s_ep.cptr); 
+    printf("sender finished\n");
+
 #endif
+
+
+
+    /*deleting the kernel image, single core, not the current kernel*/
+    /*the threads are no longer runnable, the kernel image become invalid*/
+
+
+    /*delete the kernel memory, expecting the same behaviour as deleting 
+     kernel image*/
+
+    return BENCH_SUCCESS;
+
+}
+
+
+#endif
+
+
+
+
 
 /*entry point*/
 void launch_bench_func_test(m_env_t *env){
@@ -210,12 +311,15 @@ void launch_bench_func_test(m_env_t *env){
     printf("env send to receiver \n"); 
     send_run_env(&sender, s_ep.cptr);
     printf("env send to sender\n");
-    
+   
+#if (CONFIG_MAX_NUM_NODES > 1)
+ 
     /*wait for 1ms letting the kernel does the schedule*/ 
     sw_sleep(1); 
     
     /*check the threads are alive, sperate core*/
     
+    /*also including two threads on different core, cross-core IPC*/
     for (int i = 0; i < 1000; i++) {
 
         if (alive(env) == BENCH_SUCCESS) 
@@ -224,7 +328,7 @@ void launch_bench_func_test(m_env_t *env){
             printf("dead %d\n", i); 
     }
                 
-
+#else 
     /*two threads same core, IPC*/
     wait_msg(r_ep.cptr); 
     printf("receiver finished\n");
@@ -232,23 +336,13 @@ void launch_bench_func_test(m_env_t *env){
     wait_msg(s_ep.cptr); 
     printf("sender finished\n");
 
+#endif
 
+    
+    test_destroy(env); 
+   /*launch other kernel to the thread, to other core, the other threads are running*/
 
-    /*two threads on different core, cross-core IPC*/
-
-
-    /*deleting the kernel image, single core, not the current kernel*/
-    /*the threads are no longer runnable, the kernel image become invalid*/
-
-
-    /*delete the kernel memory, expecting the same behaviour as deleting 
-     kernel image*/
-
-
-    /*deleting the kernel that used as the current kernel in other cores, 
-     expecting other core running the idle threads*/
-
-    /*launch other kernel to the thread, to other core, the other threads are running*/
+    while (1); 
 }
 
 
