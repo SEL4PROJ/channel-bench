@@ -1,7 +1,7 @@
 #
 # Automatically generated make config: don't edit
 # Project Configuration
-# Fri Mar 24 15:05:53 2017
+# Wed Mar 29 17:21:30 2017
 #
 
 #
@@ -222,7 +222,7 @@ CONFIG_KERNEL_CFLAGS=""
 CONFIG_KERNEL_EXTRA_CPPFLAGS=""
 CONFIG_USER_COMPILER=""
 # CONFIG_USER_DEBUG_INFO is not set
-CONFIG_USER_EXTRA_CFLAGS="-D_XOPEN_SOURCE=700"
+CONFIG_USER_EXTRA_CFLAGS="-D_XOPEN_SOURCE=700 -Wno-error=maybe-uninitialized"
 CONFIG_USER_CFLAGS=""
 CONFIG_BUILDSYS_USE_CCACHE=y
 # CONFIG_USER_OPTIMISATION_Os is not set
