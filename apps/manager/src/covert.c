@@ -31,7 +31,7 @@ static bench_env_t trojan, spy;
 
 #ifdef CONFIG_BENCH_COVERT_SINGLE
 /*using the cache colouring allocator for the probe/trojan buffers*/
-#ifndef CONFIG_CACHE_COLOURING 
+#ifndef CONFIG_LIB_SEL4_CACHECOLOURING 
 /*buffers for probing and trojan processes*/ 
 static char p_buf[EBSIZE] __attribute__((aligned (BENCH_PAGE_SIZE)));
 static char t_buf[CACHESIZE] __attribute__((aligned (BENCH_PAGE_SIZE))); 
@@ -477,7 +477,7 @@ void prepare_single(m_env_t *env) {
     seL4_CPtr n_ep; 
 
     printf("Preparing the running environment for benchmarking threads....\n"); 
-#ifdef CONFIG_CACHE_COLOURING 
+#ifdef CONFIG_LIB_SEL4_CACHECOLOURING 
     map_p_buf(&trojan, CACHESIZE);
     map_p_buf(&spy, EBSIZE);
 #else
@@ -549,7 +549,7 @@ void launch_bench_covert (m_env_t *env) {
     trojan.vspace = spy.vspace = &env->vspace;
     trojan.name = "trojan"; 
     spy.name = "spy";
-#ifdef CONFIG_CACHE_COLOURING
+#ifdef CONFIG_LIB_SEL4_CACHECOLOURING
     /*by default the kernel is shared*/
     trojan.kernel = spy.kernel = env->kernel;
  
@@ -592,7 +592,7 @@ void launch_bench_covert (m_env_t *env) {
 #endif   /*CONFIG_ARCH_X86*/
 #endif  /*CONFIG_COVERT_SPY_SENSITIVE*/
 
-#else /*CONFIG_CACHE_COLOURING*/ 
+#else /*CONFIG_LIB_SEL4_CACHECOLOURING*/ 
     spy.vka = trojan.vka = &env->vka; 
     env->ipc_vka = &env->vka;
 #endif

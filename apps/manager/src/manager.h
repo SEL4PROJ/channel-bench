@@ -31,16 +31,27 @@
 #include "../../bench_common.h"
 
 #define MANAGER_MORECORE_SIZE  (16 * 1024 * 1024)
+
+#define MAN_KIMAGES   CC_NUM_DOMAINS
+
+/*the kernel image used for benchmarking*/
+typedef struct bench_ki {
+
+    vka_object_t ki; 
+    vka_object_t *kmems;
+    seL4_Word k_size;
+
+} bench_ki_t; 
+
+
 typedef struct {
 
     vka_t vka;    
     vka_t *ipc_vka;    /*pointer for ep allocator*/
     vspace_t vspace; 
-#ifdef CONFIG_MULTI_KERNEL_IMAGES
     vka_t vka_colour[CC_NUM_DOMAINS]; 
-    //colored_kernel_t kernel_colour[CC_NUM_DOMAINS];
+    bench_ki_t kimages[MAN_KIMAGES];
     seL4_CPtr kernel; 
-#endif 
     /*the boot info*/
     seL4_BootInfo *bootinfo; 
 
@@ -113,14 +124,65 @@ typedef struct bench_env {
 
 } bench_env_t; 
 
-/*the kernel image used for benchmarking*/
-typedef struct bench_ki {
+/*creating a kernel image object*/
+static int create_ki(m_env_t *env, vka_t *vka, bench_ki_t *kimage) {
 
-    vka_object_t ki; 
-    vka_object_t *kmems;
-    seL4_Word k_size;
+    vka_object_t *ki = &kimage->ki;
+    seL4_Word k_size = env->bootinfo->kernelImageSize;
+    seL4_CPtr *kmem_caps; 
+    seL4_MessageInfo_t tag, output_tag;
+    int ret; 
+    
+    kimage->k_size = k_size; 
 
-} bench_ki_t; 
+    kimage->kmems = malloc(sizeof (vka_object_t) * k_size); 
+    if (!kimage->kmems) 
+        return BENCH_FAILURE; 
+
+    kmem_caps = malloc(sizeof (seL4_CPtr) * k_size);
+    if (!kmem_caps) 
+        return BENCH_FAILURE; 
+    
+    ret = vka_alloc_kernel_image(vka, ki); 
+    if (ret) 
+        return BENCH_FAILURE; 
+
+    /*assign a ASID to the kernel image*/
+    ret =  seL4_X86_ASIDPool_Assign(seL4_CapInitThreadASIDPool, ki->cptr); 
+    if (ret) 
+        return BENCH_FAILURE; 
+
+
+    /*creating multiple kernel memory objects*/
+    for (int mems = 0; mems < k_size; mems++) {
+
+        ret = vka_alloc_kernel_mem(vka, &kimage->kmems[mems]); 
+        if (ret) 
+            return BENCH_FAILURE; 
+        kmem_caps[mems] = kimage->kmems[mems].cptr; 
+    }
+
+
+    /*calling kernel clone with the kernel image and master kernel*/
+    tag = seL4_MessageInfo_new(X86KernelImageClone, 0, 1, k_size + 1);
+    seL4_SetCap(0, simple_get_ik_image(&env->simple)); 
+
+    seL4_SetMR(0, k_size);
+
+    for (int mems = 0; mems < k_size; mems++) {
+        seL4_SetMR(mems + 1, kmem_caps[mems]);
+    }
+
+    output_tag = seL4_Call(ki->cptr, tag); 
+    ret = seL4_MessageInfo_get_label(output_tag);
+    if (ret) 
+        return BENCH_FAILURE; 
+
+    printf("the kernel image clone is done \n");
+    return BENCH_SUCCESS;
+}
+
+
 
 static void create_thread(bench_env_t *t) {
 

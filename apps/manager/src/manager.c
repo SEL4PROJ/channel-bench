@@ -41,6 +41,11 @@
 #include "../../bench_common.h"
 #include "manager.h"
 
+#ifdef CONFIG_LIB_SEL4_CACHECOLOURING 
+#include <cachecoloring/color_allocator.h>
+#endif 
+
+
 /*system resources*/
 static m_env_t env; 
 
@@ -52,10 +57,10 @@ extern size_t morecore_size;
 char manager_morecore_area[MANAGER_MORECORE_SIZE]; 
 #endif
 /* dimensions of virtual memory for the allocator to use */
-#define ALLOCATOR_VIRTUAL_POOL_SIZE ((1 << seL4_PageBits) * 4096)
+#define ALLOCATOR_VIRTUAL_POOL_SIZE (1024*1024*100)
 
 /* static memory for the allocator to bootstrap with */
-#define ALLOCATOR_STATIC_POOL_SIZE ((1 << seL4_PageBits) * 200)
+#define ALLOCATOR_STATIC_POOL_SIZE (1024*1024 *20)
 static char allocator_mem_pool[ALLOCATOR_STATIC_POOL_SIZE];
 
 /*static memory for virtual memory bootstrapping*/
@@ -148,7 +153,7 @@ void init_env (m_env_t *env) {
 
 }
 
-#ifdef CONFIG_CACHE_COLOURING
+#ifdef CONFIG_LIB_SEL4_CACHECOLOURING
 /*init run time environment for cache colouring*/
 static void init_env_colour(m_env_t *env) {
 
@@ -166,13 +171,16 @@ static void init_env_colour(m_env_t *env) {
             ALLOCATOR_STATIC_POOL_SIZE, 
             allocator_mem_pool, CC_NUM_DOMAINS, div); 
     assert(init_allocator); 
+
     /*abstrating allocator*/
     color_make_vka(&env->vka, init_allocator); 
 
-    /*create a vspace*/
-    error = sel4utils_bootstrap_vspace_with_bootinfo_leaky(&env->vspace, &vdata, simple_get_pd(&env->simple), &env->vka, seL4_GetBootInfo()); 
-    assert(error == BENCH_SUCCESS); 
 
+        /*create a vspace*/
+    error = sel4utils_bootstrap_vspace_with_bootinfo_leaky(&env->vspace, &vdata, simple_get_pd(&env->simple), &env->vka, platsupport_get_bootinfo()); 
+    assert(error == BENCH_SUCCESS); 
+    
+   
 #if 0
     /*config malloc to use virtual memory*/
     sel4utils_reserve_range_no_alloc(&vspace, &muslc_brk_reservation_memory,
@@ -184,12 +192,12 @@ static void init_env_colour(m_env_t *env) {
     /*fill allocator with virtual memory*/ 
     v_reserve = vspace_reserve_range(&env->vspace, ALLOCATOR_VIRTUAL_POOL_SIZE, seL4_AllRights, 1, &vaddr); 
     assert(v_reserve.res != NULL); 
-    
+   
     color_config_init_allocator(init_allocator, vaddr, ALLOCATOR_VIRTUAL_POOL_SIZE, simple_get_pd(&env->simple)); 
 
     /*setup the colored allocators*/
     for (int i = 0; i < CC_NUM_DOMAINS; i++) {
-
+   
         color_allocator[i] = color_create_domain_allocator(init_allocator, i); 
         assert(color_allocator[i]);
         color_make_vka(&env->vka_colour[i], color_allocator[i]); 
@@ -494,19 +502,30 @@ static void *main_continued (void* arg) {
     return NULL;
 }
 
-#ifdef CONFIG_CACHE_COLOURING
+#ifdef CONFIG_MULTI_KERNEL_IMAGES 
 /*creak kernel images*/
-static void create_kernel_pd(seL4_BootInfo *info, m_env_t *env) {
+static void create_kernel_pd(m_env_t *env) {
 
-    for (int i = 0; i < CC_NUM_DOMAINS; i++) {
+    seL4_CPtr ik_image; 
+    seL4_Word k_size = env->bootinfo->kernelImageSize;
+    int ret;
 
-        create_colored_kernel_image(info, &(env->vka_colour[i]), 
-                &(env->kernel_colour[i])); 
+    ik_image = simple_get_ik_image(&env->simple); 
+    printf("ik image cap is %d size %d \n", ik_image, k_size);
+
+    for (int i = 0; i < MAN_KIMAGES; i++ )  {
+        printf("creating ki %d\n", i);
+#ifdef CONFIG_LIB_SEL4_CACHECOLOURING
+        ret = create_ki(env, env->vka_colour + i, env->kimages + i); 
+#else 
+        ret = create_ki(env, &env->vka, env->kimages + i);
+#endif
+        assert(ret == BENCH_SUCCESS); 
 
     }
 
     /*the default kernel image created at bootup*/ 
-    env->kernel = seL4_CapKernel; 
+    env->kernel = ik_image; 
 }
 #endif
 
@@ -528,7 +547,7 @@ int main (void) {
 #endif
     env.bootinfo = info; 
 
-#ifdef CONFIG_CACHE_COLOURING
+#ifdef CONFIG_LIB_SEL4_CACHECOLOURING
     /*allocator, vka, and vspace*/
     init_env_colour(&env);
 #else 
@@ -540,8 +559,8 @@ int main (void) {
     assert(err == 0);
 
 
-#ifdef CONFIG_CACHE_COLOURING
-    create_kernel_pd(info, &env); 
+#ifdef CONFIG_MULTI_KERNEL_IMAGES
+    create_kernel_pd(&env); 
 #endif
 
     /*switch to a bigger, safer stack with guard page*/ 

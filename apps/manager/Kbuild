@@ -23,9 +23,7 @@ else
 manager-$(CONFIG_LIB_SEL4_SIMPLE_DEFAULT) += libsel4simple-default 
 endif
 
-ifdef CONFIG_CACHE_COLOURING 
 manager-$(CONFIG_LIB_SEL4_CACHECOLOURING) += libsel4cachecolour  
-endif 
 
 # add the tests app  as a component so that we can elf load it
 manager-components-y += side-bench                             

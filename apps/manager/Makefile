@@ -33,7 +33,7 @@ else
 LIBS += sel4simple-default 
 endif
 
-ifdef CONFIG_CACHE_COLOURING 
+ifdef CONFIG_LIB_SEL4_CACHECOLOURING
 LIBS += sel4cachecolour
 endif 
 

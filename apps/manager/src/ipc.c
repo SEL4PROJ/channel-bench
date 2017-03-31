@@ -195,10 +195,10 @@ void create_benchmark_process(bench_env_t *t) {
     sprintf(arg_str1, "%d", ep_arg); 
     sprintf(arg_str2, "%d", (unsigned int)vaddr); 
 
-#if CONFIG_CACHE_COLOURING
+#if CONFIG_LIB_SEL4_CACHECOLOURING
     /*configure kernel image*/
-    bind_kernel_image(t->kernel,
-            process->pd.cptr, process->thread.tcb.cptr);
+    //bind_kernel_image(t->kernel,
+      //      process->pd.cptr, process->thread.tcb.cptr);
 #endif
 
    /*create a  process*/ 
@@ -706,7 +706,7 @@ static void multi_bench_ipc(bench_env_t *t1, bench_env_t *t2) {
         printf("assign T1 to core %d T2 to core %d\n", i, i); 
         printf("=========================================\n"); 
         t1->affinity = t2->affinity = i; 
-#ifdef CONFIG_CACHE_COLOURING 
+#if 0
         seL4_KernelImage_Sensitive(t1->kernel);
 #endif 
         ipc_benchmark(t1, t2); 
@@ -738,17 +738,16 @@ void multi_bench_kernel_latency(bench_env_t *t1, bench_env_t *t2) {
     printf("=========================================\n"); 
     t1->affinity = t2->affinity = 1;
 
-#ifdef CONFIG_CACHE_COLOURING
+#if 0
     seL4_KernelImage_Sensitive(t1->kernel);
 #endif
     for (int i = 0; i < NLATENCY; i++) {
         /*set the latency*/ 
         printf("set the caller kernel latency to %d %d \n", low, high);
 
-#ifdef CONFIG_CACHE_COLOURING
-        
+#if 0 
         seL4_KernelImage_HoldTime(t1->kernel, low, high);
-#endif
+#endif 
         ipc_kernel_latency_inter(t1, t2); 
 
         low += 10000; 
@@ -775,9 +774,9 @@ void launch_bench_ipc(m_env_t *env) {
     rt_v = env->record_vaddr; 
 
 
-#ifdef CONFIG_CACHE_COLOURING
-    thread1.kernel = env->kernel_colour[0].image.cptr; 
-    thread2.kernel = env->kernel_colour[1].image.cptr; 
+#ifdef CONFIG_LIB_SEL4_CACHECOLOURING
+    thread1.kernel = env->kimages[0].ki.cptr; 
+    thread2.kernel = env->kimages[1].ki.cptr; 
     thread1.vka = &env->vka_colour[0]; 
     thread2.vka = &env->vka_colour[1]; 
     /*FIXME: regarding the thread 1 with low classification level*/
@@ -799,7 +798,7 @@ void launch_bench_ipc(m_env_t *env) {
     printf("\n"); 
     printf("ipc intra colour benchmarks\n");
     printf("========================\n");
-    thread2.kernel = thread1.kernel = env->kernel_colour[0].image.cptr; 
+    thread2.kernel = thread1.kernel = env->kimages[0].ki.cptr; 
     thread2.vka = thread1.vka = &env->vka_colour[0]; 
     multi_bench_ipc(&thread1, &thread2); 
 

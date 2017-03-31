@@ -111,11 +111,15 @@
 /*dividing cache colours into security domains*/
 #define CC_NUM_DOMAINS     2
 #ifdef CONFIG_ARCH_X86 
+#ifdef CONFIG_MANAGER_FUNC_TESTS 
+#define CC_DIV             4
+#endif
+
 #ifdef CONFIG_BENCH_COVERT_SINGLE 
 #define CC_DIV             4    /*spliting the L2 caches, 8 colours in total*/
-#else
-#define CC_DIV             16
 #endif 
+
+//#define CC_DIV             16 LLC cache 
 #endif  /*x86*/
 
 
@@ -384,7 +388,7 @@ typedef struct bench_covert {
 
 
 /*used by kernel determinsitic scheduling benchmark*/
-#ifdef CONFIG_CACHE_COLOURING
+#ifdef CONFIG_LIB_SEL4_CACHECOLOURING
 /*if cache colouring enabled, the number of cache sets that high uses doubles*/
 #define NUM_LLC_CACHE_SETS   4096
 #else

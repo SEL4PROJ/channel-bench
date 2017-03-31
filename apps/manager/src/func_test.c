@@ -15,10 +15,6 @@
 
 #include "manager.h"
 
-
-#define KIMAGES   2
-
-bench_ki_t kimages[KIMAGES]; 
 bench_env_t sender; 
 bench_env_t receiver; 
 /*ep for syn and reply*/
@@ -96,63 +92,6 @@ static int destroy_ki_via_kmem(m_env_t *env, bench_ki_t *kimage) {
     return  destroy_ki(env, kimage); 
 }
 
-static int create_ki(m_env_t *env, bench_ki_t *kimage) {
-
-    vka_object_t *ki = &kimage->ki;
-    seL4_Word k_size = env->bootinfo->kernelImageSize;
-    seL4_CPtr *kmem_caps; 
-    seL4_MessageInfo_t tag, output_tag;
-    int ret; 
-    
-    kimage->k_size = k_size; 
-
-    kimage->kmems = malloc(sizeof (vka_object_t) * k_size); 
-    if (!kimage->kmems) 
-        return BENCH_FAILURE; 
-
-    kmem_caps = malloc(sizeof (seL4_CPtr) * k_size);
-    if (!kmem_caps) 
-        return BENCH_FAILURE; 
-    
-    ret = vka_alloc_kernel_image(&env->vka, ki); 
-    if (ret) 
-        return BENCH_FAILURE; 
-
-    /*assign a ASID to the kernel image*/
-    ret =  seL4_X86_ASIDPool_Assign(seL4_CapInitThreadASIDPool, ki->cptr); 
-    if (ret) 
-        return BENCH_FAILURE; 
-
-
-    /*creating multiple kernel memory objects*/
-    for (int mems = 0; mems < k_size; mems++) {
-
-        ret = vka_alloc_kernel_mem(&env->vka, &kimage->kmems[mems]); 
-        if (ret) 
-            return BENCH_FAILURE; 
-        kmem_caps[mems] = kimage->kmems[mems].cptr; 
-    }
-
-
-    /*calling kernel clone with the kernel image and master kernel*/
-    tag = seL4_MessageInfo_new(X86KernelImageClone, 0, 1, k_size + 1);
-    seL4_SetCap(0, simple_get_ik_image(&env->simple)); 
-
-    seL4_SetMR(0, k_size);
-
-    for (int mems = 0; mems < k_size; mems++) {
-        seL4_SetMR(mems + 1, kmem_caps[mems]);
-    }
-
-    output_tag = seL4_Call(ki->cptr, tag); 
-    ret = seL4_MessageInfo_get_label(output_tag);
-    if (ret) 
-        return BENCH_FAILURE; 
-
-    printf("the kernel image clone is done \n");
-    return BENCH_SUCCESS;
-}
-
 
 static int test_destroy(m_env_t *env) {
     /*deleting the kernel that used as the current kernel in other cores, 
@@ -160,20 +99,20 @@ static int test_destroy(m_env_t *env) {
     int ret; 
     int __attribute__((unused)) i = 0;
     
-    ret = destroy_ki_via_kmem(env, kimages); 
+    ret = destroy_ki_via_kmem(env, env->kimages); 
     if (ret) 
         return ret; 
 
-    ret = destroy_ki_via_kmem(env, kimages + 1); 
+    ret = destroy_ki_via_kmem(env, env->kimages + 1); 
     if (ret) 
         return ret; 
 
-    ret = destroy_ki(env, kimages); 
+    ret = destroy_ki(env, env->kimages); 
     if (ret) 
         return ret; 
 
    
-    ret = destroy_ki(env, kimages + 1);
+    ret = destroy_ki(env, env->kimages + 1);
     if (ret) 
         return ret; 
 #if (CONFIG_MAX_NUM_NODES > 1)
@@ -203,8 +142,6 @@ static int test_destroy(m_env_t *env) {
 
 #endif
 
-
-
     /*deleting the kernel image, single core, not the current kernel*/
     /*the threads are no longer runnable, the kernel image become invalid*/
 
@@ -221,37 +158,23 @@ static int test_destroy(m_env_t *env) {
 
 
 
-
-
 /*entry point*/
 void launch_bench_func_test(m_env_t *env){
-#ifdef CONFIG_MULTI_KERNEL_IMAGES 
-    seL4_CPtr ik_image; 
-    seL4_Word k_size = env->bootinfo->kernelImageSize;
-#endif 
     int ret; 
     uint32_t share_phy; 
 
-#ifdef CONFIG_MULTI_KERNEL_IMAGES 
-    ik_image = simple_get_ik_image(&env->simple); 
-    printf("ik image cap is %d size %d \n", ik_image, k_size);
-
-    /*create two kernel image*/ 
-    for (int i = 0; i < KIMAGES; i++ )  {
-
-        ret = create_ki(env, kimages + i); 
-        assert(ret == BENCH_SUCCESS); 
-
-    }
-#endif 
     env->ipc_vka = &env->vka;
 
     sender.image = receiver.image = CONFIG_BENCH_THREAD_NAME;
     sender.vspace = receiver.vspace = &env->vspace;
     sender.name = "sender"; 
     receiver.name = "receiver";
+#ifdef CONFIG_LIB_SEL4_CACHECOLOURING
+    sender.vka = env->vka_colour; 
+    receiver.vka = env->vka_colour + 1;
+#else
     sender.vka = receiver.vka = &env->vka; 
-
+#endif 
     /*ep for communicate*/
     ret = vka_alloc_endpoint(env->ipc_vka, &syn_ep);
     assert(ret == 0);
@@ -274,13 +197,14 @@ void launch_bench_func_test(m_env_t *env){
     receiver.test_num = BENCH_FUNC_RECEIVER;
     sender.test_num = BENCH_FUNC_SENDER; 
 
-
+#ifdef CONFIG_MULTI_KERNEL_IMAGES 
     /*assign two kernel image to two threads*/
-    sender.kernel = kimages[0].ki.cptr;
-    receiver.kernel = kimages[1].ki.cptr; 
-
+    sender.kernel = env->kimages[0].ki.cptr;
+    receiver.kernel = env->kimages[1].ki.cptr; 
+#else 
     /*the master kernel image*/
-    //sender.kernel = receiver.kernel = ik_image;
+    sender.kernel = receiver.kernel = env->kernel;
+#endif
 
 #if (CONFIG_MAX_NUM_NODES > 1)
  
