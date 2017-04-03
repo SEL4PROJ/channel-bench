@@ -60,7 +60,7 @@ char manager_morecore_area[MANAGER_MORECORE_SIZE];
 #define ALLOCATOR_VIRTUAL_POOL_SIZE (1024*1024*100)
 
 /* static memory for the allocator to bootstrap with */
-#define ALLOCATOR_STATIC_POOL_SIZE (1024*1024 *20)
+#define ALLOCATOR_STATIC_POOL_SIZE (1024 * 1024 * 10)
 static char allocator_mem_pool[ALLOCATOR_STATIC_POOL_SIZE];
 
 /*static memory for virtual memory bootstrapping*/
