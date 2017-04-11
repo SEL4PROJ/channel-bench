@@ -262,8 +262,9 @@ void launch_bench_func_test(m_env_t *env){
 
 #endif
 
-    
+#ifdef CONFIG_MULTI_KERNEL_IMAGES 
     test_destroy(env); 
+#endif
    /*launch other kernel to the thread, to other core, the other threads are running*/
 
     while (1); 

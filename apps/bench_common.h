@@ -206,12 +206,12 @@ enum ipc_overheads {
 
 struct ipc_results {
     /* Raw results from benchmarking. These get checked for sanity */
-    sel4bench_counter_t overhead_benchmarks[NOVERHEADBENCHMARKS][IPC_RUNS];
-    sel4bench_counter_t benchmarks[NIPCBENCHMARKS][IPC_RUNS];
+    ccnt_t overhead_benchmarks[NOVERHEADBENCHMARKS][IPC_RUNS];
+    ccnt_t benchmarks[NIPCBENCHMARKS][IPC_RUNS];
     /* A worst case overhead */
-    sel4bench_counter_t overheads[NOVERHEADS];
+    ccnt_t overheads[NOVERHEADS];
     /* Calculated results to print out */
-    sel4bench_counter_t results[NIPCBENCHMARKS];
+    ccnt_t results[NIPCBENCHMARKS];
 
 };
 #endif 
@@ -253,29 +253,29 @@ struct ipc_results {
 /*pmu counter result structure*/
 typedef struct {
 
-    sel4bench_counter_t pmuc[IPC_ALL][BENCH_PMU_COUNTERS]; 
+    ccnt_t pmuc[IPC_ALL][BENCH_PMU_COUNTERS]; 
 } ipc_pmu_t;  
 
 typedef struct {
     /* Raw results from benchmarking. These get checked for sanity */
-    sel4bench_counter_t call_time_inter[IPC_RUNS][BENCH_PMU_COUNTERS];
-    sel4bench_counter_t reply_wait_time_inter[IPC_RUNS][BENCH_PMU_COUNTERS];
-    sel4bench_counter_t call_time_inter_low[IPC_RUNS][BENCH_PMU_COUNTERS];
-    sel4bench_counter_t reply_wait_time_inter_high[IPC_RUNS][BENCH_PMU_COUNTERS];
-    sel4bench_counter_t call_time_inter_high[IPC_RUNS][BENCH_PMU_COUNTERS];
-    sel4bench_counter_t reply_wait_time_inter_low[IPC_RUNS][BENCH_PMU_COUNTERS];
-    sel4bench_counter_t send_time_inter[IPC_RUNS][BENCH_PMU_COUNTERS];
-    sel4bench_counter_t wait_time_inter[IPC_RUNS][BENCH_PMU_COUNTERS];
-    sel4bench_counter_t call_10_time_inter[IPC_RUNS][BENCH_PMU_COUNTERS];
-    sel4bench_counter_t reply_wait_10_time_inter[IPC_RUNS][BENCH_PMU_COUNTERS];
+    ccnt_t call_time_inter[IPC_RUNS][BENCH_PMU_COUNTERS];
+    ccnt_t reply_wait_time_inter[IPC_RUNS][BENCH_PMU_COUNTERS];
+    ccnt_t call_time_inter_low[IPC_RUNS][BENCH_PMU_COUNTERS];
+    ccnt_t reply_wait_time_inter_high[IPC_RUNS][BENCH_PMU_COUNTERS];
+    ccnt_t call_time_inter_high[IPC_RUNS][BENCH_PMU_COUNTERS];
+    ccnt_t reply_wait_time_inter_low[IPC_RUNS][BENCH_PMU_COUNTERS];
+    ccnt_t send_time_inter[IPC_RUNS][BENCH_PMU_COUNTERS];
+    ccnt_t wait_time_inter[IPC_RUNS][BENCH_PMU_COUNTERS];
+    ccnt_t call_10_time_inter[IPC_RUNS][BENCH_PMU_COUNTERS];
+    ccnt_t reply_wait_10_time_inter[IPC_RUNS][BENCH_PMU_COUNTERS];
 } ipc_test_pmu_t; 
 
 typedef struct {
     /* Raw results from benchmarking. rt only */
-   volatile sel4bench_counter_t call_rt_time[IPC_RUNS];
-   volatile sel4bench_counter_t call_reply_wait_overhead;
-   volatile sel4bench_counter_t call_time[IPC_RUNS]; 
-   volatile sel4bench_counter_t reply_wait_time[IPC_RUNS];
+   volatile ccnt_t call_rt_time[IPC_RUNS];
+   volatile ccnt_t call_reply_wait_overhead;
+   volatile ccnt_t call_time[IPC_RUNS]; 
+   volatile ccnt_t reply_wait_time[IPC_RUNS];
 } ipc_rt_result_t; 
            
 

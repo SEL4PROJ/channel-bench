@@ -135,7 +135,7 @@ void print_results(struct bench_results *results) {
     printf("\t<result name = \"Inter-AS ReplyRecv(10)\">"CCNT_FORMAT"</result>\n",results->reply_wait_10_cycles_inter);
 }
 
-void print_pmu_results(sel4bench_counter_t r[][BENCH_PMU_COUNTERS]) {
+void print_pmu_results(ccnt_t r[][BENCH_PMU_COUNTERS]) {
 
     for (int i = 0; i < IPC_RUNS; i++) { 
 
@@ -306,7 +306,7 @@ void ipc_overhead (bench_env_t *thread) {
 
 
 void ipc_reply_wait_time_inter(bench_env_t *t1, bench_env_t *t2,
-        ccnt_t *result, sel4bench_counter_t *pmu_counters) {
+        ccnt_t *result, ccnt_t *pmu_counters) {
 
     ccnt_t end, start; 
 
@@ -366,7 +366,7 @@ void ipc_reply_wait_10_time_inter(bench_env_t *t1, bench_env_t *t2, ccnt_t *resu
 }
 void ipc_call_time_inter(bench_env_t *t1, bench_env_t *t2, 
         ccnt_t *result, 
-        sel4bench_counter_t *pmu_counters) {
+        ccnt_t *pmu_counters) {
 
     ccnt_t end, start; 
     
@@ -472,7 +472,7 @@ void ipc_kernel_latency_inter(bench_env_t *t1, bench_env_t *t2) {
 /*round trip call performance*/
 void ipc_rt_call_time_inter(bench_env_t *t1, bench_env_t *t2, 
         ccnt_t *result, 
-        sel4bench_counter_t *pmu_counters) {
+        ccnt_t *pmu_counters) {
     sel4utils_process_t *process = NULL; 
     int error;
     cspacepath_t src, dest; 

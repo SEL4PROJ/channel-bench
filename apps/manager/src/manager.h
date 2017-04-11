@@ -124,6 +124,7 @@ typedef struct bench_env {
 
 } bench_env_t; 
 
+#ifdef CONFIG_MULTI_KERNEL_IMAGES
 /*creating a kernel image object*/
 static int create_ki(m_env_t *env, vka_t *vka, bench_ki_t *kimage) {
 
@@ -182,7 +183,7 @@ static int create_ki(m_env_t *env, vka_t *vka, bench_ki_t *kimage) {
     return BENCH_SUCCESS;
 }
 
-
+#endif
 
 static void create_thread(bench_env_t *t) {
 
