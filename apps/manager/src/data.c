@@ -149,7 +149,7 @@ static void print_bench_cache_flush(void *record) {
 void bench_process_data(m_env_t *env, seL4_Word result) {
 
 
-    printf("benchmark result: 0x%x \n", result); 
+    printf("benchmark result: 0x%zu \n", result); 
 
     printf("analysing data in vaddr %p\n", env->record_vaddr);
 

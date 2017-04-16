@@ -181,7 +181,7 @@ static inline void mfence() {
 }
 
 
-#ifdef X86_64_UNDEF
+#ifdef CONFIG_ARCH_X86_64
 static inline void walk(void *p, int count) {
   if (p == NULL)
     return;

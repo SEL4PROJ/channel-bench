@@ -178,7 +178,7 @@ void run_bench_single (char **argv) {
 
 #ifdef CONFIG_BENCH_IPC
 void run_bench_ipc(char **argv) {
-    unsigned int test_num; 
+    seL4_Word test_num; 
     seL4_CPtr ep, result_ep, null_ep; 
     void *record_vaddr = NULL;
     /*get the test number*/
@@ -234,7 +234,7 @@ int run_bench_covert(char **argv) {
  
 void run_bench_mastik(char **argv) {
 
-    unsigned int test_num; 
+    seL4_Word test_num; 
     seL4_CPtr ep, reply_ep; 
     /*get the test number*/
     test_num = atol(argv[0]); 

@@ -298,7 +298,7 @@ typedef struct bench_covert {
     seL4_CPtr syn_ep; /*comm trojan and receiver, tr_start_slave*/ 
     seL4_CPtr r_ep; /*comm between receiver and manager*/
     seL4_CPtr notification_ep; /*notification ep used only within a domain*/ 
-    int opt;        /*running option, trojan, probe, etc*/
+    seL4_Word opt;        /*running option, trojan, probe, etc*/
 }bench_covert_t; 
 
 #define BENCH_PAGE_SIZE  4096

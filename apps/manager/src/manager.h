@@ -107,7 +107,7 @@ typedef struct bench_env {
     char *image;            /*binary name of benchmarking elf file*/
     seL4_Word prio;         /*priority of benchmarking thread*/
     sel4utils_process_t process;  /*internal process context*/ 
-    uint32_t test_num;      /*test number*/
+    seL4_Word test_num;      /*test number*/
     /*extra caps to the record data frames for mapping into 
      the benchmark vspace*/ 
     seL4_CPtr record_frames[BENCH_PMU_PAGES]; 
@@ -119,7 +119,7 @@ typedef struct bench_env {
     void *s_vaddr;  /*shared address between spy and trojan*/
     void *huge_vaddr;  /*the starting point of huge pages*/
     /*the affinity of this thread*/ 
-    uint32_t affinity; 
+    seL4_Word affinity; 
     char *name;    /*name of this thread*/ 
 
 } bench_env_t; 
@@ -216,10 +216,23 @@ static void create_thread(bench_env_t *t) {
     reply_ep_arg = sel4utils_copy_cap_to_process(process, src);
     assert(reply_ep_arg);
 
-    sprintf(arg_str0, "%d", t->test_num); 
-    sprintf(arg_str1, "%d", ep_arg); 
-    sprintf(arg_str2, "%d", reply_ep_arg); 
+#ifdef CONFIG_MANAGER_IPC
 
+    void *vaddr = vspace_map_pages(&process->vspace, t->record_frames, 
+            NULL, seL4_AllRights, BENCH_PMU_PAGES, PAGE_BITS_4K, 1);
+    assert(vaddr); 
+ 
+    sprintf(arg_str0, "%zu", t->test_num); 
+    sprintf(arg_str1, "%zu", ep_arg); 
+    sprintf(arg_str2, "%zu", vaddr); 
+
+
+#else 
+
+    sprintf(arg_str0, "%zu", t->test_num); 
+    sprintf(arg_str1, "%zu", ep_arg); 
+    sprintf(arg_str2, "%zu", reply_ep_arg); 
+#endif 
 #ifdef CONFIG_MULTI_KERNEL_IMAGES 
     /*configure the kernel image to the process*/
     printf("set kernel image\n");
@@ -323,7 +336,7 @@ static void map_r_buf(m_env_t *env, uint32_t n_p, bench_env_t *t) {
             n_p, PAGE_BITS_4K);
     assert(t->t_vaddr != NULL); 
 
-    uint32_t v = (uint32_t)t->t_vaddr; 
+    intptr_t v = (intptr_t)t->t_vaddr; 
 
     /*reserve an area in vspace of the manager*/ 
     v_r = vspace_reserve_range(&env->vspace, n_p * BENCH_PAGE_SIZE, 
@@ -371,7 +384,7 @@ static void map_shared_buf(bench_env_t *owner, bench_env_t *share,
 
     *phy = vka_utspace_paddr(owner->vka, cookies, seL4_ARCH_4KPage, seL4_PageBits);
 
-    uint32_t v = (uint32_t)owner->s_vaddr;
+    intptr_t v = (intptr_t)owner->s_vaddr;
 
     /*reserve the area in shared process*/
     v_r = vspace_reserve_range(&p_s->vspace, n_p * BENCH_PAGE_SIZE,

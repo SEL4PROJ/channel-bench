@@ -156,72 +156,6 @@ void process_pmu_results (ipc_test_pmu_t *results) {
 
 }
 
-void create_benchmark_process(bench_env_t *t) {
-        
-    sel4utils_process_t *process = &t->process; 
-    cspacepath_t src;
-    seL4_CPtr ep_arg;
-    int argc = 3;
-    char arg_str0[15] = {0}; 
-    char arg_str1[15] = {0}; 
-    char arg_str2[15] = {0}; 
-
-    char *argv[3] = {arg_str0, arg_str1, arg_str2}; 
-    
-    int error __attribute__((unused)); 
-
-    /*configure process*/ 
-    error = sel4utils_configure_process(process, 
-            t->vka, t->vspace, t->prio, 
-            t->image); 
-            
-    assert(error == 0); 
-
-
-    vka_cspace_make_path(t->ipc_vka, t->ep.cptr, &src);  
-    ep_arg = sel4utils_copy_cap_to_process(process, src);
-    assert(ep_arg); 
-
-#if 0
-    vka_cspace_make_path(t->ipc_vka, t->reply_ep.cptr, &src);  
-    reply_ep_arg = sel4utils_copy_cap_to_process(process, src);
-    assert(reply_ep_arg);
-#endif
-    void *vaddr = vspace_map_pages(&process->vspace, t->record_frames, 
-            NULL, seL4_AllRights, BENCH_PMU_PAGES, PAGE_BITS_4K, 1);
-    assert(vaddr); 
- 
-    sprintf(arg_str0, "%d", t->test_num); 
-    sprintf(arg_str1, "%d", ep_arg); 
-    sprintf(arg_str2, "%d", (unsigned int)vaddr); 
-
-#if CONFIG_LIB_SEL4_CACHECOLOURING
-    /*configure kernel image*/
-    //bind_kernel_image(t->kernel,
-      //      process->pd.cptr, process->thread.tcb.cptr);
-#endif
-
-   /*create a  process*/ 
-    error = sel4utils_spawn_process_v(process, t->vka, 
-            t->vspace, argc, argv, 0);
-    assert(error == 0);
-
-#if (CONFIG_MAX_NUM_NODES > 1)
-    /*assign the affinity*/ 
-    error = seL4_TCB_SetAffinity(process->thread.tcb.cptr, t->affinity);
-    assert(error == 0); 
-#endif 
-
-#if 0 
-   /*a never returned ep*/
-    vka_cspace_make_path(t->ipc_vka, t->null_ep.cptr, &src);  
-    null_ep = sel4utils_copy_cap_to_process(process, src);
-    assert(null_ep);
-
-    send_msg_to(t->reply_ep.cptr, (seL4_Word)null_ep); 
-   send_msg_to(t->reply_ep.cptr, (seL4_Word)vaddr); 
-#endif 
-}
 
 
 void ipc_destroy_process(bench_env_t *t1, bench_env_t *t2) {
@@ -240,7 +174,7 @@ void ipc_alloc_eps(vka_t *vka) {
     error = vka_alloc_endpoint(vka, &ipc_ep);
     assert(error == 0); 
 
-    printf("ipc alloc eps: ep paddr 0x%x\n", vka_object_paddr(vka, &ipc_ep)); 
+    printf("ipc alloc eps: ep paddr 0x%zu\n", vka_object_paddr(vka, &ipc_ep)); 
 
     error = vka_alloc_endpoint(vka, &ipc_reply_ep);
     assert(error == 0); 
@@ -286,7 +220,7 @@ void ipc_overhead (bench_env_t *thread) {
     assert(ret == 0); 
 
  
-    create_benchmark_process(thread); 
+    create_thread(thread); 
     /*resume the thread*/ 
     error = seL4_TCB_Resume(process->thread.tcb.cptr); 
     assert(error == 0); 
@@ -314,8 +248,8 @@ void ipc_reply_wait_time_inter(bench_env_t *t1, bench_env_t *t2,
 
     t1->test_num = IPC_CALL; 
     t2->test_num = IPC_REPLY_WAIT; 
-    create_benchmark_process(t1); 
-    create_benchmark_process(t2); 
+    create_thread(t1); 
+    create_thread(t2); 
 
     end = get_result(ipc_reply_ep.cptr);
     start = get_result(ipc_reply_ep.cptr);
@@ -349,8 +283,8 @@ void ipc_reply_wait_10_time_inter(bench_env_t *t1, bench_env_t *t2, ccnt_t *resu
     //ipc_alloc_eps(vka0); 
     t1->test_num = IPC_CALL_10; 
     t2->test_num = IPC_REPLY_WAIT_10; 
-    create_benchmark_process(t1); 
-    create_benchmark_process(t2); 
+    create_thread(t1); 
+    create_thread(t2); 
     
     end = get_result(ipc_reply_ep.cptr);
     start = get_result(ipc_reply_ep.cptr);
@@ -373,8 +307,8 @@ void ipc_call_time_inter(bench_env_t *t1, bench_env_t *t2,
     //ipc_alloc_eps(vka0); 
     t1->test_num = IPC_CALL2; 
     t2->test_num = IPC_REPLY_WAIT2; 
-    create_benchmark_process(t1);
-    create_benchmark_process(t2);
+    create_thread(t1);
+    create_thread(t2);
 
     end = get_result(ipc_reply_ep.cptr);
     start = get_result(ipc_reply_ep.cptr);
@@ -439,8 +373,8 @@ void ipc_kernel_latency_inter(bench_env_t *t1, bench_env_t *t2) {
     t1->test_num = IPC_LATENCY_CALL; 
     t2->test_num = IPC_LATENCY_REPLY_WAIT; 
     /*t1 has the sensitive attribute, with holdTime configured*/
-    create_benchmark_process(t1);
-    create_benchmark_process(t2);
+    create_thread(t1);
+    create_thread(t2);
 
     printf("kernel switching latency observed at user-level:\n");
     /*resume the thread*/ 
@@ -505,8 +439,8 @@ void ipc_rt_call_time_inter(bench_env_t *t1, bench_env_t *t2,
     //ipc_alloc_eps(vka0); 
     t1->test_num = IPC_RT_CALL; 
     t2->test_num = IPC_RT_REPLY_WAIT; 
-    create_benchmark_process(t1);
-    create_benchmark_process(t2);
+    create_thread(t1);
+    create_thread(t2);
 
     /*resume the thread*/ 
     process = &t2->process;
@@ -553,8 +487,8 @@ void ipc_call_10_time_inter(bench_env_t *t1, bench_env_t *t2,
    // ipc_alloc_eps(vka0); 
     t1->test_num = IPC_CALL2_10; 
     t2->test_num = IPC_REPLY_WAIT2_10; 
-    create_benchmark_process(t1); 
-    create_benchmark_process(t2); 
+    create_thread(t1); 
+    create_thread(t2); 
 
     end = get_result(ipc_reply_ep.cptr);
     start = get_result(ipc_reply_ep.cptr);
@@ -576,8 +510,8 @@ void ipc_send_time_inter(bench_env_t *t1, bench_env_t *t2,
 
     t1->test_num = IPC_SEND; 
     t2->test_num = IPC_WAIT; 
-    create_benchmark_process(t1);
-    create_benchmark_process(t2);
+    create_thread(t1);
+    create_thread(t2);
 
     start = get_result(ipc_reply_ep.cptr);
     end = get_result(ipc_reply_ep.cptr);
