@@ -549,18 +549,26 @@ void launch_bench_covert (m_env_t *env) {
     trojan.vspace = spy.vspace = &env->vspace;
     trojan.name = "trojan"; 
     spy.name = "spy";
-#ifdef CONFIG_LIB_SEL4_CACHECOLOURING
-    /*by default the kernel is shared*/
-    trojan.kernel = spy.kernel = env->kernel;
- 
+    
 #ifdef CONFIG_MANAGER_COVERT_MITIGATION 
     /*using sperate kernels*/
-    trojan.kernel = env->kernel_colour[0].image.cptr; 
-    spy.kernel = env->kernel_colour[1].image.cptr;
+    trojan.kernel = env->kimages[0].ki.cptr; 
+    spy.kernel = env->kimages[1].ki.cptr;
+#else 
+    /*by default the kernel is shared*/
+    trojan.kernel = spy.kernel = env->kernel;
 #endif 
+
+#ifdef CONFIG_LIB_SEL4_CACHECOLOURING
     trojan.vka = &env->vka_colour[0]; 
     spy.vka = &env->vka_colour[1]; 
     env->ipc_vka = &env->vka_colour[0];
+#else 
+    spy.vka = trojan.vka = &env->vka; 
+    env->ipc_vka = &env->vka;
+#endif
+
+#if 0
     /*setting the kernel sensitivity*/
 #ifdef CONFIG_COVERT_TROJAN_SENSITIVE 
     seL4_KernelImage_Sensitive(trojan.kernel); 
@@ -591,86 +599,9 @@ void launch_bench_covert (m_env_t *env) {
         seL4_KernelImage_Random(spy.kernel, i, random());
 #endif   /*CONFIG_ARCH_X86*/
 #endif  /*CONFIG_COVERT_SPY_SENSITIVE*/
-
-#else /*CONFIG_LIB_SEL4_CACHECOLOURING*/ 
-    spy.vka = trojan.vka = &env->vka; 
-    env->ipc_vka = &env->vka;
-#endif
-
-#ifdef CONFIG_MULTI_KERNEL_IMAGES
-    {
-        /*testing the kernel image APIs*/
-        vka_object_t kernel_image_obj, kernel_mem_obj;
-        cspacepath_t src_path, dest_path;
-        seL4_CPtr kernel_image_copy, kernel_mem_copy; 
-        seL4_CPtr ik_image; 
-        seL4_MessageInfo_t tag, output_tag;
-        seL4_CPtr *kernel_mems; 
-
-        ret = vka_alloc_kernel_image(&env->vka, &kernel_image_obj); 
-        assert(ret == 0); 
-        vka_cspace_make_path(&env->vka, kernel_image_obj.cptr, &src_path);
-        ret = vka_cspace_alloc(&env->vka, &kernel_image_copy); 
-        assert(ret == 0); 
-        vka_cspace_make_path(&env->vka, kernel_image_copy, &dest_path); 
-        /*cannot copy a kernel image cap without created a clone*/
-    //    ret = vka_cnode_copy(&dest_path, &src_path, seL4_AllRights); 
-   
-        /*assign a ASID to the kernel image*/
-        ret =  seL4_X86_ASIDPool_Assign(seL4_CapInitThreadASIDPool, kernel_image_obj.cptr); 
-        assert(ret == 0); 
-
-        /*cannot copy a kernel image cap after assign an ASID*/
-     //   ret = vka_cnode_copy(&dest_path, &src_path, seL4_AllRights); 
-        
-        printf("creating %d kernel memory object for generating a kernel clone \n", (uint32_t)env->bootinfo->kernelImageSize);
-       
-        kernel_mems = malloc (sizeof (seL4_CPtr) * env->bootinfo->kernelImageSize);
-        assert(kernel_mems != NULL); 
-
-        /*creating multiple kernel memory objects*/
-        for (int mems = 0; mems < env->bootinfo->kernelImageSize; mems++) {
-
-            ret = vka_alloc_kernel_mem(&env->vka, &kernel_mem_obj); 
-            assert(ret == 0);
-            kernel_mems[mems] = kernel_mem_obj.cptr; 
-
-        }
-        
-  
-        /*calling kernel clone with the kernel image and master kernel*/
-        tag = seL4_MessageInfo_new(X86KernelImageClone, 0, 1, env->bootinfo->kernelImageSize + 1);
-        seL4_SetCap(0, simple_get_ik_image(&env->simple)); 
-
-        seL4_SetMR(0, env->bootinfo->kernelImageSize);
-        
-        for (int mems = 0; mems < env->bootinfo->kernelImageSize; mems++) {
-            seL4_SetMR(mems + 1, kernel_mems[mems]);
-        }
-
-        output_tag = seL4_Call(kernel_image_obj.cptr, tag); 
-        ret = seL4_MessageInfo_get_label(output_tag);
-        assert(ret == 0);
-        printf("the kernel image clone is done \n");
-       
-        vka_cspace_make_path(&env->vka, kernel_mem_obj.cptr, &src_path);
-        ret = vka_cspace_alloc(&env->vka, &kernel_mem_copy); 
-        assert(ret == 0); 
-        vka_cspace_make_path(&env->vka, kernel_mem_copy, &dest_path);
-        /*can copy a kernel memory cap without generated a kernel image
-         with the memory*/
-        ret = vka_cnode_copy(&dest_path, &src_path, seL4_AllRights); 
-
-        assert(ret == 0);
-
-        /*the master kernel image*/
-        ik_image = simple_get_ik_image(&env->simple); 
-        printf("ik image cap is %d\n", ik_image);
-        trojan.kernel = spy.kernel = kernel_image_obj.cptr; 
-        //trojan.kernel = spy.kernel = ik_image;
-
-    }
 #endif 
+
+
     /*ep for communicate*/
     ret = vka_alloc_endpoint(env->ipc_vka, &syn_ep);
     assert(ret == 0);

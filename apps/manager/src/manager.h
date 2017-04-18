@@ -226,13 +226,13 @@ static void create_thread(bench_env_t *t) {
     sprintf(arg_str1, "%zu", ep_arg); 
     sprintf(arg_str2, "%zu", vaddr); 
 
-
 #else 
 
     sprintf(arg_str0, "%zu", t->test_num); 
     sprintf(arg_str1, "%zu", ep_arg); 
     sprintf(arg_str2, "%zu", reply_ep_arg); 
 #endif 
+
 #ifdef CONFIG_MULTI_KERNEL_IMAGES 
     /*configure the kernel image to the process*/
     printf("set kernel image\n");
