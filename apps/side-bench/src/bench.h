@@ -56,6 +56,8 @@ int l3_spy_single(bench_covert_t *env);
 /*the function correctness test */
 int funcs_receiver(bench_covert_t *env); 
 int funcs_sender(bench_covert_t *env);
+int bp_trojan(bench_covert_t *env); 
+int bp_spy(bench_covert_t *env); 
 
 #endif 
 

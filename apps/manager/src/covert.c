@@ -124,7 +124,7 @@ void create_huge_pages(bench_env_t *owner, uint32_t size) {
     /*4M*/
     huge_page_size = seL4_LargePageBits;
     huge_page_object = seL4_X86_LargePageObject;
-#endif 
+#else  /*ARCH_X86*/
 
 #ifdef CONFIG_ARCH_AARCH64
     /*2M, Can be changed to be 1G with seL4_HugePageBits*/ 
@@ -135,6 +135,7 @@ void create_huge_pages(bench_env_t *owner, uint32_t size) {
     huge_page_size = vka_get_object_size(seL4_ARM_SuperSectionObject, 0); 
     huge_page_object = seL4_ARM_SuperSectionObject;
 #endif 
+#endif  /*ARCH_X86*/
 
     if (size % (1 << huge_page_size)) { 
         size += 1 << huge_page_size; 
