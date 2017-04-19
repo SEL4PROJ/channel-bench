@@ -14,7 +14,7 @@
 
 #else
 #define SPY_TLB_PAGES 32
-#define TROJAN_TLB_PAGES 64
+#define TROJAN_TLB_PAGES 128
 #endif
 
 
@@ -61,6 +61,9 @@ static volatile int a;
 uint32_t tlb_probe(int secret) {
   uint32_t start = rdtscp();
   int i = 0;
+
+  if (!secret)
+      return rdtscp() - start; 
   do {
     i = buf[i];
   } while ((i!=0) && (--secret > 0));
