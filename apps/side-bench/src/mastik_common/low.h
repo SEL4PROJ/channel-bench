@@ -9,6 +9,7 @@
 /*the cache architecture configuration on benchmarking platforms*/
 
 #ifdef CONFIG_ARCH_X86
+
 #define L1_ASSOCIATIVITY   8
 #define L1_SETS            64
 #define L1_CACHELINE       64
@@ -19,6 +20,38 @@
 #define L1I_ASSOCIATIVITY  8
 #define L1I_SETS           64
 #define L1I_CACHELINE      64
+
+/*L2 cache feature*/
+#define L2_ASSOCIATIVITY   8
+#define L2_SETS            512
+#define L2_CACHELINE       64
+#define L2_LINES           4096
+#define L2_STRIDE          (L2_CACHELINE * L2_SETS)
+#define L2_PROBE_BUFFER    (PAGE_SIZE + (L2_STRIDE * L2_ASSOCIATIVITY))  
+
+
+#ifdef CONFIG_BENCH_COVERT_L2 
+/*the L2 probing function shares with L1*/
+#undef L1_ASSOCIATIVITY   
+#define L1_ASSOCIATIVITY   L2_ASSOCIATIVITY
+
+#undef L1_SETS            
+#define L1_SETS            L2_SETS
+
+#undef L1_CACHELINE       
+#define L1_CACHELINE       L2_CACHELINE 
+
+#undef  L1_LINES           
+#define L1_LINES           L2_LINES 
+
+#undef L1_STRIDE   
+#define L1_STRIDE           L2_STRIDE 
+
+#undef L1_PROBE_BUFFER
+#define L1_PROBE_BUFFER    L2_PROBE_BUFFER
+
+#endif /*CONFIG_BENCH_COVERT_L2*/
+
 
 #define L3_THRESHOLD       140
 #define L3_ASSOCIATIVITY   16

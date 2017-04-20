@@ -39,7 +39,7 @@ static void access_buffer(char *buffer, uint32_t sets) {
 int l1_trojan(bench_covert_t *env) {
   /*buffer size 32K L1 cache size
    512 cache lines*/
-  char *data = malloc(4096 * 8);
+  char *data = malloc(L1_PROBE_BUFFER);
   int secret = 0; 
 
 
@@ -81,9 +81,14 @@ int l1_trojan(bench_covert_t *env) {
 int l1_spy(bench_covert_t *env) {
   seL4_Word badge;
   seL4_MessageInfo_t info;
-  uint64_t monitored_mask = ~0LLU;
 
-  l1info_t l1_1 = l1_prepare(&monitored_mask);
+#ifdef CONFIG_BENCH_COVERT_L1D 
+  uint64_t monitored_mask[1] = ~0LLU;
+#else 
+  uint64_t monitored_mask[8] = {~0LLU, ~0LLU,~0LLU, ~0LLU,
+      ~0LLU, ~0LLU,~0LLU, ~0LLU,};
+#endif 
+  l1info_t l1_1 = l1_prepare(monitored_mask);
 
   uint16_t *results = malloc(l1_nsets(l1_1)*sizeof(uint16_t));
   

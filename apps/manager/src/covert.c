@@ -417,7 +417,7 @@ int run_single_llc_kernel_schedule(m_env_t *env) {
 int run_single (m_env_t *env) {
 
 #ifdef CONFIG_BENCH_COVERT_L2
-    return run_single_l2(env); 
+    return run_single_l1(env); 
 #endif     
 #if defined (CONFIG_BENCH_COVERT_L1D) || defined (CONFIG_BENCH_COVERT_L1I)  
     return run_single_l1(env);

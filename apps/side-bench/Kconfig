@@ -127,7 +127,7 @@ menu   "Timing Channel Benchmarks"
                bool "L1 instruction cache"
 
                config BENCH_COVERT_L2 
-               bool "L2 NOT WORKING"
+               bool "L2 cache"
 
                config BENCH_COVERT_LLC 
                bool "LLC user-level p+p attack"

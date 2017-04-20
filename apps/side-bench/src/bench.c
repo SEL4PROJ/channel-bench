@@ -37,7 +37,7 @@ extern size_t morecore_size;
 #endif 
 #ifdef CONFIG_BENCH_COVERT_SINGLE
 static int (*covert_bench_fun[BENCH_COVERT_FUNS])(bench_covert_t *) = {NULL, 
-    NULL, NULL,  
+    l1_trojan, l1_spy,  
     NULL, NULL, 
     NULL, NULL, 
     l1_trojan, l1_spy, 
