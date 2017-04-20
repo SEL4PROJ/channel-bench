@@ -441,6 +441,7 @@ int run_single (m_env_t *env) {
 #ifdef CONFIG_BENCH_COVERT_LLC_KERNEL_SCHEDULE
     return run_single_llc_kernel_schedule(env); 
 #endif 
+    return BENCH_FAILURE; 
 }
 
 static inline void mfence() {

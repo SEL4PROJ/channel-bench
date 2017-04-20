@@ -121,6 +121,9 @@
 #define CC_DIV             4    /*spliting the L2 caches, 8 colours in total*/
 #endif 
 
+#ifdef CONFIG_MANAGER_COVERT_MULTI
+#define CC_DIV             4    /*spliting the L2 caches, 8 colours in total*/
+#endif 
 //#define CC_DIV             16 LLC cache 
 #endif  /*x86*/
 
