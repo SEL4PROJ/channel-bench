@@ -470,6 +470,7 @@ int run_multi(m_env_t *env) {
     if (seL4_MessageInfo_get_label(info) != seL4_Fault_NullFault)
         return BENCH_FAILURE; 
 
+    printf("done covert benchmark\n"); 
     /*do not return*/
     for (;;)
     return BENCH_SUCCESS; 
