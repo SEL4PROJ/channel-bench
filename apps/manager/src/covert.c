@@ -568,7 +568,7 @@ void launch_bench_covert (m_env_t *env) {
     trojan.kernel = spy.kernel = env->kernel;
 #endif 
 
-#ifdef CONFIG_LIB_SEL4_CACHECOLOURING
+#ifdef CONFIG_MANAGER_COVERT_MITIGATION 
     trojan.vka = &env->vka_colour[0]; 
     spy.vka = &env->vka_colour[1]; 
     env->ipc_vka = &env->vka_colour[0];

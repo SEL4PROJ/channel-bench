@@ -24,9 +24,9 @@ void mpi_victim(void ) {
   
   for (;;) {
     mpi_powm( res, b, d, p);
-    //printf("%s\n", mpi_tostr(res));
+//    printf("%s\n", mpi_tostr(res));
     uint32_t start = rdtscp();
-    while (rdtscp() - start < 3000000)
+    while (rdtscp() - start < 300000)
       ;
   }
 }
