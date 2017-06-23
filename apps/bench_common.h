@@ -113,6 +113,7 @@
 /*dividing cache colours into security domains*/
 #define CC_NUM_DOMAINS     2
 #ifdef CONFIG_ARCH_X86 
+
 #ifdef CONFIG_MANAGER_FUNC_TESTS 
 #define CC_DIV             4
 #endif

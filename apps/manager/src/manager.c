@@ -512,7 +512,7 @@ static void create_kernel_pd(m_env_t *env) {
     int ret;
 
     ik_image = simple_get_ik_image(&env->simple); 
-    printf("ik image cap is %d size %d \n", ik_image, k_size);
+    printf("ik image cap is %zu size %zu \n", ik_image, k_size);
 
     for (int i = 0; i < MAN_KIMAGES; i++ )  {
         printf("creating ki %d\n", i);
@@ -524,7 +524,7 @@ static void create_kernel_pd(m_env_t *env) {
         assert(ret == BENCH_SUCCESS); 
 
     }
-
+    printf("done creating ki\n");
     /*the default kernel image created at bootup*/ 
     env->kernel = ik_image; 
 }

@@ -207,7 +207,6 @@ static void create_thread(bench_env_t *t) {
             
     assert(error == 0); 
 
-
     vka_cspace_make_path(t->ipc_vka, t->ep.cptr, &src);  
     ep_arg = sel4utils_copy_cap_to_process(process, src);
     assert(ep_arg); 
@@ -256,8 +255,8 @@ static void create_thread(bench_env_t *t) {
 
     printf("process is ready\n"); 
     error = seL4_TCB_Resume(process->thread.tcb.cptr);
-    assert(error == 0);
-   
+    assert(error == 0); 
+    printf("resume thread done\n");
 }
 
 /*reassign a thread to a different core

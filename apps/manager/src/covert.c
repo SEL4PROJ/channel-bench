@@ -489,25 +489,29 @@ void prepare_single(m_env_t *env) {
 #ifdef CONFIG_LIB_SEL4_CACHECOLOURING 
     map_p_buf(&trojan, CACHESIZE);
     map_p_buf(&spy, EBSIZE);
+
 #else
     /*map the buffers into spy and trojan threads*/ 
     map_init_frames(env, (void *)t_buf, CACHESIZE, &trojan);
     map_init_frames(env, (void *)p_buf, EBSIZE, &spy); 
 #endif 
+
     /*recording buffer, outcome from spy*/
     map_r_buf(env, BENCH_COVERT_TIME_PAGES, &spy);
 
    /*copy the notification cap*/ 
     vka_cspace_make_path(trojan.vka, trojan.notification_ep.cptr, &src);  
+
     n_ep = sel4utils_copy_cap_to_process(&trojan.process, src);
     assert(n_ep); 
-   
+ 
     printf("Sending Trojan env message...."); 
     /*trojan, probming buffer, 0, notification ep*/
     seL4_SetMR(0,(seL4_Word)trojan.p_vaddr); 
     seL4_SetMR(1, 0);
     seL4_SetMR(2, n_ep);
- 
+
+
     seL4_Send(t_ep.cptr, info);
     printf("done\n"); 
 

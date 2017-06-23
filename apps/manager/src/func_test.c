@@ -93,12 +93,15 @@ static int destroy_ki_via_kmem(m_env_t *env, bench_ki_t *kimage) {
 }
 
 
-static int test_destroy(m_env_t *env) {
+static int test_destroy(m_env_t *env, bench_env_t *sender, bench_env_t *receiver) {
     /*deleting the kernel that used as the current kernel in other cores, 
      expecting other core running the idle threads*/
     int ret; 
     int __attribute__((unused)) i = 0;
-    
+    sel4utils_process_t *sender_p = &sender->process; 
+    sel4utils_process_t *receiver_p = &receiver->process; 
+   
+    printf("testing kernel destory\n");
     ret = destroy_ki_via_kmem(env, env->kimages); 
     if (ret) 
         return ret; 
@@ -132,22 +135,14 @@ static int test_destroy(m_env_t *env) {
         i++;
     }
 
-#else 
-    /*two threads same core, IPC*/
-    wait_msg(r_ep.cptr); 
-    printf("receiver finished\n");
-    /*sender*/
-    wait_msg(s_ep.cptr); 
-    printf("sender finished\n");
-
 #endif
 
-    /*deleting the kernel image, single core, not the current kernel*/
-    /*the threads are no longer runnable, the kernel image become invalid*/
 
-
-    /*delete the kernel memory, expecting the same behaviour as deleting 
-     kernel image*/
+    ret = seL4_TCB_SetKernel(sender_p->thread.tcb.cptr, sender->kernel);
+    printf("sender set kernel return %d\n", ret);
+    
+    ret = seL4_TCB_SetKernel(receiver_p->thread.tcb.cptr, receiver->kernel);
+    printf("receiver set kernel return %d\n", ret);
 
     return BENCH_SUCCESS;
 
@@ -221,7 +216,6 @@ void launch_bench_func_test(m_env_t *env){
     
     printf("creating sender\n"); 
     create_thread(&sender); 
-    
     printf("creating receiver\n"); 
     create_thread(&receiver);
 
@@ -239,12 +233,12 @@ void launch_bench_func_test(m_env_t *env){
 #if (CONFIG_MAX_NUM_NODES > 1)
  
     /*wait for 1ms letting the kernel does the schedule*/ 
-    sw_sleep(1); 
     
     /*check the threads are alive, sperate core*/
     
     /*also including two threads on different core, cross-core IPC*/
     for (int i = 0; i < 1000; i++) {
+        sw_sleep(1); 
 
         if (alive(env) == BENCH_SUCCESS) 
             printf("alive %d\n", i); 
@@ -263,7 +257,7 @@ void launch_bench_func_test(m_env_t *env){
 #endif
 
 #ifdef CONFIG_MULTI_KERNEL_IMAGES 
-    test_destroy(env); 
+    test_destroy(env, &sender, &receiver); 
 #endif
    /*launch other kernel to the thread, to other core, the other threads are running*/
 
