@@ -72,10 +72,8 @@ static inline
 seL4_CPtr copy_cap_to(sel4utils_process_t *pro, seL4_CPtr cap) {
 
     seL4_CPtr copy; 
-    cspacepath_t path; 
 
-    vka_cspace_make_path(&env.vka, cap, &path); 
-    copy = sel4utils_copy_cap_to_process(pro, path); 
+    copy = sel4utils_copy_cap_to_process(pro, &env.vka, cap); 
     assert(copy != 0); 
     
     return copy;

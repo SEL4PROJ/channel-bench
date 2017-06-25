@@ -188,7 +188,6 @@ static int create_ki(m_env_t *env, vka_t *vka, bench_ki_t *kimage) {
 static void create_thread(bench_env_t *t) {
 
     sel4utils_process_t *process = &t->process; 
-    cspacepath_t src;
     seL4_CPtr ep_arg, reply_ep_arg;
     int argc = 3;
     char arg_str0[15] = {0}; 
@@ -207,12 +206,10 @@ static void create_thread(bench_env_t *t) {
             
     assert(error == 0); 
 
-    vka_cspace_make_path(t->ipc_vka, t->ep.cptr, &src);  
-    ep_arg = sel4utils_copy_cap_to_process(process, src);
+    ep_arg = sel4utils_copy_cap_to_process(process, t->ipc_vka, t->ep.cptr);
     assert(ep_arg); 
 
-    vka_cspace_make_path(t->ipc_vka, t->reply_ep.cptr, &src);  
-    reply_ep_arg = sel4utils_copy_cap_to_process(process, src);
+    reply_ep_arg = sel4utils_copy_cap_to_process(process,t->ipc_vka, t->reply_ep.cptr);
     assert(reply_ep_arg);
 
 #ifdef CONFIG_MANAGER_IPC

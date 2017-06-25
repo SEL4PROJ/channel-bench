@@ -482,7 +482,6 @@ void prepare_single(m_env_t *env) {
 
     seL4_MessageInfo_t info = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 
             BENCH_COVERT_MSG_LEN);
-    cspacepath_t src;
     seL4_CPtr n_ep; 
 
     printf("Preparing the running environment for benchmarking threads....\n"); 
@@ -500,9 +499,7 @@ void prepare_single(m_env_t *env) {
     map_r_buf(env, BENCH_COVERT_TIME_PAGES, &spy);
 
    /*copy the notification cap*/ 
-    vka_cspace_make_path(trojan.vka, trojan.notification_ep.cptr, &src);  
-
-    n_ep = sel4utils_copy_cap_to_process(&trojan.process, src);
+    n_ep = sel4utils_copy_cap_to_process(&trojan.process, trojan.vka, trojan.notification_ep.cptr);
     assert(n_ep); 
  
     printf("Sending Trojan env message...."); 
@@ -515,8 +512,7 @@ void prepare_single(m_env_t *env) {
     seL4_Send(t_ep.cptr, info);
     printf("done\n"); 
 
-    vka_cspace_make_path(spy.vka, spy.notification_ep.cptr, &src);  
-    n_ep = sel4utils_copy_cap_to_process(&spy.process, src);
+    n_ep = sel4utils_copy_cap_to_process(&spy.process, spy.vka, spy.notification_ep.cptr);
     assert(n_ep); 
     printf("Sending Spy env message...."); 
     /*spy, probming buffer, recording buffer, notification ep*/
