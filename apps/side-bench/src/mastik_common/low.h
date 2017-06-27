@@ -196,11 +196,17 @@ static inline void walk(void *p, int count) {
 
 #endif /* CONFIG_ARCH_ARM  */
 #ifdef CONFIG_ARCH_X86
+
 static inline int access(void *v) {
-  int rv;
-  asm volatile("mov (%1), %0": "=r" (rv): "r" (v):);
+  int rv = 0xff;
+#ifdef CONFIG_BENCH_L1D_WRITE
+  asm volatile("mov %1, (%0)": "+r" (v): "r" (rv): "memory");
+#else 
+  asm volatile("mov (%1), %0": "+r" (rv): "r" (v): "memory");
+#endif
   return rv;
 }
+
 
 static inline int accesstime(void *v) {
   int rv = 0;

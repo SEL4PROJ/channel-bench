@@ -113,16 +113,19 @@ static int probelist(void *pp, int segments, int seglen, uint16_t *results) {
 #ifdef CONFIG_ARCH_X86
       s = rdtscp();
 #endif 
-    for (int i = seglen; i--; ) {
-      // Under normal circumstances, p is never NULL. 
-      // We need this test to ensure the optimiser does not kill the whole loop...
-      if (p == NULL)
-	break;
-      p = LNEXT(p);
-    }
+      for (int i = seglen; i--; ) {
+          // Under normal circumstances, p is never NULL. 
+          // We need this test to ensure the optimiser does not kill the whole loop...
+          if (p == NULL)
+              break;
+#ifdef CONFIG_BENCH_COVERT_L1D_WRITE
+        *(uint32_t*) ((uint32_t*)p + 4) = 0xff;
+#endif    
+          p = LNEXT(p);
+      }
 #ifdef CONFIG_ARCH_ARM 
-    READ_COUNTER_ARMV7(res); 
-    res -= s; 
+      READ_COUNTER_ARMV7(res); 
+      res -= s; 
 #endif 
 #ifdef CONFIG_ARCH_X86
     res = rdtscp() - s;

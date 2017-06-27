@@ -9,8 +9,12 @@ static inline uint32_t rdtsc() {
 }
 
 static inline int access(void *v) {
-  int rv = 0;
-  asm volatile("mov (%1), %0": "+r" (rv): "r" (v):);
+  int rv = 0xff;
+#ifdef CONFIG_BENCH_L1D_WRITE
+  asm volatile("mov %1, (%0)": "+r" (v): "r" (rv): "memory");
+#else 
+  asm volatile("mov (%1), %0": "+r" (rv): "r" (v): "memory");
+#endif
   return rv;
 }
 
