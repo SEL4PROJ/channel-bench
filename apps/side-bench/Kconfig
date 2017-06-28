@@ -170,6 +170,13 @@ menu   "Timing Channel Benchmarks"
       help  
              using writes for accessing the probing buffer in the L1D cache channel 
 
+      config BENCH_COVERT_L1I_REWRITE
+      bool   "rewrite the L1I probe buffer"
+      default n
+      depends on BENCH_COVERT_L1I
+      help  
+             read then writeback the L1I probing buffer after every L1I probe
+
       config BENCH_DATA_SEQUENTIAL
       bool "sending the secret in sequential order"
       default n
