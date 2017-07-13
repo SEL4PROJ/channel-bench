@@ -225,11 +225,7 @@ int run_single_l1(m_env_t *env) {
 
     printf("starting covert channel benchmark\n");
 
-#ifdef CONFIG_BENCH_DATA_SEQUENTIAL 
-    printf("data points %d with sequential sequence\n", CONFIG_BENCH_DATA_POINTS);
-#else 
     printf("data points %d with random sequence\n", CONFIG_BENCH_DATA_POINTS);
-#endif 
 
     map_shared_buf(&spy, &trojan, NUM_L1D_SHARED_PAGE, &share_phy);
     map_r_buf(env, n_p, &spy);

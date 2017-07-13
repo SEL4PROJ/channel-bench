@@ -425,17 +425,48 @@ static void init_pmu_counters(void) {
 #endif
 
 #ifdef CONFIG_ARCH_X86
-    sel4bench_set_count_event(0, SEL4BENCH_EVENT_EXECUTE_INSTRUCTION);
-    //sel4bench_set_count_event(1, SEL4BENCH_EVENT_CACHE_L1D_MISS); 
-#if 1
-    /*dtlb store group*/
-   // sel4bench_set_count_event(0, 0x0108);
-    sel4bench_set_count_event(1, 0x0e08); 
-    sel4bench_set_count_event(2, 0x2008);
-    sel4bench_set_count_event(3, 0x2424); 
-    sel4bench_set_count_event(4, 0x3f24); 
+    /*skylake*/
+    /*the following event have numbers */
+    sel4bench_set_count_event(0, 0x0108); /*DTLB_LOAD_MISSES.MISS_CAUS
+                                           ES_A_WALK*/
 
+    sel4bench_set_count_event(1, 0x4424); /*L2_RQSTS.CODE_RD_HIT*/
+    sel4bench_set_count_event(2, 0xe424); /*L2_RQSTS.ALL_CODE_RD*/
+    sel4bench_set_count_event(3, 0x412e); /*LONGEST_LAT_CACHE.MISS*/
+    sel4bench_set_count_event(4, 0x0185); /*ITLB_MISSES.MISS_CAUSES_A_
+                                           WALK*/
+
+    
+#if 0
+    /****the followings events are not related, numbers do not change**/
+    sel4bench_set_count_event(1, 0x0e08);  /*DTLB_LOAD_MISSES.WALK_COM
+                                           PLETED*/ 
+
+     sel4bench_set_count_event(2, 0x2008);  /*DTLB_LOAD_MISSES.STLB_HIT*/
+    /*L2 cache requests*/
+    sel4bench_set_count_event(3, 0x2424);  /*L2_RQSTS.CODE_RD_MISS*/
+    sel4bench_set_count_event(4, 0x3824);  /*L2_RQSTS.PF_MISS*/ 
+
+    sel4bench_set_count_event(1, 0x3f24); /*L2_RQSTS.MISS*/
+
+    sel4bench_set_count_event(3, 0xd824); /*L2_RQSTS.PF_HIT*/
+    sel4bench_set_count_event(0, 0xf824); /*L2_RQSTS.ALL_PF*/
+    sel4bench_set_count_event(1, 0x4f2e); /*LONGEST_LAT_CACHE.REFEREN
+                                            CE*/
+
+    sel4bench_set_count_event(3, 0x0283); /*ICACHE_64B.IFTAG_MISS*/
+
+    sel4bench_set_count_event(0, 0x2085); /*ITLB_MISSES.STLB_HIT*/
+    sel4bench_set_count_event(1, 0x00c5); /*BR_MISP_RETIRED.ALL_BRANC
+                                           HES*/
+
+    /**********************/
 #endif 
+
+
+
+
+
 #if 0
     /*dtlb load group*/
     sel4bench_set_count_event(0, 0x0108); //DTLB_LOAD_MISSES.MISS_CAUSEAWALK
