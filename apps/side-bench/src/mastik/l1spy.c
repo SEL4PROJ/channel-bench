@@ -88,10 +88,21 @@ int l1_spy(bench_covert_t *env) {
   uint64_t monitored_mask[8] = {~0LLU, ~0LLU,~0LLU, ~0LLU,
       ~0LLU, ~0LLU,~0LLU, ~0LLU,};
 #endif 
+
+#ifdef CONFIG_x86_64
+  uint64_t volatile pmu_start[BENCH_PMU_COUNTERS]; 
+  uint64_t volatile pmu_end[BENCH_PMU_COUNTERS]; 
+#else
+  uint32_t volatile pmu_start[BENCH_PMU_COUNTERS]; 
+  uint32_t volatile pmu_end[BENCH_PMU_COUNTERS]; 
+#endif
+
+
+
   l1info_t l1_1 = l1_prepare(monitored_mask);
 
   uint16_t *results = malloc(l1_nsets(l1_1)*sizeof(uint16_t));
-  
+
   info = seL4_Recv(env->r_ep, &badge);
   assert(seL4_MessageInfo_get_label(info) == seL4_Fault_NullFault);
 
@@ -110,16 +121,29 @@ int l1_spy(bench_covert_t *env) {
 
   for (int i = 0; i < CONFIG_BENCH_DATA_POINTS; i++) {
 
-    newTimeSlice();
-    l1_probe(l1_1, results);
-    
-    /*result is the total probing cost
-     secret is updated by trojan in the previous system tick*/
-    r_addr->result[i] = 0; 
-    r_addr->sec[i] = *secret; 
+      newTimeSlice();
 
-    for (int j = 0; j < l1_nsets(l1_1); j++) 
-        r_addr->result[i] += results[j];
+#ifdef CONFIG_MANAGER_PMU_COUNTER
+      sel4bench_get_counters(BENCH_PMU_BITS, pmu_start);  
+#endif 
+
+      l1_probe(l1_1, results);
+
+#ifdef CONFIG_MANAGER_PMU_COUNTER 
+      sel4bench_get_counters(BENCH_PMU_BITS, pmu_end);
+      /*loading the pmu counter value */
+      for (int counter = 0; counter < BENCH_PMU_COUNTERS; counter++ )
+          r_addr->pmu[i][counter] = pmu_end[counter] - pmu_start[counter]; 
+
+#endif
+
+      /*result is the total probing cost
+        secret is updated by trojan in the previous system tick*/
+      r_addr->result[i] = 0; 
+      r_addr->sec[i] = *secret; 
+
+      for (int j = 0; j < l1_nsets(l1_1); j++) 
+          r_addr->result[i] += results[j];
 
   }
 

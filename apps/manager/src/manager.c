@@ -425,11 +425,11 @@ static void init_pmu_counters(void) {
 #endif
 
 #ifdef CONFIG_ARCH_X86
-    //sel4bench_set_count_event(0, SEL4BENCH_EVENT_CACHE_L1I_MISS);
+    sel4bench_set_count_event(0, SEL4BENCH_EVENT_EXECUTE_INSTRUCTION);
     //sel4bench_set_count_event(1, SEL4BENCH_EVENT_CACHE_L1D_MISS); 
 #if 1
     /*dtlb store group*/
-    sel4bench_set_count_event(0, 0x0108);
+   // sel4bench_set_count_event(0, 0x0108);
     sel4bench_set_count_event(1, 0x0e08); 
     sel4bench_set_count_event(2, 0x2008);
     sel4bench_set_count_event(3, 0x2424); 

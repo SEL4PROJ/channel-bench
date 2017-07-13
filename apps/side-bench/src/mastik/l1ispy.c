@@ -9,16 +9,6 @@
 #include "../../../bench_common.h"
 
 #define TS_THRESHOLD 10000
-extern void nop_spy(void);
-extern void nop_trojan_1(void);
-extern void nop_trojan_2(void);
-extern void nop_trojan_3(void);
-extern void nop_trojan_4(void);
-extern void nop_trojan_5(void);
-extern void nop_trojan_6(void);
-extern void nop_trojan_7(void);
-extern void nop_trojan_8(void);
-
 
 static void  newTimeSlice(){
   asm("");
@@ -31,122 +21,12 @@ static void  newTimeSlice(){
   }
 }
 
-#if 0
-static void l1i_trojan_nop_select(uint32_t n) {
 
-    switch(n) {
-
-        case 0: 
-            break;
-        case 1:
-            nop_trojan_1(); 
-            for (int p = 0; p < 4096 + 4096; p += 64)
-                clflush(nop_trojan_1 + p); 
-            break;
-        case 2:
-            nop_trojan_2(); 
-            for (int p = 0; p < 4096 * 2 + 4096; p += 64)
-                clflush(nop_trojan_2 + p); 
-            break;
-        case 3:
-            nop_trojan_3(); 
-            for (int p = 0; p < 4096 * 3 + 4096; p += 64)
-                clflush(nop_trojan_3 + p); 
-            break;
-        case 4:
-   
-            nop_trojan_4(); 
-            for (int p = 0; p < 4096 * 4 + 4096; p += 64)
-                clflush(nop_trojan_4 + p); 
-            break;
-
-        case 5:
-            nop_trojan_5(); 
-            for (int p = 0; p < 4096 * 5 + 4096; p += 64)
-                clflush(nop_trojan_5 + p); 
-
-            break;
-        case 6:
-            nop_trojan_6();
-            for (int p = 0; p < 4096 * 6 + 4096; p += 64)
-                clflush(nop_trojan_6 + p); 
-
-            break;
-        case 7:
-            nop_trojan_7();
-            for (int p = 0; p < 4096 * 7 + 4096; p += 64)
-                clflush(nop_trojan_7 + p); 
-
-            break;
-        case 8:
-            nop_trojan_8();
-            for (int p = 0; p < 4096 * 8 + 4096; p += 64)
-                clflush(nop_trojan_8 + p); 
-
-            break;
-        default:
-            break;
-    }
-
-}
-int l1i_trojan(bench_covert_t *env) {
-
-  uint32_t total_sec = 9, secret;
-  seL4_Word badge;
-  seL4_MessageInfo_t info;
-
-  info = seL4_Recv(env->r_ep, &badge);
-  assert(seL4_MessageInfo_get_label(info) == seL4_Fault_NullFault);
-
-  /*receive the shared address to record the secret*/
-  uint32_t volatile *share_vaddr = (uint32_t *)seL4_GetMR(0);
-  *share_vaddr = SYSTEM_TICK_SYN_FLAG; 
-  
-  info = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 1);
-  seL4_SetMR(0, 0); 
-  seL4_Send(env->r_ep, info);
-
-  /*warm up the platform*/
-  for (int i = 0; i < NUM_L1I_WARMUP_ROUNDS; i++) {
-      secret = random() % total_sec; 
-
-      /*do the probe*/
-      l1i_trojan_nop_select(secret);
-  }
-  /*ready to do the test*/
-  seL4_Send(env->syn_ep, info);
-  
-  /*giving some number of system ticks to syn trojan and spy */
-
-  for (int i = 0; i < 100; i++) {
-      secret = random() % total_sec;
-      newTimeSlice();
-      
-      /*do the probe*/
-      l1i_trojan_nop_select(secret);
-  }
-
-for (int i = 0; i < CONFIG_BENCH_DATA_POINTS; i++) {
-      secret = random() % total_sec; 
-      
-      /*waiting for a system tick*/
-      newTimeSlice();
-      l1i_trojan_nop_select(secret);
-      /*update the secret read by low*/ 
-      *share_vaddr = secret; 
-    
-      
-  }
-  while (1);
- 
-  return 0;
-}
-#endif 
-#if 1
 int l1i_trojan(bench_covert_t *env) {
 
   uint16_t results[64];
   uint64_t l1i_prepare_sets = ~0LLU; 
+
   l1iinfo_t l1i_1 = l1i_prepare(&l1i_prepare_sets);
   uint32_t total_sec = L1I_SETS, secret;
   uint64_t monitored_sets;  
@@ -181,8 +61,10 @@ for (int i = 0; i < CONFIG_BENCH_DATA_POINTS; i++) {
 
       /*set up the l1i buffer according to the monitored sets*/
       l1i_set_monitored_set(l1i_1, &monitored_sets); 
+
       /*do the probe*/
       l1i_probe(l1i_1, results);
+
 
 #ifdef CONFIG_BENCH_COVERT_L1I_REWRITE
     /*rewrite the L1I probing buffer*/
@@ -210,61 +92,20 @@ for (int i = 0; i < CONFIG_BENCH_DATA_POINTS; i++) {
  
   return 0;
 }
-#endif
-#if 0
-int l1i_spy(bench_covert_t *env) {
-  seL4_Word badge;
-  seL4_MessageInfo_t info;
 
-  /*spy using different virtual address to establish the probing buffer*/
-
-
-  info = seL4_Recv(env->r_ep, &badge);
-  assert(seL4_MessageInfo_get_label(info) == seL4_Fault_NullFault);
-
-  /*the record address*/
-  struct bench_l1 *r_addr = (struct bench_l1 *)seL4_GetMR(0);
-  /*the shared address*/
-  uint32_t volatile *secret = (uint32_t *)seL4_GetMR(1);
-
-  /*syn with trojan*/
-  info = seL4_Recv(env->syn_ep, &badge);
-  assert(seL4_MessageInfo_get_label(info) == seL4_Fault_NullFault);
-
-  /*waiting for a start*/
-  while (*secret == SYSTEM_TICK_SYN_FLAG) ;
-
-
-  for (int i = 0; i < CONFIG_BENCH_DATA_POINTS; i++) {
-
-      newTimeSlice();
-  
-      /*using the nops to test the benchmark*/
-      r_addr->result[i] = l1i_probe_nop();
-      /*result is the total probing cost
-        secret is updated by trojan in the previous system tick*/
-      r_addr->sec[i] = *secret; 
-     
-      for (int p = 0; p < 32768 + 4096; p += 64) 
-          clflush(nop_spy + p);
-  }
-
-  /*send result to manager, spy is done*/
-  info = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 1);
-  seL4_SetMR(0, 0);
-  seL4_Send(env->r_ep, info);
-
-  while (1);
-
-
-  return 0;
-}
-#endif 
-#if 1
 int l1i_spy(bench_covert_t *env) {
   seL4_Word badge;
   seL4_MessageInfo_t info;
   uint64_t prepare_sets = ~0LLU; 
+
+#ifdef CONFIG_x86_64
+  uint64_t volatile pmu_start[BENCH_PMU_COUNTERS]; 
+  uint64_t volatile pmu_end[BENCH_PMU_COUNTERS]; 
+#else
+  uint32_t volatile pmu_start[BENCH_PMU_COUNTERS]; 
+  uint32_t volatile pmu_end[BENCH_PMU_COUNTERS]; 
+#endif
+
   /*spy using different virtual address to establish the probing buffer*/
   l1iinfo_t l1i_1 = l1i_prepare(&prepare_sets);
 
@@ -291,8 +132,20 @@ int l1i_spy(bench_covert_t *env) {
   for (int i = 0; i < CONFIG_BENCH_DATA_POINTS; i++) {
 
       newTimeSlice();
-  
+#ifdef CONFIG_MANAGER_PMU_COUNTER
+      sel4bench_get_counters(BENCH_PMU_BITS, pmu_start);  
+#endif 
+ 
       l1i_probe(l1i_1, results);
+
+#ifdef CONFIG_MANAGER_PMU_COUNTER 
+      sel4bench_get_counters(BENCH_PMU_BITS, pmu_end);
+      /*loading the pmu counter value */
+      for (int counter = 0; counter < BENCH_PMU_COUNTERS; counter++ )
+          r_addr->pmu[i][counter] = pmu_end[counter] - pmu_start[counter]; 
+
+#endif
+      
       /*result is the total probing cost
         secret is updated by trojan in the previous system tick*/
       r_addr->result[i] = 0; 
@@ -331,4 +184,3 @@ int l1i_spy(bench_covert_t *env) {
 
   return 0;
 }
-#endif 

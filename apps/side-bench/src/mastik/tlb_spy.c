@@ -171,9 +171,6 @@ int tlb_spy(bench_covert_t *env) {
 
 #ifdef CONFIG_MANAGER_PMU_COUNTER 
       sel4bench_get_counters(BENCH_PMU_BITS, pmu_end);
-#endif 
-
-#ifdef CONFIG_MANAGER_PMU_COUNTER 
       /*loading the pmu counter value */
       for (int counter = 0; counter < BENCH_PMU_COUNTERS; counter++ )
           r_addr->pmu[i][counter] = pmu_end[counter] - pmu_start[counter]; 
