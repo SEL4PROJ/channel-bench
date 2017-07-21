@@ -98,13 +98,8 @@ int l1i_spy(bench_covert_t *env) {
   seL4_MessageInfo_t info;
   uint64_t prepare_sets = ~0LLU; 
 
-#ifdef CONFIG_x86_64
-  uint64_t volatile pmu_start[BENCH_PMU_COUNTERS]; 
-  uint64_t volatile pmu_end[BENCH_PMU_COUNTERS]; 
-#else
-  uint32_t volatile pmu_start[BENCH_PMU_COUNTERS]; 
-  uint32_t volatile pmu_end[BENCH_PMU_COUNTERS]; 
-#endif
+  uint64_t volatile pmu_start; 
+  uint64_t volatile pmu_end; 
 
   /*spy using different virtual address to establish the probing buffer*/
   l1iinfo_t l1i_1 = l1i_prepare(&prepare_sets);
@@ -133,16 +128,15 @@ int l1i_spy(bench_covert_t *env) {
 
       newTimeSlice();
 #ifdef CONFIG_MANAGER_PMU_COUNTER
-      sel4bench_get_counters(BENCH_PMU_BITS, pmu_start);  
+      pmu_start = sel4bench_get_counter(0);  
 #endif 
  
       l1i_probe(l1i_1, results);
 
 #ifdef CONFIG_MANAGER_PMU_COUNTER 
-      sel4bench_get_counters(BENCH_PMU_BITS, pmu_end);
       /*loading the pmu counter value */
-      for (int counter = 0; counter < BENCH_PMU_COUNTERS; counter++ )
-          r_addr->pmu[i][counter] = pmu_end[counter] - pmu_start[counter]; 
+      pmu_end = sel4bench_get_counter(0);  
+      r_addr->pmu[i][0] = pmu_end - pmu_start; 
 
 #endif
       

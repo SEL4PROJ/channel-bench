@@ -356,13 +356,10 @@ static void launch_bench_single (void *arg) {
 #ifdef CONFIG_MANAGER_PMU_COUNTER
 static void init_pmu_counters(void) {
 
-    uint32_t num_counter; 
     uint32_t bit_counter = BENCH_PMU_BITS;
 
 
-    num_counter =  sel4bench_get_num_counters(); 
-    printf("\n num of pmu counter is %d \n", num_counter); 
-   
+  
 #ifdef CONFIG_ARCH_X86 
     {
         uint32_t eax, ebx, ecx, edx; 
@@ -377,6 +374,7 @@ static void init_pmu_counters(void) {
         printf("cpu family and model value 0x%x\n", eax); 
 
     }
+ 
 #endif 
 
 
@@ -425,17 +423,49 @@ static void init_pmu_counters(void) {
 #endif
 
 #ifdef CONFIG_ARCH_X86
+
+    /*sandy bridge*/
+    //sel4bench_set_count_event(0, 0x3024);  /*L2_RQSTS.ALL_CODE_RD*/
+
+
+    sel4bench_set_count_event(0, 0x0280); /*ICACHE.MISSES*/
+
+#if 0
+    /*tried events for sandybridge*/
+    sel4bench_set_count_event(0, 0x8024); /*L2_RQSTS.PF_MISS*/
+    sel4bench_set_count_event(1, 0x0149); /*DTLB_STORE_MISSES.MISS_CA
+                                            USES_A_WALK*/
+
+    sel4bench_set_count_event(2, 0x0149); /*DTLB_STORE_MISSES.MISS_CA
+                                            USES_A_WALK*/
+
+    sel4bench_set_count_event(3, 0x02c1); /*OTHER_ASSISTS.ITLB_MISS_R
+                                            ETIRED*/
+
+
+    sel4bench_set_count_event(1, 0x0108); /*DTLB_LOAD_MISSES.MISS_CAUS
+                                            ES_A_WALK*/
+
+    sel4bench_set_count_event(0, SEL4BENCH_EVENT_EXECUTE_INSTRUCTION);
+    sel4bench_set_count_event(0, 0x412e); /*LONGEST_LAT_CACHE.MISS*/
+ 
+    sel4bench_set_count_event(0, 0x2024); /*L2_RQSTS.CODE_RD_MISS*/
+
+
+    sel4bench_set_count_event(0, 0x0185); /*ITLB_MISSES.MISS_CAUSES_A_
+                                            WALK*/
+ 
+#endif 
+
+#if 0
     /*skylake*/
     /*the following event have numbers */
-    sel4bench_set_count_event(0, 0x0108); /*DTLB_LOAD_MISSES.MISS_CAUS
-                                           ES_A_WALK*/
-
-    sel4bench_set_count_event(1, 0x4424); /*L2_RQSTS.CODE_RD_HIT*/
-    sel4bench_set_count_event(2, 0xe424); /*L2_RQSTS.ALL_CODE_RD*/
-    sel4bench_set_count_event(3, 0x412e); /*LONGEST_LAT_CACHE.MISS*/
-    sel4bench_set_count_event(4, 0x0185); /*ITLB_MISSES.MISS_CAUSES_A_
+    sel4bench_set_count_event(0, 0x4424); /*L2_RQSTS.CODE_RD_HIT*/
+    sel4bench_set_count_event(1, 0xe424); /*L2_RQSTS.ALL_CODE_RD*/
+    sel4bench_set_count_event(2, 0x412e); /*LONGEST_LAT_CACHE.MISS*/
+    sel4bench_set_count_event(3, 0x0185); /*ITLB_MISSES.MISS_CAUSES_A_
                                            WALK*/
-
+#endif 
     
 #if 0
     /****the followings events are not related, numbers do not change**/
@@ -459,6 +489,9 @@ static void init_pmu_counters(void) {
     sel4bench_set_count_event(0, 0x2085); /*ITLB_MISSES.STLB_HIT*/
     sel4bench_set_count_event(1, 0x00c5); /*BR_MISP_RETIRED.ALL_BRANC
                                            HES*/
+    sel4bench_set_count_event(0, 0x0108); /*DTLB_LOAD_MISSES.MISS_CAUS
+                                           ES_A_WALK*/
+
 
     /**********************/
 #endif 
