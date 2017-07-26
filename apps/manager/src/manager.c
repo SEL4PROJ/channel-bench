@@ -57,7 +57,7 @@ extern size_t morecore_size;
 char manager_morecore_area[MANAGER_MORECORE_SIZE]; 
 #endif
 /* dimensions of virtual memory for the allocator to use */
-#define ALLOCATOR_VIRTUAL_POOL_SIZE (1024*1024*100)
+#define ALLOCATOR_VIRTUAL_POOL_SIZE (1024*1024*10)
 
 /* static memory for the allocator to bootstrap with */
 #define ALLOCATOR_STATIC_POOL_SIZE (1024 * 1024 * 10)
@@ -380,11 +380,12 @@ static void init_pmu_counters(void) {
 
     /*set up the pmu counter events*/
 
-
+    /*hikey platform*/
+    sel4bench_set_count_event(0, 0x1);
     /*sabre platform */
     /*instruction cache dependent stall cycles*/
 
-    sel4bench_set_count_event(0, 0x60);
+    //sel4bench_set_count_event(0, 0x60);
 #if 0
     /*tried on sabre but no corelation */
     /*L1 I cache refill*/ 

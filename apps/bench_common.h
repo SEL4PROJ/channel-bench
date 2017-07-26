@@ -128,6 +128,9 @@
 //#define CC_DIV             16 LLC cache 
 #endif  /*x86*/
 
+#ifdef CONFIG_PLAT_HIKEY
+#define CC_DIV             4
+#endif
 
 #ifdef CONFIG_PLAT_IMX6
 #define CC_DIV             8
@@ -237,8 +240,7 @@ struct ipc_results {
 #define BENCH_PMU_COUNTERS 2 
 #endif 
 
-/*currently do not support any pmu debugging on v8a*/
-#ifdef CONFIG_ARCH_ARM_V8A
+#ifdef CONFIG_ARM_CORTEX_A53
 #define BENCH_PMU_BITS  0x1
 #define BENCH_PMU_COUNTERS 1 
 #endif 
