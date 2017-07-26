@@ -108,14 +108,15 @@ int btb_trojan(bench_covert_t *env) {
     assert(results);
 
     info = seL4_Recv(env->r_ep, &badge);
-    assert(seL4_MessageInfo_get_label(info) == seL4_NoFault);
+    assert(seL4_MessageInfo_get_label(info) == seL4_Fault_NullFault);
+
 
     /*receive the shared address to record the secret*/
     uint32_t volatile *share_vaddr = (uint32_t *)seL4_GetMR(0);
     uint32_t volatile *syn_vaddr = share_vaddr + 1;
     *share_vaddr = 0; 
 
-    info = seL4_MessageInfo_new(seL4_NoFault, 0, 0, 1);
+    info = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 1);
     seL4_SetMR(0, 0); 
     seL4_Send(env->r_ep, info);
 
@@ -185,8 +186,8 @@ int btb_spy(bench_covert_t *env) {
     seL4_Word badge;
     seL4_MessageInfo_t info;
     uint32_t start, after;
-    uint32_t volatile pmu_start[BENCH_PMU_COUNTERS]; 
-    uint32_t volatile pmu_end[BENCH_PMU_COUNTERS]; 
+    ccnt_t volatile pmu_start; 
+    ccnt_t volatile pmu_end; 
 
 
     uint64_t  monitored_mask[I_MONITOR_MASK] = {0};
@@ -207,7 +208,8 @@ int btb_spy(bench_covert_t *env) {
     assert(results);
 
     info = seL4_Recv(env->r_ep, &badge);
-    assert(seL4_MessageInfo_get_label(info) == seL4_NoFault);
+    assert(seL4_MessageInfo_get_label(info) == seL4_Fault_NullFault);
+
 
     /*the record address*/
     struct bench_l1 *r_addr = (struct bench_l1 *)seL4_GetMR(0);
@@ -218,7 +220,7 @@ int btb_spy(bench_covert_t *env) {
 
     /*syn with trojan*/
     info = seL4_Recv(env->syn_ep, &badge);
-    assert(seL4_MessageInfo_get_label(info) == seL4_NoFault);
+    assert(seL4_MessageInfo_get_label(info) == seL4_Fault_NullFault);
 
     for (int i = 0; i < CONFIG_BENCH_DATA_POINTS; i++) {
 
@@ -233,29 +235,30 @@ int btb_spy(bench_covert_t *env) {
         /*reset the counter to zero*/
         //sel4bench_reset_cycle_count();
 #ifdef CONFIG_MANAGER_PMU_COUNTER 
-        sel4bench_get_counters(BENCH_PMU_BITS, pmu_start);  
+        pmu_start = sel4bench_get_counter(0);  
 #endif 
+        SEL4BENCH_READ_CCNT(start); 
 
-        READ_COUNTER_ARMV7(start);
 #ifdef CONFIG_BENCH_BRANCH_ALIGN 
         /*using instrcutions to probe*/
         branch_probe_lines(BTAC_SPY_SETS);
 #else
         /*using cache sets to probe*/
-       l1i_probe(l1i_1, results); 
+        l1i_probe(l1i_1, results); 
 #endif 
 
-        READ_COUNTER_ARMV7(after);
+        SEL4BENCH_READ_CCNT(after);
+
 #ifdef CONFIG_MANAGER_PMU_COUNTER 
-        sel4bench_get_counters(BENCH_PMU_BITS, pmu_end);  
+        pmu_end = sel4bench_get_counter(0);  
 #endif 
 
         r_addr->result[i] = after - start; 
 
 #ifdef CONFIG_MANAGER_PMU_COUNTER 
-      /*loading the pmu counter value */
+        /*loading the pmu counter value */
         for (int counter = 0; counter < BENCH_PMU_COUNTERS; counter++ )
-            r_addr->pmu[i][counter] = pmu_end[counter] - pmu_start[counter]; 
+            r_addr->pmu[i][counter] = pmu_end - pmu_start; 
 
 #endif 
         /*result is the total probing cost
@@ -267,7 +270,7 @@ int btb_spy(bench_covert_t *env) {
 
 
     /*send result to manager, spy is done*/
-    info = seL4_MessageInfo_new(seL4_NoFault, 0, 0, 1);
+    info = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 1);
     seL4_SetMR(0, 0);
     seL4_Send(env->r_ep, info);
 

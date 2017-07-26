@@ -102,6 +102,10 @@ int l1i_spy(bench_covert_t *env) {
   uint64_t volatile pmu_end; 
 
   /*spy using different virtual address to establish the probing buffer*/
+
+  l1i_prepare(&prepare_sets); 
+  l1i_prepare(&prepare_sets); 
+
   l1iinfo_t l1i_1 = l1i_prepare(&prepare_sets);
 
 

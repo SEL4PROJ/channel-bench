@@ -228,10 +228,8 @@ struct ipc_results {
 #endif 
 
 #ifdef CONFIG_ARM_CORTEX_A9
-//#define BENCH_PMU_BITS 0x3f 
-//#define BENCH_PMU_COUNTERS 6 
-#define BENCH_PMU_BITS 0x1f 
-#define BENCH_PMU_COUNTERS 5 
+#define BENCH_PMU_BITS 0x1
+#define BENCH_PMU_COUNTERS 1
 #endif 
 
 #ifdef CONFIG_ARM_CORTEX_A15

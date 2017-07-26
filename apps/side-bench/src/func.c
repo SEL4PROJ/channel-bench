@@ -85,7 +85,7 @@ int funcs_receiver(bench_covert_t *env) {
         printf("r\n");
         /*updating the shared memory
           indicating both threads are alive*/
-        *record_vaddr  = rdtscp_64();
+        SEL4BENCH_READ_CCNT(*record_vaddr); 
 
     }
 

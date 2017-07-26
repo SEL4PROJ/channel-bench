@@ -64,7 +64,7 @@ int l3_trojan_single(bench_covert_t *env) {
 #endif
 
     info = seL4_Recv(env->r_ep, &badge);
-    assert(seL4_MessageInfo_get_label(info) == seL4_NoFault);
+    assert(seL4_MessageInfo_get_label(info) == seL4_Fault_NullFault);
 
     /*receive the shared address to record the secret*/
     uint32_t volatile *share_vaddr = (uint32_t *)seL4_GetMR(0);
@@ -82,7 +82,7 @@ int l3_trojan_single(bench_covert_t *env) {
     trojan_buf = (char *)malloc(TROJAN_BUFFER_SIZE); 
     assert(trojan_buf);
 
-    info = seL4_MessageInfo_new(seL4_NoFault, 0, 0, 1);
+    info = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 1);
     seL4_SetMR(0, 0); 
     seL4_Send(env->r_ep, info);
 
@@ -141,7 +141,7 @@ int l3_spy_single(bench_covert_t *env) {
     
       
     info = seL4_Recv(env->r_ep, &badge);
-    assert(seL4_MessageInfo_get_label(info) == seL4_NoFault);
+    assert(seL4_MessageInfo_get_label(info) == seL4_Fault_NullFault);
 
     /*the record address*/
     struct bench_l1 *r_addr = (struct bench_l1 *)seL4_GetMR(0);
@@ -199,7 +199,7 @@ int l3_spy_single(bench_covert_t *env) {
 
     /*syn with trojan*/
     info = seL4_Recv(env->syn_ep, &badge);
-    assert(seL4_MessageInfo_get_label(info) == seL4_NoFault);
+    assert(seL4_MessageInfo_get_label(info) == seL4_Fault_NullFault);
 
     for (int i = 0; i < CONFIG_BENCH_DATA_POINTS; i++) {
 
@@ -230,7 +230,7 @@ int l3_spy_single(bench_covert_t *env) {
 
 
     /*send result to manager, spy is done*/
-    info = seL4_MessageInfo_new(seL4_NoFault, 0, 0, 1);
+    info = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 1);
     seL4_SetMR(0, 0);
     seL4_Send(env->r_ep, info);
 

@@ -378,9 +378,27 @@ static void init_pmu_counters(void) {
 #endif 
 
 
-#ifdef CONFIG_ARM_CORTEX_A9  
     /*set up the pmu counter events*/
 
+
+    /*sabre platform */
+    /*instruction cache dependent stall cycles*/
+
+    sel4bench_set_count_event(0, 0x60);
+#if 0
+    /*tried on sabre but no corelation */
+    /*L1 I cache refill*/ 
+    sel4bench_set_count_event(0, 0x1);
+    /*L1I_CACHE acess*/
+    sel4bench_set_count_event(0, 0x14);
+    /*L1 I tlb refill*/
+    sel4bench_set_count_event(0, 0x2);
+
+
+
+#endif 
+
+#if 0
     /*L1 D cache refill*/ 
     sel4bench_set_count_event(0, 0x3);
     /*level 1 data tlb refill*/
@@ -388,49 +406,20 @@ static void init_pmu_counters(void) {
 
     /*level 2 cache access*/ 
     sel4bench_set_count_event(2, 0x16);
-    
-    /*L1 I cache refill*/ 
-    sel4bench_set_count_event(3, 0x1);
-
     /*L1 I tlb refill*/
     sel4bench_set_count_event(4, 0x2);
 
 #endif 
 
-#ifdef CONFIG_ARM_CORTEXT_A15 
-/*set up the pmu counter events*/
-    sel4bench_set_count_event(0, SEL4BENCH_EVENT_TLB_L1I_MISS); 
-    sel4bench_set_count_event(1, SEL4BENCH_EVENT_TLB_L1D_MISS); 
-    /*L1 I cache refill*/
-    //sel4bench_set_count_event(2, 0x1); 
-    /*L1 D cache refill*/
-    //sel4bench_set_count_event(3, 0x3); 
-
-    /*L2 cache refill*/ 
-    //sel4bench_set_count_event(4, 0x17);
-   
-    /*stall due to instruction micro tlb miss*/ 
-   // sel4bench_set_count_event(2, 0x84); 
-    /*stall due to data micro tlb miss*/ 
-   // sel4bench_set_count_event(3, 0x85); 
-    /*stall due to main tlb miss instruction side*/ 
-   // sel4bench_set_count_event(4, 0x82);
-    /*stall due to main tlb miss data side*/
-    //sel4bench_set_count_event(5, 0x83);
-
-
-
-#endif
-
 #ifdef CONFIG_ARCH_X86
 
+#if 0
     /*sandy bridge*/
     //sel4bench_set_count_event(0, 0x3024);  /*L2_RQSTS.ALL_CODE_RD*/
 
-
+    /*event that is currently used for the paper*/
     sel4bench_set_count_event(0, 0x0280); /*ICACHE.MISSES*/
 
-#if 0
     /*tried events for sandybridge*/
     sel4bench_set_count_event(0, 0x8024); /*L2_RQSTS.PF_MISS*/
     sel4bench_set_count_event(1, 0x0149); /*DTLB_STORE_MISSES.MISS_CA
@@ -457,20 +446,28 @@ static void init_pmu_counters(void) {
  
 #endif 
 
-#if 0
+    /*haswell*/
+  //  sel4bench_set_count_event(0, 0x0280); /*ICACHE.MISSES*/
+
+
+
+
     /*skylake*/
+   // sel4bench_set_count_event(0, 0x0283); /*ICACHE_64B.IFTAG_MISS*/
+
+     sel4bench_set_count_event(0, 0xe424); /*L2_RQSTS.ALL_CODE_RD*/
+#if 0
     /*the following event have numbers */
     sel4bench_set_count_event(0, 0x4424); /*L2_RQSTS.CODE_RD_HIT*/
-    sel4bench_set_count_event(1, 0xe424); /*L2_RQSTS.ALL_CODE_RD*/
     sel4bench_set_count_event(2, 0x412e); /*LONGEST_LAT_CACHE.MISS*/
-    sel4bench_set_count_event(3, 0x0185); /*ITLB_MISSES.MISS_CAUSES_A_
-                                           WALK*/
 #endif 
     
 #if 0
     /****the followings events are not related, numbers do not change**/
     sel4bench_set_count_event(1, 0x0e08);  /*DTLB_LOAD_MISSES.WALK_COM
                                            PLETED*/ 
+    sel4bench_set_count_event(0, 0x0185); /*ITLB_MISSES.MISS_CAUSES_A_
+                                           WALK*/
 
      sel4bench_set_count_event(2, 0x2008);  /*DTLB_LOAD_MISSES.STLB_HIT*/
     /*L2 cache requests*/
@@ -484,7 +481,6 @@ static void init_pmu_counters(void) {
     sel4bench_set_count_event(1, 0x4f2e); /*LONGEST_LAT_CACHE.REFEREN
                                             CE*/
 
-    sel4bench_set_count_event(3, 0x0283); /*ICACHE_64B.IFTAG_MISS*/
 
     sel4bench_set_count_event(0, 0x2085); /*ITLB_MISSES.STLB_HIT*/
     sel4bench_set_count_event(1, 0x00c5); /*BR_MISP_RETIRED.ALL_BRANC
@@ -494,6 +490,15 @@ static void init_pmu_counters(void) {
 
 
     /**********************/
+
+
+    /*haswell number does not change, not related*/
+//    sel4bench_set_count_event(0, 0xf824); /*L2_RQSTS.ALL_PF*/
+ //   sel4bench_set_count_event(0, 0x3024); /*L2_RQSTS.L2_PF_MISS*/
+
+
+    sel4bench_set_count_event(0, 0x5024); /*L2_RQSTS.L2_PF_HIT*/
+    sel4bench_set_count_event(0, 0x08f0); /*L2_TRANS.ALL_PF*/
 #endif 
 
 

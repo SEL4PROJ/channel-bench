@@ -97,7 +97,8 @@ int tlb_trojan(bench_covert_t *env) {
   init_seq(seq, ATTACK_PAGES); 
 #endif 
   info = seL4_Recv(env->r_ep, &badge);
-  assert(seL4_MessageInfo_get_label(info) == seL4_NoFault);
+  assert(seL4_MessageInfo_get_label(info) == seL4_Fault_NullFault);
+
 
   /*receive the shared address to record the secret*/
   uint32_t volatile *share_vaddr = (uint32_t *)seL4_GetMR(0);
@@ -186,7 +187,8 @@ int tlb_spy(bench_covert_t *env) {
 
   /*syn with trojan*/
   info = seL4_Recv(env->syn_ep, &badge);
-  assert(seL4_MessageInfo_get_label(info) == seL4_NoFault);
+  assert(seL4_MessageInfo_get_label(info) == seL4_Fault_NullFault);
+
 
  
 
