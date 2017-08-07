@@ -381,11 +381,13 @@ static void init_pmu_counters(void) {
     /*set up the pmu counter events*/
 
     /*hikey platform*/
-    sel4bench_set_count_event(0, 0x1);
+    /*Level 1 instruction cache refill*/
+    //sel4bench_set_count_event(0, 0x1);
     /*sabre platform */
     /*instruction cache dependent stall cycles*/
 
     //sel4bench_set_count_event(0, 0x60);
+
 #if 0
     /*tried on sabre but no corelation */
     /*L1 I cache refill*/ 
@@ -398,21 +400,6 @@ static void init_pmu_counters(void) {
 
 
 #endif 
-
-#if 0
-    /*L1 D cache refill*/ 
-    sel4bench_set_count_event(0, 0x3);
-    /*level 1 data tlb refill*/
-    sel4bench_set_count_event(1, 0x5);
-
-    /*level 2 cache access*/ 
-    sel4bench_set_count_event(2, 0x16);
-    /*L1 I tlb refill*/
-    sel4bench_set_count_event(4, 0x2);
-
-#endif 
-
-#ifdef CONFIG_ARCH_X86
 
 #if 0
     /*sandy bridge*/
@@ -456,7 +443,10 @@ static void init_pmu_counters(void) {
     /*skylake*/
    // sel4bench_set_count_event(0, 0x0283); /*ICACHE_64B.IFTAG_MISS*/
 
-     sel4bench_set_count_event(0, 0xe424); /*L2_RQSTS.ALL_CODE_RD*/
+//     sel4bench_set_count_event(0, 0xe424); /*L2_RQSTS.ALL_CODE_RD*/
+
+
+    sel4bench_set_count_event(0, 0x2085); /*ITLB_MISSES.STLB_HIT*/
 #if 0
     /*the following event have numbers */
     sel4bench_set_count_event(0, 0x4424); /*L2_RQSTS.CODE_RD_HIT*/
@@ -486,8 +476,8 @@ static void init_pmu_counters(void) {
     sel4bench_set_count_event(0, 0x2085); /*ITLB_MISSES.STLB_HIT*/
     sel4bench_set_count_event(1, 0x00c5); /*BR_MISP_RETIRED.ALL_BRANC
                                            HES*/
-    sel4bench_set_count_event(0, 0x0108); /*DTLB_LOAD_MISSES.MISS_CAUS
-                                           ES_A_WALK*/
+    sel4bench_set_count_event(0, 0x0108); /*DTLB_LOAD_MISSES.MISS_CAUS*/
+     sel4bench_set_count_event(0, 0x20c5); /*BR_MISP_RETIRED.ALL_BRANCHES*/
 
 
     /**********************/
@@ -501,37 +491,6 @@ static void init_pmu_counters(void) {
     sel4bench_set_count_event(0, 0x5024); /*L2_RQSTS.L2_PF_HIT*/
     sel4bench_set_count_event(0, 0x08f0); /*L2_TRANS.ALL_PF*/
 #endif 
-
-
-
-
-
-#if 0
-    /*dtlb load group*/
-    sel4bench_set_count_event(0, 0x0108); //DTLB_LOAD_MISSES.MISS_CAUSEAWALK
-    sel4bench_set_count_event(1, 0x1008); //DTLB_LOAD_MISSES.WALK_DUR
-    sel4bench_set_count_event(2, 0x6008); //DTLB_LOAD_MISSES.STLB_HIT
-    sel4bench_set_count_event(3, 0x8008);// DTLB_LOAD_MISSES.PDE_CACHE_MISS
-#endif 
-#if 0
-    /*itlb group*/ 
-    sel4bench_set_count_event(0, 0x0185); // ITLB_MISSES.MISS_CAUSES_A_WALK
-    sel4bench_set_count_event(1, 0x1085); // ITLB_MISSES.WALK_DURATION
-    sel4bench_set_count_event(2, 0x6085); // ITLB_MISSES.STLB_HIT
-#endif
-
-#if 0
-    /*page walk levels*/ 
-    sel4bench_set_count_event(0, 0x11bc); 
-    sel4bench_set_count_event(1, 0x12bc); 
-    sel4bench_set_count_event(2, 0x14bc); 
-    sel4bench_set_count_event(3, 0x18bc); 
-#endif
-    //sel4bench_set_count_event(2, 0x0185); //itlb miss
-    //sel4bench_set_count_event(2, SEL4BENCH_EVENT_TLB_L1I_MISS);
-    //sel4bench_set_count_event(3, SEL4BENCH_EVENT_TLB_L1D_MISS);       //TLB L1D miss on store
-    //sel4bench_set_count_event(4, SEL4BENCH_EVENT_MEMORY_ACCESS); //Does TLB L1D miss on load. Is misnamed cuz lazy
-#endif
 
     /*start the pmu counter*/ 
 
