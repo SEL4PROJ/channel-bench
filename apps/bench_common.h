@@ -331,13 +331,9 @@ typedef struct bench_covert {
 #define BENCH_COVERT_LLC_SINGLE_TROJAN   19 
 #define BENCH_COVERT_LLC_SINGLE_SPY      20
 
-#ifdef CONFIG_ARCH_X86
 #define BENCH_COVERT_BP_TROJAN		     21
 #define BENCH_COVERT_BP_SPY		        22
 #define BENCH_COVERT_FUNS                23
-#else
-#define BENCH_COVERT_FUNS                21
-#endif /* CONFIG_ARCH_X86 */
 
 
 /*the benchmarking tets for the function correctness */

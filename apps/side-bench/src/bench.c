@@ -47,9 +47,7 @@ static int (*covert_bench_fun[BENCH_COVERT_FUNS])(bench_covert_t *) = {NULL,
     tlb_trojan, tlb_spy,
     btb_trojan, btb_spy,
     l3_trojan_single, l3_spy_single,
-#ifdef CONFIG_ARCH_X86
     bp_trojan, bp_spy,
-#endif
 };
 #endif
 /* dummy global for libsel4muslcsys */
