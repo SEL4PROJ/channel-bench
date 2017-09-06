@@ -236,9 +236,9 @@ void launch_bench_func_test(m_env_t *env){
     
     /*check the threads are alive, sperate core*/
     
+    sw_sleep(1); 
     /*also including two threads on different core, cross-core IPC*/
     for (int i = 0; i < 1000; i++) {
-        sw_sleep(1); 
 
         if (alive(env) == BENCH_SUCCESS) 
             printf("alive %d\n", i); 

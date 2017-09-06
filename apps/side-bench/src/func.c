@@ -33,7 +33,6 @@ int funcs_sender(bench_covert_t *env) {
       info = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 1);
       seL4_SetMR(0, 0); 
       seL4_Call(env->syn_ep, info); 
-
   }
   info = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 1);
   seL4_SetMR(0, 0); 
@@ -66,7 +65,7 @@ int funcs_receiver(bench_covert_t *env) {
     assert(seL4_MessageInfo_get_label(info) == seL4_Fault_NullFault);
 
     /*receive the shared address to record the secret*/
-    uint32_t volatile *record_vaddr = (uint32_t *)seL4_GetMR(0);
+    ccnt_t volatile *record_vaddr = (ccnt_t *)seL4_GetMR(0);
     uint32_t volatile *share_vaddr = (uint32_t *)seL4_GetMR(1);
 
 
@@ -77,17 +76,14 @@ int funcs_receiver(bench_covert_t *env) {
   while (ipc_runs--) 
 #endif 
   {
-
-        info = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 1);
-        seL4_SetMR(0, 0); 
-        seL4_ReplyRecv(env->syn_ep, info, &badge); 
-
-        printf("r\n");
-        /*updating the shared memory
+      /*updating the shared memory
           indicating both threads are alive*/
-        SEL4BENCH_READ_CCNT(*record_vaddr); 
+      SEL4BENCH_READ_CCNT(*record_vaddr); 
+      info = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 1);
+      seL4_SetMR(0, 0); 
+      seL4_ReplyRecv(env->syn_ep, info, &badge); 
 
-    }
+  }
 
 
     /*test is done*/

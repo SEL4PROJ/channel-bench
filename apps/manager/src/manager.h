@@ -201,7 +201,7 @@ static void create_thread(bench_env_t *t) {
     printf("creating benchmarking thread\n");
     /*configure process*/ 
     error = sel4utils_configure_process(process, 
-            t->vka, t->vspace, t->prio, 
+            t->vka, t->vspace,  
             t->image); 
             
     assert(error == 0); 
@@ -277,22 +277,6 @@ static void reassign_core( bench_env_t *t) {
     assert(error == 0);
 }
 
-
-static int alive(m_env_t *env) {
-
-    volatile uint32_t *s_vaddr = env->record_vaddr; 
-    uint32_t local = *s_vaddr; 
-    /*try to probe on the shared buffer N times 
-     if the content changes, the thread that uses the share buffer 
-     is alive*/
-    for(int i = 0; i < 10000; i++) {
-        if (local != *s_vaddr)
-            return BENCH_SUCCESS; 
-
-    }
-    return BENCH_FAILURE; 
-}
-
 /*software polling for number of CPU ticks*/
 static void sw_sleep(unsigned int microsec) {
 
@@ -315,6 +299,23 @@ static void sw_sleep(unsigned int microsec) {
     }
 
 }
+
+static int alive(m_env_t *env) {
+
+    volatile ccnt_t *s_vaddr = env->record_vaddr; 
+    ccnt_t local = *s_vaddr; 
+    /*try to probe on the shared buffer N times 
+     if the content changes, the thread that uses the share buffer 
+     is alive*/
+    for(int i = 0; i < 10000; i++) {
+        sw_sleep(1);
+        if (local != *s_vaddr)
+            return BENCH_SUCCESS; 
+
+    }
+    return BENCH_FAILURE; 
+}
+
 
 /*map the record buffer to thread*/
 static void map_r_buf(m_env_t *env, uint32_t n_p, bench_env_t *t) {
