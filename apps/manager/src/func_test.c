@@ -102,22 +102,27 @@ static int test_destroy(m_env_t *env, bench_env_t *sender, bench_env_t *receiver
     sel4utils_process_t *receiver_p = &receiver->process; 
    
     printf("testing kernel destory\n");
+    printf("destory kernel memory used by sender");  
     ret = destroy_ki_via_kmem(env, env->kimages); 
     if (ret) 
         return ret; 
 
+    printf("...done\n"); 
+    printf("destory kernel memory used by receiver"); 
     ret = destroy_ki_via_kmem(env, env->kimages + 1); 
     if (ret) 
         return ret; 
-
+    printf("...done\n");
+    printf("destory kernel image used by sender");
     ret = destroy_ki(env, env->kimages); 
     if (ret) 
         return ret; 
-
-   
+    printf("...done\n");
+    printf("destory kernel image used by receiver"); 
     ret = destroy_ki(env, env->kimages + 1);
     if (ret) 
         return ret; 
+    printf("...done\n");
 #if (CONFIG_MAX_NUM_NODES > 1)
 
     /*wait for 1ms letting the kernel does the schedule*/ 
