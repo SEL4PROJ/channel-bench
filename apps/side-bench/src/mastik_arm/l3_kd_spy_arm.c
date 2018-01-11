@@ -45,7 +45,7 @@ void data_access(char *buf, uint32_t sets) {
 
 int l3_kd_trojan(bench_covert_t *env) {
 
-    uint32_t secret, shadow, index;
+    uint32_t secret;
     uint32_t cur, prev;
     seL4_Word badge;
     seL4_MessageInfo_t info;

@@ -102,10 +102,10 @@ int tlb_trojan(bench_covert_t *env) {
 
   /*receive the shared address to record the secret*/
   uint32_t volatile *share_vaddr = (uint32_t *)seL4_GetMR(0);
-  uint32_t volatile *syn_vaddr = share_vaddr + 1;
+  uint32_t volatile UNUSED *syn_vaddr = share_vaddr + 1;
   *share_vaddr = 0; 
   
-  info = seL4_MessageInfo_new(seL4_NoFault, 0, 0, 1);
+  info = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 1);
   seL4_SetMR(0, 0); 
   seL4_Send(env->r_ep, info);
   
@@ -157,8 +157,10 @@ int tlb_spy(bench_covert_t *env) {
   seL4_MessageInfo_t info;
   uint32_t start, after;
   uint32_t prev, cur; 
-  uint32_t volatile pmu_start[BENCH_PMU_COUNTERS]; 
-  uint32_t volatile pmu_end[BENCH_PMU_COUNTERS]; 
+#ifdef CONFIG_MANAGER_PMU_COUNTER 
+  uint32_t pmu_start[BENCH_PMU_COUNTERS]; 
+  uint32_t pmu_end[BENCH_PMU_COUNTERS]; 
+#endif 
 
   char *buf = malloc ((ATTACK_PAGES  * 4096) + 4096);
   assert(buf);
@@ -176,7 +178,7 @@ int tlb_spy(bench_covert_t *env) {
 #endif 
 
   info = seL4_Recv(env->r_ep, &badge);
-  assert(seL4_MessageInfo_get_label(info) == seL4_NoFault);
+  assert(seL4_MessageInfo_get_label(info) == seL4_Fault_NullFault);
   
   /*the record address*/
   struct bench_l1 *r_addr = (struct bench_l1 *)seL4_GetMR(0);
@@ -236,7 +238,7 @@ int tlb_spy(bench_covert_t *env) {
  
 
   /*send result to manager, spy is done*/
-  info = seL4_MessageInfo_new(seL4_NoFault, 0, 0, 1);
+  info = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 1);
   seL4_SetMR(0, 0);
   seL4_Send(env->r_ep, info);
 

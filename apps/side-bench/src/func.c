@@ -14,14 +14,11 @@ int funcs_sender(bench_covert_t *env) {
 
   seL4_Word badge;
   seL4_MessageInfo_t info;
-  uint32_t ipc_runs = 100; 
+  uint32_t UNUSED ipc_runs = 100; 
 
   info = seL4_Recv(env->r_ep, &badge);
   assert(seL4_MessageInfo_get_label(info) == seL4_Fault_NullFault);
 
-  /*receive the shared address to record the secret*/
-  uint32_t volatile *record_vaddr = (uint32_t *)seL4_GetMR(0);
-  uint32_t volatile *share_vaddr = (uint32_t *)seL4_GetMR(1);
   
   /*doing IPC ping-pong test to receiver*/ 
 #if (CONFIG_MAX_NUM_NODES > 1)
@@ -59,14 +56,14 @@ int funcs_receiver(bench_covert_t *env) {
     
     seL4_Word badge;
     seL4_MessageInfo_t info;
-    uint32_t ipc_runs = 100; 
+    
+    uint32_t UNUSED ipc_runs = 100; 
     
     info = seL4_Recv(env->r_ep, &badge);
     assert(seL4_MessageInfo_get_label(info) == seL4_Fault_NullFault);
 
     /*receive the shared address to record the secret*/
     ccnt_t volatile *record_vaddr = (ccnt_t *)seL4_GetMR(0);
-    uint32_t volatile *share_vaddr = (uint32_t *)seL4_GetMR(1);
 
 
     seL4_Recv(env->syn_ep, NULL);  

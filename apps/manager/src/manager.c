@@ -570,6 +570,7 @@ int main (void) {
     morecore_size = MANAGER_MORECORE_SIZE; 
 #endif 
 
+
 #ifdef CONFIG_KERNEL_STABLE 
     simple_stable_init_bootinfo(&env.simple, info); 
 #else 

@@ -26,7 +26,7 @@ extern size_t morecore_size;
 #endif
 
 /*assuming 2048 sets, one line each*/
-char volatile *trojan_buf;
+char *trojan_buf;
 
 
 static void trojan_access( uint32_t secret) { 
@@ -148,7 +148,7 @@ int l3_spy_single(bench_covert_t *env) {
     /*the shared address*/
     uint32_t volatile *secret = (uint32_t *)seL4_GetMR(1);
     uint32_t volatile *syn = secret + 1;
-    uint32_t share_phy = seL4_GetMR(2); 
+    //uint32_t share_phy = seL4_GetMR(2); 
 #ifdef CONFIG_MANAGER_HUGE_PAGES 
     void *huge_vaddr = (void*)seL4_GetMR(3);
     update_morecore_area(huge_vaddr);
@@ -184,18 +184,6 @@ int l3_spy_single(bench_covert_t *env) {
 
     *syn = TROJAN_SYN_FLAG;
 
-    /*calculate the shared cache set, unmonitor*/
-#if 0
-#ifdef CONFIG_CACHE_COLOURING 
-    uint32_t share_set = (share_phy >> 5) & 0x3ff; 
-#else 
-    uint32_t share_set = (share_phy >> 5) & 0x7ff;  
-#endif
-#ifdef CONFIG_DEBUG_BUILD
- 
-    //printf("unmonitor set %d frame 0x%x\n", share_set, share_phy); 
-#endif
-#endif
 
     /*syn with trojan*/
     info = seL4_Recv(env->syn_ep, &badge);
@@ -249,12 +237,11 @@ void l3_spy_multicore(seL4_CPtr ep, char *p) {
     printf("Got %d sets\n", nsets);
 #endif 
     uint16_t res[SAMPLE_LEN + SAMPLE_PREFIX];
-    char str[SAMPLE_LEN + 1];
-    const char mark[]=".@@@@@@@@@@@@@@@@";
+  //  char str[SAMPLE_LEN + 1];
     /*2048 sets in total*/
     int data[2048];
 
-    str[SAMPLE_LEN] = '\0';
+   // str[SAMPLE_LEN] = '\0';
 
 
     for (int l = 0; l < 4; l++) {

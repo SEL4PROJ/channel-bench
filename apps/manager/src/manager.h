@@ -143,13 +143,18 @@ static int create_ki(m_env_t *env, vka_t *vka, bench_ki_t *kimage) {
     kmem_caps = malloc(sizeof (seL4_CPtr) * k_size);
     if (!kmem_caps) 
         return BENCH_FAILURE; 
-    
+
     ret = vka_alloc_kernel_image(vka, ki); 
     if (ret) 
         return BENCH_FAILURE; 
 
+#ifdef CONFIG_ARCH_X86 
     /*assign a ASID to the kernel image*/
     ret =  seL4_X86_ASIDPool_Assign(seL4_CapInitThreadASIDPool, ki->cptr); 
+#else 
+    ret = seL4_ARM_ASIDPool_Assign(seL4_CapInitThreadASIDPool, ki->cptr); 
+#endif
+
     if (ret) 
         return BENCH_FAILURE; 
 
@@ -165,7 +170,11 @@ static int create_ki(m_env_t *env, vka_t *vka, bench_ki_t *kimage) {
 
 
     /*calling kernel clone with the kernel image and master kernel*/
+#ifdef CONFIG_ARCH_X86
     tag = seL4_MessageInfo_new(X86KernelImageClone, 0, 1, k_size + 1);
+#else 
+    tag = seL4_MessageInfo_new(ARMKernelImageClone, 0, 1, k_size + 1); 
+#endif 
     seL4_SetCap(0, simple_get_ik_image(&env->simple)); 
 
     seL4_SetMR(0, k_size);

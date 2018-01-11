@@ -186,9 +186,10 @@ int btb_spy(bench_covert_t *env) {
     seL4_Word badge;
     seL4_MessageInfo_t info;
     uint32_t start, after;
+#ifdef CONFIG_MANAGER_PMU_COUNTER 
     ccnt_t volatile pmu_start; 
     ccnt_t volatile pmu_end; 
-
+#endif
 
     uint64_t  monitored_mask[I_MONITOR_MASK] = {0};
 

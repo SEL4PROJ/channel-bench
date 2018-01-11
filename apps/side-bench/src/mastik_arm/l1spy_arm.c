@@ -95,9 +95,9 @@ int l1_trojan(bench_covert_t *env) {
 int l1_spy(bench_covert_t *env) {
   seL4_Word badge;
   seL4_MessageInfo_t info;
-  uint32_t start, after;
-  uint32_t volatile pmu_start[BENCH_PMU_COUNTERS]; 
-  uint32_t volatile pmu_end[BENCH_PMU_COUNTERS]; 
+  uint32_t UNUSED start, after;
+  uint32_t volatile UNUSED pmu_start[BENCH_PMU_COUNTERS]; 
+  uint32_t volatile UNUSED pmu_end[BENCH_PMU_COUNTERS]; 
 
   uint64_t  monitored_mask[4] = {~0LLU, ~0LLU, ~0LLU, ~0LLU};
 
