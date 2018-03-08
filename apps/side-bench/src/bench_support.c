@@ -10,7 +10,14 @@
  * @TAG(DATA61_BSD)
  */
 
-
+#include <autoconf.h>
+#include <sel4/sel4.h>
+#include <allocman/bootstrap.h>
+#include <allocman/vka.h>
+#include <sel4utils/process.h>
+#include <sel4platsupport/io.h>
+#include "bench_types.h"
+#include "bench_support.h"
 /* allocator */
 #define ALLOCATOR_STATIC_POOL_SIZE ((1 << seL4_PageBits) * 20)
 static char allocator_mem_pool[ALLOCATOR_STATIC_POOL_SIZE];
@@ -18,7 +25,7 @@ static char allocator_mem_pool[ALLOCATOR_STATIC_POOL_SIZE];
 #define ALLOCMAN_VIRTUAL_SIZE BIT(20)
 
 static allocman_t*
-init_allocator(simple_t *simple, vka_t *vka, timer_objects_t *to) { 
+init_allocator(simple_t *simple, vka_t *vka) { 
     int error = 0; 
 
     /* set up allocator */
@@ -30,10 +37,6 @@ init_allocator(simple_t *simple, vka_t *vka, timer_objects_t *to) {
     
     /* create vka backed by allocator */
     allocman_make_vka(vka, allocator);
-
-    error = allocman_add_untypeds_from_timer_objects(allocator, to);
-    assert(error == 0);
-
     return allocator;
 }
 
@@ -103,6 +106,7 @@ init_vspace(bench_env_t *env) {
 
     index = add_frames(existing_frames, 0, 
             args->shared_vaddr, args->shared_pages);
+    
     index = add_frames(existing_frames, index, 
             args->record_vaddr, args->record_pages);
 
@@ -119,6 +123,9 @@ init_vspace(bench_env_t *env) {
     error = sel4utils_bootstrap_vspace(&env->vspace, &env->data, 
                 SEL4UTILS_PD_SLOT, &env->vka, NULL, NULL, existing_frames); 
     assert(error == 0); 
+
+    free(existing_frames); 
+
 }
 
 
@@ -137,7 +144,7 @@ static seL4_CPtr get_nth_untyped(void *data,
         uintptr_t *paddr, bool *device)
 {
     
-    env_t *env = data;
+    bench_env_t *env = data;
 
     if (n >= CONFIG_BENCH_UNTYPE_COUNT) {
         return seL4_CapNull;
@@ -166,7 +173,7 @@ static int get_cap_count(void *data) {
        and so we have 1 empty null slot, 
        and if we're not on the RT kernel two more unused slots */
 
-    int last = ((env_t *) data)->args->first_free;
+    int last = ((bench_env_t *) data)->args->first_free;
 
     /* skip the null slot */
     last--;
@@ -212,7 +219,7 @@ static seL4_CPtr get_nth_cap(void *data, int n)
 static seL4_Error
 get_irq(void *data, int irq, seL4_CNode cnode, seL4_Word index, uint8_t depth)
 {
-    env_t *env = data;
+    bench_env_t *env = data;
     seL4_CPtr cap = sel4platsupport_timer_objs_get_irq_cap(&env->args->to, irq, PS_INTERRUPT);
     cspacepath_t path;
     vka_cspace_make_path(&env->vka, cap, &path);
@@ -290,19 +297,23 @@ int benchmark_init_timer(bench_env_t *env)
 void bench_init_env(int argc, char **argv, 
         bench_env_t *env) {
     
-    bench_args_t *args = NULL; 
     int error; 
+    bench_args_t *args; 
 
     /*the virtual address contained the argument, passed by the root task*/
     env->args = (void *)atol(argv[0]);
     args = env->args; 
 
-    /*the virtual address containing result*/
-    env->results = args->record_vaddr; 
+    init_simple(env);
 
-    init_simple(&env);
+    env->allocman = init_allocator(&env->simple, &env->vka); 
 
-    env->allocman = init_allocator(&env->simple, &env->vka, &env->args->to); 
+    if (args->timer_enabled) {
+    
+        error = allocman_add_untypeds_from_timer_objects(env->allocman, &args->to);
+        assert(error == 0);
+    }
+
     init_vspace(env); 
 
     init_allocator_vspace(env->allocman, &env->vspace);
@@ -315,6 +326,9 @@ void bench_init_env(int argc, char **argv,
     }
 #endif
     /* allocate a notification for timers */                                       
-    error = vka_alloc_notification(&env.vka, &env.ntfn);  
-    assert(error == 0);
+    if (args->timer_enabled) {
+
+        error = vka_alloc_notification(&env->vka, &env->ntfn);  
+        assert(error == 0);
+    }
 }

@@ -1,5 +1,5 @@
 /*this file contains the covert channel attack using the 
-  branch target buffer*/
+  branch target buffer*
 
 /*there are two way branch target cache, 2 way 256 entries, total 512 entries*/
 
@@ -18,6 +18,8 @@
 #include "../mastik_common/low.h"
 #include "../mastik_common/l1i.h"
 #include "../ipc_test.h"
+#include "bench_types.h"
+
 
 
 #define INSTRUCTION_LENGTH  4
@@ -93,12 +95,13 @@ void branch_probe_lines(uint32_t n) {
 #endif
 }
 
-int btb_trojan(bench_covert_t *env) {
+int btb_trojan(bench_env_t *env) {
 
     uint32_t secret, shadow, index;
     seL4_Word badge;
     seL4_MessageInfo_t info;
-    
+    bench_args_t *args = env->args; 
+
     uint64_t  monitored_mask[I_MONITOR_MASK] = {~0LLU, ~0LLU, ~0LLU, ~0LLU};
     
     l1iinfo_t l1i_1 = l1i_prepare(monitored_mask);
@@ -107,23 +110,16 @@ int btb_trojan(bench_covert_t *env) {
     uint16_t *results = malloc(sizeof (uint16_t) * L1I_SETS); 
     assert(results);
 
-    info = seL4_Recv(env->r_ep, &badge);
-    assert(seL4_MessageInfo_get_label(info) == seL4_Fault_NullFault);
-
-
-    /*receive the shared address to record the secret*/
-    uint32_t volatile *share_vaddr = (uint32_t *)seL4_GetMR(0);
+    uint32_t volatile *share_vaddr = args->shared_vaddr; 
     uint32_t volatile *syn_vaddr = share_vaddr + 1;
     *share_vaddr = 0; 
 
     info = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 1);
     seL4_SetMR(0, 0); 
-    seL4_Send(env->r_ep, info);
-
+    seL4_Send(args->r_ep, info);
 
     /*ready to do the test*/
-    seL4_Send(env->syn_ep, info);
-
+    seL4_Send(args->ep, info);
 
     secret = 0; 
 
@@ -181,7 +177,7 @@ int btb_trojan(bench_covert_t *env) {
     return 0;
 }
 
-int btb_spy(bench_covert_t *env) {
+int btb_spy(bench_env_t *env) {
 
     seL4_Word badge;
     seL4_MessageInfo_t info;
@@ -190,6 +186,7 @@ int btb_spy(bench_covert_t *env) {
     ccnt_t volatile pmu_start; 
     ccnt_t volatile pmu_end; 
 #endif
+    bench_args_t *args = env->args; 
 
     uint64_t  monitored_mask[I_MONITOR_MASK] = {0};
 
@@ -208,19 +205,14 @@ int btb_spy(bench_covert_t *env) {
     uint16_t *results = malloc(sizeof (uint16_t) * L1I_SETS); 
     assert(results);
 
-    info = seL4_Recv(env->r_ep, &badge);
-    assert(seL4_MessageInfo_get_label(info) == seL4_Fault_NullFault);
-
-
-    /*the record address*/
-    struct bench_l1 *r_addr = (struct bench_l1 *)seL4_GetMR(0);
+    struct bench_l1 *r_addr = (struct bench_l1 *)args->record_vaddr; 
     /*the shared address*/
-    uint32_t volatile *secret = (uint32_t *)seL4_GetMR(1);
+    uint32_t volatile *secret = args->shared_vaddr; 
     uint32_t volatile *syn = secret + 1;
     *syn = TROJAN_SYN_FLAG;
 
     /*syn with trojan*/
-    info = seL4_Recv(env->syn_ep, &badge);
+    info = seL4_Recv(args->ep, &badge);
     assert(seL4_MessageInfo_get_label(info) == seL4_Fault_NullFault);
 
     for (int i = 0; i < CONFIG_BENCH_DATA_POINTS; i++) {
@@ -273,12 +265,10 @@ int btb_spy(bench_covert_t *env) {
     /*send result to manager, spy is done*/
     info = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 1);
     seL4_SetMR(0, 0);
-    seL4_Send(env->r_ep, info);
+    seL4_Send(args->r_ep, info);
 
     while (1);
 
     return 0;
-
-
 }
 

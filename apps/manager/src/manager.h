@@ -23,12 +23,11 @@
 #include <simple/simple.h>
 #include <vka/object.h>
 #include <vka/capops.h>
-#ifdef CONFIG_CACHE_COLOURING 
-#include <cachecoloring/color_allocator.h>
-#endif
+#include <sel4platsupport/timer.h>
 
 /*common definitions*/
-#include "../../bench_common.h"
+#include "bench_common.h"
+#include "bench_types.h"
 
 #define MANAGER_MORECORE_SIZE  (16 * 1024 * 1024)
 
@@ -45,9 +44,8 @@ typedef struct bench_ki {
 
 
 typedef struct {
-
     vka_t vka;    
-    vka_t *ipc_vka;    /*pointer for ep allocator*/
+    vka_t *ipc_vka;    /*ep allocator*/
     vspace_t vspace; 
     vka_t vka_colour[CC_NUM_DOMAINS]; 
     bench_ki_t kimages[MAN_KIMAGES];
@@ -58,71 +56,56 @@ typedef struct {
     /*abstracts over kernel version and boot envior*/
     simple_t simple; 
 
-    /*path for the default timer irq handler*/
-    cspacepath_t irq_path; 
-#ifdef CONFIG_ARCH_ARM 
-    /*frame for the default timer*/ 
-    cspacepath_t frame_path; 
-#endif 
-
-#ifdef CONFIG_ARCH_IA32 
-    /*io port for the default timer*/ 
-    seL4_CPtr io_port_cap; 
-#endif 
-    /*extra caps to the record data frames for mapping into 
-     the benchmark vspace*/ 
-    seL4_CPtr record_frames[CONFIG_BENCH_RECORD_PAGES]; 
-
     /*virtual address for recording data, used by root*/ 
     void *record_vaddr; 
-
-    /*mapping the huge pages into the process address space for benchmarking
-     40 * 4M = 160M*/
-    seL4_CPtr huge_frames[40]; 
-
+    
     /*virtual address for the huge frames, used by root thread*/ 
     void *huge_vaddr; 
     
+    /*timer object sharing with the benchmark thread*/
+    timer_objects_t to;
+
+    /*FIXME: delete all of these */
     /*benchmark thread structure*/
     sel4utils_process_t bench_thread;
-   // [MAX_BENCH_THREADS]; 
-
+ 
     /*endpoint that root thread is waiting on*/ 
     seL4_CPtr bench_ep;
-    
-} m_env_t;  /*environnt used by the manager*/  
-
+} m_env_t;  /*environment used by the manager*/  
 
 /*parameters for setting up a benchmark process*/ 
-typedef struct bench_env {
+typedef struct bench_thread {
 
-    seL4_CPtr kernel;       /*kernel image*/
+    seL4_CPtr kernel;              /*kernel image*/
     vka_object_t ep;               /*communication between trojan & spy*/ 
     vka_object_t reply_ep;         /*reply manager*/
     vka_object_t notification_ep;  /*using for seL4_Poll*/       
-    vka_object_t null_ep;    /*never returned ep*/
+   
     vka_t *vka;              /*kernel object allocator*/
     vka_t *ipc_vka;          /*used for endpoint*/
+    vka_t *root_vka;         /*vka used by root task*/ 
+
     vspace_t *vspace;        /*virtual address space of the root task*/
     char *image;            /*binary name of benchmarking elf file*/
     seL4_Word prio;         /*priority of benchmarking thread*/
     sel4utils_process_t process;  /*internal process context*/ 
     seL4_Word test_num;      /*test number*/
-    /*extra caps to the record data frames for mapping into 
-     the benchmark vspace*/ 
-    seL4_CPtr record_frames[BENCH_PMU_PAGES]; 
-    seL4_CPtr t_frames[BENCH_COVERT_BUF_PAGES];
-    seL4_CPtr p_frames[BENCH_COVERT_BUF_PAGES]; /*shared frame caps for prime/trojan buffers*/
-    seL4_CPtr s_frames[BENCH_COVERT_BUF_PAGES]; /*shared buffer*/
-    void *p_vaddr;
-    void *t_vaddr;  /*vaddr for above buffers in bench thread vspace*/ 
-    void *s_vaddr;  /*shared address between spy and trojan*/
-    void *huge_vaddr;  /*the starting point of huge pages*/
+ 
     /*the affinity of this thread*/ 
-    seL4_Word affinity; 
+    seL4_Word affinity;
+
+    /*untypes allocated to benchmarking thread*/
+    vka_object_t bench_untypes[CONFIG_BENCH_UNTYPE_COUNT];
+    
+    /*the timer object shared with the root task, allocated with rook_vka*/
+    timer_objects_t *to;
+
+    /*the page containing benchmark args */
+   /*vadd in root task, allocated with the kernel object allocator*/ 
+    bench_args_t *bench_args;  
     char *name;    /*name of this thread*/ 
 
-} bench_env_t; 
+} bench_thread_t; 
 
 #ifdef CONFIG_MULTI_KERNEL_IMAGES
 /*creating a kernel image object*/
@@ -158,7 +141,6 @@ static int create_ki(m_env_t *env, vka_t *vka, bench_ki_t *kimage) {
     if (ret) 
         return BENCH_FAILURE; 
 
-
     /*creating multiple kernel memory objects*/
     for (int mems = 0; mems < k_size; mems++) {
 
@@ -167,7 +149,6 @@ static int create_ki(m_env_t *env, vka_t *vka, bench_ki_t *kimage) {
             return BENCH_FAILURE; 
         kmem_caps[mems] = kimage->kmems[mems].cptr; 
     }
-
 
     /*calling kernel clone with the kernel image and master kernel*/
 #ifdef CONFIG_ARCH_X86
@@ -189,102 +170,128 @@ static int create_ki(m_env_t *env, vka_t *vka, bench_ki_t *kimage) {
         return BENCH_FAILURE; 
 
     printf("the kernel image clone is done \n");
+    free(kmem_caps); 
+
     return BENCH_SUCCESS;
 }
 
 #endif
 
-static void create_thread(bench_env_t *t) {
+static int allocate_untyped(vka_t *vka, vka_object_t *untyped)
+{
+    int error = 0;
+
+    /*allocating untyped according to the config*/    
+    for (int i = 0; i < CONFIG_BENCH_UNTYPE_COUNT; i++) {
+        error = vka_alloc_untyped(vka, 
+                CONFIG_BENCH_UNTYPE_SIZEBITS, untyped + i);
+        if (error) {
+            break; 
+        }
+    }
+    return error;
+}
+
+static int copy_untyped(sel4utils_process_t *process, vka_t *vka, 
+        vka_object_t *untyped, seL4_CPtr *untyped_cptr) {
+
+    for (int i = 0; i < CONFIG_BENCH_UNTYPE_COUNT; i++) {
+  
+        untyped_cptr[i] = sel4utils_copy_cap_to_process(process, 
+                vka, untyped[i].cptr);
+        if (!untyped_cptr[i])
+            return BENCH_FAILURE; 
+
+    }
+    return BENCH_SUCCESS; 
+}
+
+
+
+
+static void create_thread(bench_thread_t *t) {
 
     sel4utils_process_t *process = &t->process; 
-    seL4_CPtr ep_arg, reply_ep_arg;
-    int argc = 3;
-    char arg_str0[15] = {0}; 
-    char arg_str1[15] = {0}; 
-    char arg_str2[15] = {0}; 
-
-    char *argv[3] = {arg_str0, arg_str1, arg_str2}; 
+    bench_args_t *bench_args = NULL; 
     
-    int error __attribute__((unused)); 
+    int error = 0; 
 
-    printf("creating benchmarking thread\n");
-    /*configure process*/ 
+    /*allocating a page for arguments*/
+    assert(sizeof(bench_args_t) < PAGE_SIZE_4K);
+    bench_args = (bench_args_t*)vspace_new_pages(t->vspace, seL4_AllRights, 1, seL4_PageBits);
+    assert(bench_args); 
+    memset(bench_args, 0 , sizeof (bench_args_t));
+    t->bench_args = bench_args; 
+    
+    /*test number*/
+    bench_args->test_num = t->test_num; 
+
+    /*configure process, requiring a seperate vspace and cspace*/ 
     error = sel4utils_configure_process(process, 
             t->vka, t->vspace,  
             t->image); 
-            
     assert(error == 0); 
 
-    ep_arg = sel4utils_copy_cap_to_process(process, t->ipc_vka, t->ep.cptr);
-    assert(ep_arg); 
-
-    reply_ep_arg = sel4utils_copy_cap_to_process(process,t->ipc_vka, t->reply_ep.cptr);
-    assert(reply_ep_arg);
-
-#ifdef CONFIG_MANAGER_IPC
-
-    void *vaddr = vspace_map_pages(&process->vspace, t->record_frames, 
-            NULL, seL4_AllRights, BENCH_PMU_PAGES, PAGE_BITS_4K, 1);
-    assert(vaddr); 
+    bench_args->stack_pages = CONFIG_SEL4UTILS_STACK_SIZE / SIZE_BITS_TO_BYTES(seL4_PageBits);
+    bench_args->stack_vaddr = ((uintptr_t) process->thread.stack_top) - CONFIG_SEL4UTILS_STACK_SIZE;
  
-    sprintf(arg_str0, "%zu", t->test_num); 
-    sprintf(arg_str1, "%zu", ep_arg); 
-    sprintf(arg_str2, "%zu", vaddr); 
-
-#else 
-
-    sprintf(arg_str0, "%zu", t->test_num); 
-    sprintf(arg_str1, "%zu", ep_arg); 
-    sprintf(arg_str2, "%zu", reply_ep_arg); 
-#endif 
+    NAME_THREAD(process->thread.tcb.cptr, t->name);
 
 #ifdef CONFIG_MULTI_KERNEL_IMAGES 
     /*configure the kernel image to the process*/
     printf("set kernel image\n");
     error = seL4_TCB_SetKernel(process->thread.tcb.cptr, t->kernel);
     assert(error == 0);
-#endif 
-    printf("spawn process\n");
-   /*start process*/ 
-    error = sel4utils_spawn_process_v(process, t->vka, 
-            t->vspace, argc, argv, 0);
-    assert(error == 0);
-    
-    /*assign the affinity*/ 
-#if (CONFIG_MAX_NUM_NODES > 1)
-    error = seL4_TCB_SetAffinity(process->thread.tcb.cptr, t->affinity);
-    assert(error == 0);
-#endif 
-#ifdef CONFIG_DEBUG_BUILD
-    seL4_DebugNameThread(process->thread.tcb.cptr, t->name);
 #endif
 
-    printf("process is ready\n"); 
-    error = seL4_TCB_Resume(process->thread.tcb.cptr);
-    assert(error == 0); 
-    printf("resume thread done\n");
-}
-
-/*reassign a thread to a different core
- assume the affinity is already updated by the caller*/
-static void reassign_core( bench_env_t *t) {
-    
-    sel4utils_process_t *process = &t->process; 
-    
-    int error __attribute__((unused)); 
-
-
-    error = seL4_TCB_Suspend(process->thread.tcb.cptr);
-    assert(error == 0);
- 
 #if (CONFIG_MAX_NUM_NODES > 1)
+    /*assign the affinity*/ 
     error = seL4_TCB_SetAffinity(process->thread.tcb.cptr, t->affinity);
     assert(error == 0);
 #endif 
+    
+    /*copy caps used for communication*/
+    bench_args->ep = sel4utils_copy_cap_to_process(process, t->ipc_vka, t->ep.cptr);
+    assert(bench_args->ep); 
 
-    error = seL4_TCB_Resume(process->thread.tcb.cptr);
+    bench_args->r_ep = sel4utils_copy_cap_to_process(process, t->ipc_vka, t->reply_ep.cptr);
+    assert(bench_args->r_ep);
+
+}
+
+static void launch_thread(bench_thread_t *t) {
+
+    /*sperating this with the thread creation because something 
+     can be done in between, such as, sharing frames between 
+     threads*/
+    sel4utils_process_t *process = &t->process; 
+    bench_args_t *args = t->bench_args;
+    char string_args[1][WORD_STRING_SIZE];
+    char *argv[1];
+    int error;
+
+    /*map the page containing the arguments into the thread vspace*/
+    void *remote_args_vaddr = vspace_share_mem(t->vspace, &process->vspace, 
+            args, 1, seL4_PageBits, seL4_AllRights, true);
+    assert(remote_args_vaddr); 
+
+    sel4utils_create_word_args(string_args, argv, 1, remote_args_vaddr);
+    
+    /*create untypes with the vka belong to this process then copy*/
+    error = allocate_untyped(t->vka, t->bench_untypes);
+    assert(error == 0); 
+    error = copy_untyped(process, t->vka, t->bench_untypes, args->untyped_cptr); 
+    assert(error == 0);
+    
+    /* this is the last cap we copy - initialise the first free cap */           
+    args->first_free = args->untyped_cptr[CONFIG_BENCH_UNTYPE_COUNT - 1] + 1;                                     
+    printf("spawn process\n");
+    /*start process*/ 
+    error = sel4utils_spawn_process_v(process, t->vka, 
+            t->vspace, 1, argv, 1);
     assert(error == 0);
 }
+
 
 /*software polling for number of CPU ticks*/
 static void sw_sleep(unsigned int microsec) {
@@ -326,126 +333,113 @@ static int alive(m_env_t *env) {
 }
 
 
-/*map the record buffer to thread*/
-static void map_r_buf(m_env_t *env, uint32_t n_p, bench_env_t *t) {
+static void map_r_buf(m_env_t *env, uint32_t n_p, bench_thread_t *t) {
 
-    reservation_t v_r;
-    void  *e_v;  
-    cspacepath_t src, dest;
-    int ret; 
     sel4utils_process_t *p = &t->process; 
+    bench_args_t *args = t->bench_args;
     
     if (!n_p)
         return; 
 
-    t->t_vaddr = vspace_new_pages(&p->vspace, seL4_AllRights, 
+    /*allocate record buffer from thread*/
+    args->record_pages = n_p; 
+    args->record_vaddr = (uintptr_t)vspace_new_pages(&p->vspace, seL4_AllRights, 
             n_p, PAGE_BITS_4K);
-    assert(t->t_vaddr != NULL); 
-
-    intptr_t v = (intptr_t)t->t_vaddr; 
-
-    /*reserve an area in vspace of the manager*/ 
-    v_r = vspace_reserve_range(&env->vspace, n_p * BENCH_PAGE_SIZE, 
-            seL4_AllRights, 1, &e_v);
-    assert(v_r.res != NULL);
-
-    env->record_vaddr = e_v; 
-
-    for (int i = 0; i < n_p; i++, v+= BENCH_PAGE_SIZE) {
-
-        /*copy those frame caps*/ 
-        vka_cspace_make_path(t->vka, vspace_get_cap(&p->vspace, 
-                    (void*)v), &src);
-        ret = vka_cspace_alloc(&env->vka, &t->t_frames[i]); 
-        assert(ret == 0); 
-        vka_cspace_make_path(&env->vka, t->t_frames[i], &dest); 
-        ret = vka_cnode_copy(&dest, &src, seL4_AllRights); 
-        assert(ret == 0); 
-    }
-    /*map in*/
-    ret = vspace_map_pages_at_vaddr(&env->vspace, t->t_frames, 
-            NULL, e_v, n_p, PAGE_BITS_4K, v_r);
-    assert(ret == 0); 
-
+    assert(args->record_vaddr); 
+    
+    /*map to the root thread*/
+    env->record_vaddr = vspace_share_mem(&p->vspace, &env->vspace, 
+            (void *)args->record_vaddr, n_p, 
+            PAGE_BITS_4K, seL4_AllRights, true); 
+    assert(env->record_vaddr); 
 }
 
-static void map_shared_buf(bench_env_t *owner, bench_env_t *share, 
+static void map_shared_buf(bench_thread_t *owner, bench_thread_t *share, 
         uint32_t n_p, uint32_t *phy) {
 
     /*allocate buffer from owner that shared between two threads*/
-    reservation_t v_r;
-    void  *e_v;
-    cspacepath_t src, dest;
-    int ret;
     sel4utils_process_t *p_o = &owner->process, *p_s = &share->process;
     uint32_t cookies; 
+    bench_args_t *args_o = owner->bench_args, *args_s = share->bench_args; 
+    
+    /*the number of pages shared*/
+    args_o->shared_pages = args_s->shared_pages = n_p;  
 
-    /*pages for spy record, ts structure*/
-    owner->s_vaddr = vspace_new_pages(&p_o->vspace, seL4_AllRights,
+    /*allocating from the owner*/
+    args_o->shared_vaddr = (uintptr_t)vspace_new_pages(&p_o->vspace, seL4_AllRights,
             n_p, PAGE_BITS_4K);
-    assert(owner->s_vaddr != NULL);
+    assert(args_o->shared_vaddr); 
 
     /*find the physical address of the page*/
-    cookies = vspace_get_cookie(&p_o->vspace, owner->s_vaddr); 
+    cookies = vspace_get_cookie(&p_o->vspace, (void *)args_o->shared_vaddr); 
 
     *phy = vka_utspace_paddr(owner->vka, cookies, seL4_ARCH_4KPage, seL4_PageBits);
 
-    intptr_t v = (intptr_t)owner->s_vaddr;
+    /*sharing with the other thread*/
+    args_s->shared_vaddr = (uintptr_t)vspace_share_mem(&p_o->vspace, 
+            &p_s->vspace, (void *)args_o->shared_vaddr,
+            n_p, PAGE_BITS_4K, seL4_AllRights, true);
+    assert(args_s->shared_vaddr); 
+}
 
-    /*reserve the area in shared process*/
-    v_r = vspace_reserve_range(&p_s->vspace, n_p * BENCH_PAGE_SIZE,
-            seL4_AllRights, 1, &e_v);
-    assert(v_r.res != NULL);
 
-    share->s_vaddr = e_v;
 
-    for (int i = 0; i < n_p; i++, v+= BENCH_PAGE_SIZE) {
+static void create_huge_pages(bench_thread_t *owner, uint32_t size) {
 
-        /*copy those frame caps*/
-        vka_cspace_make_path(owner->vka, vspace_get_cap(&p_o->vspace,
-                    (void*)v), &src);
-        ret = vka_cspace_alloc(share->vka, &share->s_frames[i]);
-        assert(ret == 0);
-        vka_cspace_make_path(share->vka, share->s_frames[i], &dest);
-        ret = vka_cnode_copy(&dest, &src, seL4_AllRights);
-        assert(ret == 0);
+   /*creating the large page that uses as the probe buffer 
+    for testing, mapping to the benchmark process, and passing in 
+    the pointer and the size to the benchmark thread*/ 
+    uint32_t huge_page_size;
+    sel4utils_process_t *p_o = &owner->process;
+    bench_args_t *args = owner->bench_args;
+
+    uint32_t cookies, huge_page_object;
+    seL4_Word phy;
+
+#ifdef CONFIG_ARCH_X86
+    /*4M*/
+    huge_page_size = seL4_LargePageBits;
+    huge_page_object = seL4_X86_LargePageObject;
+#else  /*ARCH_X86*/
+
+#ifdef CONFIG_ARCH_AARCH64
+    /*2M, Can be changed to be 1G with seL4_HugePageBits*/ 
+    huge_page_size = vka_get_object_size(seL4_ARM_LargePageObject, 0); 
+    huge_page_object = seL4_ARM_LargePageObject;
+#else
+    /*16M*/ 
+    huge_page_size = vka_get_object_size(seL4_ARM_SuperSectionObject, 0); 
+    huge_page_object = seL4_ARM_SuperSectionObject;
+#endif 
+#endif  /*ARCH_X86*/
+
+    if (size % (1 << huge_page_size)) { 
+        size += 1 << huge_page_size; 
     }
-    /*map in*/
-    ret = vspace_map_pages_at_vaddr(&p_s->vspace, share->s_frames,
-            NULL, e_v, n_p, PAGE_BITS_4K, v_r);
-    assert(ret == 0);
+    size /= 1 << huge_page_size;
+
+    args->hugepage_size = size * huge_page_size; 
+    args->hugepage_vaddr = (uintptr_t)vspace_new_pages(&p_o->vspace, seL4_AllRights, size, 
+            huge_page_size);
+
+    /*find the physical address of the page*/
+    for (int i = 0; i < size; i++) {
+        cookies = vspace_get_cookie(&p_o->vspace, (void *)args->hugepage_vaddr + i * (1 << huge_page_size)); 
+        phy = vka_utspace_paddr(owner->vka, cookies, huge_page_object, huge_page_size);
+        printf("huge page vaddr %p phy %p\n", (void *)args->hugepage_vaddr + i * (1 << huge_page_size), (void *)phy);
+    }
 
 }
 
+static inline void send_msg_to(seL4_CPtr endpoint, seL4_Word w) {
 
+    seL4_MessageInfo_t info = seL4_MessageInfo_new
+        (seL4_Fault_NullFault, 0, 0, 1);
 
-static void send_run_env(bench_env_t *p, seL4_CPtr ep) {
-
-    //seL4_MessageInfo_t info;
-    seL4_MessageInfo_t tag;
-
-    /*sending the running enviornment to process*/
-    tag = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 2);
-
-    seL4_SetMR(0,(seL4_Word)p->t_vaddr);
-    seL4_SetMR(1, (seL4_Word)p->s_vaddr);
-
-    seL4_Send(ep, tag);
+    seL4_SetMR(0, w); 
+    seL4_Send(endpoint, info);
 }
 
-static int wait_msg(seL4_CPtr ep) {
-    seL4_MessageInfo_t info;
-
-    info = seL4_Recv(ep, NULL);
-    if (seL4_MessageInfo_get_label(info) != seL4_Fault_NullFault)
-       return BENCH_FAILURE;
-
-    return BENCH_SUCCESS;
-
-}
-
-
-/*interfaces in data.c*/
 
 /*analysing benchmark results*/
 void bench_process_data(m_env_t *env, seL4_Word result); 
@@ -456,10 +450,8 @@ void launch_bench_ipc(m_env_t *);
 /*interface in covert.c*/
 /*entry point of covert channel benchmark*/
 void launch_bench_covert(m_env_t *env);
-
 /*entry point of the functional correctness test
  in func_test.c*/
 void launch_bench_func_test(m_env_t *env);
-
-#endif
+#endif   /*__MANAGER_H*/
 

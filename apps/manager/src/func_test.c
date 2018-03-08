@@ -15,8 +15,8 @@
 
 #include "manager.h"
 
-bench_env_t sender; 
-bench_env_t receiver; 
+bench_thread_t sender; 
+bench_thread_t receiver; 
 /*ep for syn and reply*/
 static vka_object_t syn_ep, r_ep, s_ep; 
 
@@ -47,8 +47,6 @@ static int copy_kcaps(bench_ki_t *kimage) {
     ret = vka_cnode_copy(&dest_path, &src_path, seL4_AllRights); 
 
     assert(ret == 0);
-
-
 
 }
 
@@ -93,7 +91,7 @@ static int destroy_ki_via_kmem(m_env_t *env, bench_ki_t *kimage) {
 }
 
 
-static int test_destroy(m_env_t *env, bench_env_t *sender, bench_env_t *receiver) {
+static int test_destroy(m_env_t *env, bench_thread_t *sender, bench_thread_t *receiver) {
     /*deleting the kernel that used as the current kernel in other cores, 
      expecting other core running the idle threads*/
     int ret; 
@@ -124,7 +122,6 @@ static int test_destroy(m_env_t *env, bench_env_t *sender, bench_env_t *receiver
         return ret; 
     printf("...done\n");
 #if (CONFIG_MAX_NUM_NODES > 1)
-
     /*wait for 1ms letting the kernel does the schedule*/ 
     sw_sleep(1); 
 
@@ -139,9 +136,7 @@ static int test_destroy(m_env_t *env, bench_env_t *sender, bench_env_t *receiver
             printf("dead %d\n", i); 
         i++;
     }
-
 #endif
-
 
     ret = seL4_TCB_SetKernel(sender_p->thread.tcb.cptr, sender->kernel);
     printf("sender set kernel return %d\n", ret);
@@ -150,12 +145,9 @@ static int test_destroy(m_env_t *env, bench_env_t *sender, bench_env_t *receiver
     printf("receiver set kernel return %d\n", ret);
 
     return BENCH_SUCCESS;
-
 }
 
-
-#endif
-
+#endif /**CONFIG_MULTI_KERNEL_IMAGES*/
 
 
 /*entry point*/
@@ -164,17 +156,19 @@ void launch_bench_func_test(m_env_t *env){
     uint32_t share_phy; 
 
     env->ipc_vka = &env->vka;
-
+    
     sender.image = receiver.image = CONFIG_BENCH_THREAD_NAME;
     sender.vspace = receiver.vspace = &env->vspace;
     sender.name = "sender"; 
     receiver.name = "receiver";
+
 #ifdef CONFIG_LIB_SEL4_CACHECOLOURING
     sender.vka = env->vka_colour; 
     receiver.vka = env->vka_colour + 1;
 #else
     sender.vka = receiver.vka = &env->vka; 
-#endif 
+#endif
+
     /*ep for communicate*/
     ret = vka_alloc_endpoint(env->ipc_vka, &syn_ep);
     assert(ret == 0);
@@ -189,7 +183,11 @@ void launch_bench_func_test(m_env_t *env){
     receiver.ep  = sender.ep = syn_ep; 
     receiver.reply_ep = r_ep;
     sender.reply_ep = s_ep; 
- 
+    
+    sender.root_vka = receiver.root_vka = &env->vka;
+    /*sharing the timer object*/
+    sender.to = receiver.to = &env->to; 
+
     receiver.prio  = 100;
     sender.prio = 100;
     
@@ -207,16 +205,9 @@ void launch_bench_func_test(m_env_t *env){
 #endif
 
 #if (CONFIG_MAX_NUM_NODES > 1)
- 
     /*two threads on two seperate cores cross*/
-
     sender.affinity = 1;
     receiver.affinity = 2; 
-
-#else 
-
-    /*two threads on same core*/ 
-    sender.affinity = receiver.affinity = 0;
 #endif 
     
     printf("creating sender\n"); 
@@ -229,18 +220,14 @@ void launch_bench_func_test(m_env_t *env){
     /*buffer shared between receiver and sender, owned by receiver*/
     map_shared_buf(&receiver, &sender, BENCH_FUNC_TEST_PAGES, &share_phy);
 
-    send_run_env(&receiver, r_ep.cptr);
+    /*run threads*/ 
+    launch_thread(&sender); 
+    launch_thread(&receiver); 
 
-    printf("env send to receiver \n"); 
-    send_run_env(&sender, s_ep.cptr);
-    printf("env send to sender\n");
-   
 #if (CONFIG_MAX_NUM_NODES > 1)
- 
     /*wait for 1ms letting the kernel does the schedule*/ 
     
     /*check the threads are alive, sperate core*/
-    
     sw_sleep(1); 
     /*also including two threads on different core, cross-core IPC*/
     for (int i = 0; i < 1000; i++) {
@@ -264,7 +251,8 @@ void launch_bench_func_test(m_env_t *env){
 #ifdef CONFIG_MULTI_KERNEL_IMAGES 
     test_destroy(env, &sender, &receiver); 
 #endif
-   /*launch other kernel to the thread, to other core, the other threads are running*/
+   /*launch other kernel to the thread, 
+     to other core, the other threads are running*/
 
     while (1); 
 }

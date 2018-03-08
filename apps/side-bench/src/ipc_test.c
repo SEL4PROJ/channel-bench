@@ -3,7 +3,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sel4/sel4.h>
-#include "../../bench_common.h"
+#include "bench_common.h"
+#include "bench_types.h"
 #include "ipc_test.h"
 
 #ifdef CONFIG_BENCH_IPC 

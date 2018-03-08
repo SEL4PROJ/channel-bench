@@ -3,9 +3,9 @@
 #include <assert.h>
 #include <stdint.h>
 
-#include "../mastik_common/vlist.h"
+#include "vlist.h"
 #include "pp.h"
-#include "../mastik_common/low.h"
+#include "low.h"
 
 #define LNEXT(p) (*(void **)(p))
 #define OFFSET(p, o) ((void *)((uintptr_t)(p) + (o)))

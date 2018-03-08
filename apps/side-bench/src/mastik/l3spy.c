@@ -7,11 +7,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sel4/sel4.h>
-#include "../mastik_common/vlist.h"
+#include "vlist.h"
 #include "cachemap.h"
 #include "pp.h"
-#include "../mastik_common/low.h"
-#include "../../../bench_common.h"
+#include "low.h"
+#include "bench_common.h"
+#include "bench_types.h"
 
 
 #define SIZE (16*1024*1024)
@@ -165,7 +166,6 @@ static void realspy(vlist_t probed) {
   }
 
   printf("%d probing sets\n", l);
-  int count = 1;
   for (int i = 0; i < 100; i++) {
       /*the slot number*/
       for (int j = 0; j < l; j++) 
@@ -191,48 +191,50 @@ void realtrojan() {
 }
 
 
-int l3_spy(bench_covert_t *env) {
-  
-  async_ep = env->notification_ep;
-  seL4_CPtr ep = env->r_ep; 
-  seL4_Word badge;
-  seL4_MessageInfo_t info;
+int l3_spy(bench_env_t *env) {
+    bench_args_t *args = env->args; 
 
-  info = seL4_Recv(ep, &badge);
-  assert(seL4_MessageInfo_get_label(info) == seL4_Fault_NullFault);
+    async_ep = args->notification_ep;
+    seL4_CPtr ep = args->r_ep; 
+    seL4_Word badge;
+    seL4_MessageInfo_t info;
 
-  cachemap_t cm = map();
-  printf("Test at %p, buffer at %p\n", test, buffer);
-  vlist_t probed = search(cm);
+    info = seL4_Recv(ep, &badge);
+    assert(seL4_MessageInfo_get_label(info) == seL4_Fault_NullFault);
 
-  info = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 1);
-  seL4_SetMR(0, 0); 
-  seL4_Send(ep, info);
+    cachemap_t cm = map();
+    printf("Test at %p, buffer at %p\n", test, buffer);
+    vlist_t probed = search(cm);
 
-  info = seL4_Recv(ep, &badge);
-  assert(seL4_MessageInfo_get_label(info) == seL4_Fault_NullFault);
+    info = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 1);
+    seL4_SetMR(0, 0); 
+    seL4_Send(ep, info);
 
-  realspy(probed);
+    info = seL4_Recv(ep, &badge);
+    assert(seL4_MessageInfo_get_label(info) == seL4_Fault_NullFault);
 
-  info = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 1);
-  seL4_SetMR(0, 0); 
-  seL4_Send(ep, info);
+    realspy(probed);
 
-  info = seL4_Recv(ep, &badge);
-  assert(seL4_MessageInfo_get_label(info) == seL4_Fault_NullFault);
+    info = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 1);
+    seL4_SetMR(0, 0); 
+    seL4_Send(ep, info);
 
-  realtrojan();
+    info = seL4_Recv(ep, &badge);
+    assert(seL4_MessageInfo_get_label(info) == seL4_Fault_NullFault);
 
-  info = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 1);
-  seL4_SetMR(0, 0); 
-  seL4_Send(ep, info);
-  return 0;
+    realtrojan();
+
+    info = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 1);
+    seL4_SetMR(0, 0); 
+    seL4_Send(ep, info);
+    return 0;
 }
 
-int l3_trojan(bench_covert_t *env) {
+int l3_trojan(bench_env_t *env) {
+    bench_args_t *args = env->args; 
 
-    async_ep = env->notification_ep;
-    seL4_CPtr ep = env->r_ep; 
+    async_ep = args->notification_ep;
+    seL4_CPtr ep = args->r_ep; 
     seL4_Word badge;
     seL4_MessageInfo_t info;
 

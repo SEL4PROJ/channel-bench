@@ -173,7 +173,7 @@ static cachemap_t map() {
     exit(1);
   }
   /*making the buffer page aligned*/
-  int buf_switch = (int) buf; 
+  int buf_switch = (int)buf; 
   buf_switch &= ~(0xfff); 
   buf_switch += 0x1000; 
   buf = (char *) buf_switch; 

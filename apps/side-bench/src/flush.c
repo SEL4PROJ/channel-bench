@@ -21,14 +21,15 @@
 #include <sys/mman.h>
 #include <sel4/sel4.h>
 #include <sel4bench/sel4bench.h>
+
 #ifdef CONFIG_ARCH_X86 
-#include "./mastik_common/low.h"
-#include "./mastik_common/l1.h"
-#include "./mastik_common/vlist.h"
+#include "low.h"
+#include "l1.h"
+#include "vlist.h"
 #include "./mastik/cachemap.h"
 #include "./mastik/pp.h"
 #endif
-#include "../../bench_common.h"
+#include "bench_common.h"
 #include "bench.h"
 
 #ifdef CONFIG_BENCH_CACHE_FLUSH 
@@ -81,30 +82,6 @@ static inline void overhead(void) {
         if (overhead_stable(measure_overhead)) break; 
     }
 
-}
-
-/*send msg to the root task*/
-static inline void send_msg_to(seL4_CPtr endpoint, seL4_Word w) {
-
-    seL4_MessageInfo_t info = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 1);
-
-    seL4_SetMR(0, w); 
-    seL4_Send(endpoint, info);
-}
-
-static inline seL4_CPtr wait_msg_from(seL4_CPtr endpoint)
-{
-    /* wait for a message */
-    seL4_Word badge;
-    seL4_MessageInfo_t info;
-
-    info = seL4_Recv(endpoint, &badge);
-
-    /* check the label and length*/
-    assert(seL4_MessageInfo_get_label(info) == seL4_Fault_NullFault);
-    assert(seL4_MessageInfo_get_length(info) == 1);
-
-    return (seL4_CPtr)seL4_GetMR(0);
 }
 
 #ifdef CONFIG_ARCH_X86

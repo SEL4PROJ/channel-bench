@@ -4,9 +4,10 @@
 #include <stdint.h>
 #include <sel4/sel4.h>
 
-#include "../mastik_common/low.h"
-#include "../mastik_common/l1.h"
-#include "../../../bench_common.h"
+#include "low.h"
+#include "l1.h"
+#include "bench_common.h"
+#include "bench_types.h"
 
 
 
@@ -33,137 +34,122 @@ static void access_buffer(char *buffer, uint32_t sets) {
             access(buffer + offset);
         }
     }
-
 }
 
-int l1_trojan(bench_covert_t *env) {
-  /*buffer size 32K L1 cache size
-   512 cache lines*/
-  char *data = malloc(L1_PROBE_BUFFER);
-  int secret = 0; 
+int l1_trojan(bench_env_t *env) {
+
+    seL4_MessageInfo_t info;
 
 
-  seL4_Word badge;
-  seL4_MessageInfo_t info;
+    /*buffer size 32K L1 cache size
+      512 cache lines*/
+    char *data = malloc(L1_PROBE_BUFFER);
+    int secret = 0; 
 
-  info = seL4_Recv(env->r_ep, &badge);
-  assert(seL4_MessageInfo_get_label(info) == seL4_Fault_NullFault);
+    bench_args_t *args = env->args; 
 
-  /*receive the shared address to record the secret*/
-  uint32_t volatile *share_vaddr = (uint32_t *)seL4_GetMR(0);
-  *share_vaddr = SYSTEM_TICK_SYN_FLAG; 
-  
-  info = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 1);
-  seL4_SetMR(0, 0); 
-  seL4_Send(env->r_ep, info);
+    uint32_t volatile *share_vaddr = args->shared_vaddr; 
+    *share_vaddr = SYSTEM_TICK_SYN_FLAG; 
 
-  /*ready to do the test*/
-  seL4_Send(env->syn_ep, info);
-  
+    /*manager: trojan is ready*/
+    info = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 1);
+    seL4_SetMR(0, 0); 
+    seL4_Send(args->r_ep, info);
 
-  for (int i = 0; i < CONFIG_BENCH_DATA_POINTS; i++) {
+    /*syn with spy*/
+    seL4_Send(args->ep, info);
 
-     /*waiting for a system tick*/
-      newTimeSlice();
-      secret = random() % (L1_SETS + 1);
-     
-      access_buffer(data, secret);
-      
-      /*update the secret read by low*/ 
-      *share_vaddr = secret; 
-     
-  }
-  while (1);
 
-  return 0;
+    for (int i = 0; i < CONFIG_BENCH_DATA_POINTS; i++) {
+
+        /*waiting for a system tick*/
+        newTimeSlice();
+        secret = random() % (L1_SETS + 1);
+
+        access_buffer(data, secret);
+
+        /*update the secret read by low*/ 
+        *share_vaddr = secret; 
+
+    }
+    while (1);
+
+    return 0;
 }
 
-int l1_spy(bench_covert_t *env) {
-  seL4_Word badge;
-  seL4_MessageInfo_t info;
+int l1_spy(bench_env_t *env) {
+    seL4_Word badge;
+    seL4_MessageInfo_t info;
 
 #ifdef CONFIG_BENCH_COVERT_L1D 
-  uint64_t monitored_mask[1] = {~0LLU};
+    uint64_t monitored_mask[1] = {~0LLU};
 #else 
-  uint64_t monitored_mask[8] = {~0LLU, ~0LLU,~0LLU, ~0LLU,
-      ~0LLU, ~0LLU,~0LLU, ~0LLU,};
+    /*for the L2 cache attack, with larger cache set*/
+    uint64_t monitored_mask[8] = {~0LLU, ~0LLU,~0LLU, ~0LLU,
+        ~0LLU, ~0LLU,~0LLU, ~0LLU,};
 #endif 
 
 #ifdef CONFIG_x86_64
-  uint64_t volatile pmu_start[BENCH_PMU_COUNTERS]; 
-  uint64_t volatile pmu_end[BENCH_PMU_COUNTERS]; 
+    uint64_t UNUSED pmu_start[BENCH_PMU_COUNTERS]; 
+    uint64_t UNUSED pmu_end[BENCH_PMU_COUNTERS]; 
 #else
-  uint32_t volatile pmu_start[BENCH_PMU_COUNTERS]; 
-  uint32_t volatile pmu_end[BENCH_PMU_COUNTERS]; 
+    uint32_t UNUSED pmu_start[BENCH_PMU_COUNTERS]; 
+    uint32_t UNUSED pmu_end[BENCH_PMU_COUNTERS]; 
 #endif
 
+    bench_args_t *args = env->args; 
+
+    l1info_t l1_1 = l1_prepare(monitored_mask);
+    uint16_t *results = malloc(l1_nsets(l1_1)*sizeof(uint16_t));
 
 
-  l1info_t l1_1 = l1_prepare(monitored_mask);
+    /*the record address*/
+    struct bench_l1 *r_addr = (struct bench_l1 *)args->record_vaddr;
+    /*the shared address*/
+    uint32_t volatile *secret = (uint32_t *)args->shared_vaddr; 
 
-  uint16_t *results = malloc(l1_nsets(l1_1)*sizeof(uint16_t));
+    /*syn with trojan*/
+    info = seL4_Recv(args->ep, &badge);
+    assert(seL4_MessageInfo_get_label(info) == seL4_Fault_NullFault);
 
-  info = seL4_Recv(env->r_ep, &badge);
-  assert(seL4_MessageInfo_get_label(info) == seL4_Fault_NullFault);
-
-  /*the record address*/
-  struct bench_l1 *r_addr = (struct bench_l1 *)seL4_GetMR(0);
-  /*the shared address*/
-  uint32_t volatile *secret = (uint32_t *)seL4_GetMR(1);
-
-  /*syn with trojan*/
-  info = seL4_Recv(env->syn_ep, &badge);
-  assert(seL4_MessageInfo_get_label(info) == seL4_Fault_NullFault);
-
-  /*waiting for a start*/
-  while (*secret == SYSTEM_TICK_SYN_FLAG) ;
+    /*waiting for a start*/
+    while (*secret == SYSTEM_TICK_SYN_FLAG) ;
 
 
-  for (int i = 0; i < CONFIG_BENCH_DATA_POINTS; i++) {
+    for (int i = 0; i < CONFIG_BENCH_DATA_POINTS; i++) {
 
-      newTimeSlice();
+        newTimeSlice();
 
 #ifdef CONFIG_MANAGER_PMU_COUNTER
-      sel4bench_get_counters(BENCH_PMU_BITS, pmu_start);  
+        sel4bench_get_counters(BENCH_PMU_BITS, pmu_start);  
 #endif 
 
-      l1_probe(l1_1, results);
+        l1_probe(l1_1, results);
 
 #ifdef CONFIG_MANAGER_PMU_COUNTER 
-      sel4bench_get_counters(BENCH_PMU_BITS, pmu_end);
-      /*loading the pmu counter value */
-      for (int counter = 0; counter < BENCH_PMU_COUNTERS; counter++ )
-          r_addr->pmu[i][counter] = pmu_end[counter] - pmu_start[counter]; 
+        sel4bench_get_counters(BENCH_PMU_BITS, pmu_end);
+        /*loading the pmu counter value */
+        for (int counter = 0; counter < BENCH_PMU_COUNTERS; counter++ )
+            r_addr->pmu[i][counter] = pmu_end[counter] - pmu_start[counter]; 
 
 #endif
 
-      /*result is the total probing cost
-        secret is updated by trojan in the previous system tick*/
-      r_addr->result[i] = 0; 
-      r_addr->sec[i] = *secret; 
+        /*result is the total probing cost
+          secret is updated by trojan in the previous system tick*/
+        r_addr->result[i] = 0; 
+        r_addr->sec[i] = *secret; 
 
-      for (int j = 0; j < l1_nsets(l1_1); j++) 
-          r_addr->result[i] += results[j];
+        for (int j = 0; j < l1_nsets(l1_1); j++) 
+            r_addr->result[i] += results[j];
 
-  }
+    }
 
-  /*send result to manager, spy is done*/
-  info = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 1);
-  seL4_SetMR(0, 0);
-  seL4_Send(env->r_ep, info);
+    /*send result to manager, spy is done*/
+    info = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 1);
+    seL4_SetMR(0, 0);
+    seL4_Send(args->r_ep, info);
 
-  while (1);
+    while (1);
 
-#if 0
-  /*print out the result*/
-  for (int i = 1; i < 100; i++) {
-      /*the variance of the probing time*/
-    //printf("%3d: %10u %10u", i, times[i], times[i] - times[i-1]);
-    for (int j = 0; j < l1_nsets(l1_1); j++)
-        /*variance of that cache set*/
-      printf("%4d ", results[i*l1_nsets(l1_1) + j]);
-    printf("\n");
-  }
-#endif
-   return 0;
+    return 0;
 }

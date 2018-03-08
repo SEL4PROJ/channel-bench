@@ -6,14 +6,15 @@
 #include <stdint.h>
 #include <sel4/sel4.h>
 #include "../../../bench_common.h"
+#include "../../../bench_types.h"
 
 #include "../bench.h"
 
-int l1i_trojan(bench_covert_t *env) {
+int l1i_trojan(bench_env_t *env) {
     return btb_trojan(env); 
 }
 
 
-int l1i_spy(bench_covert_t *env) {
+int l1i_spy(bench_env_t *env) {
     return btb_spy(env);
 }

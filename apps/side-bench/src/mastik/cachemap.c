@@ -4,10 +4,10 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#include "../mastik_common/vlist.h"
+#include "vlist.h"
 #include "cachemap.h"
-#include "../mastik_common/timestats.h"
-#include "../mastik_common/low.h"
+#include "timestats.h"
+#include "low.h"
 
 #define CHECKTIMES 16
 

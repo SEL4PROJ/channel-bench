@@ -16,6 +16,22 @@ menu    "Manager task for benchmarking tests"
         help 
              Partitioning system resources and setting up isolated domains. 
         
+        config BENCH_UNTYPE_COUNT
+        int "number of untyped grant to benchmarking thread" 
+        default 1 
+        depends on APP_MANAGER 
+        help 
+              allocate N number of untypes for each of the benchmarking thread. 
+
+
+
+      config BENCH_UNTYPE_SIZEBITS
+        int "the sizebit of the untypes allocated to benchmarking thread" 
+        default 12
+        depends on APP_MANAGER 
+        help 
+             allocating 1<<N untype for each of the benchmarking thread.  
+
         config MANAGER_IPC
         bool "ipc performance"
         default n 

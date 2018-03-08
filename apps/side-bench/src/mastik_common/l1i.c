@@ -24,11 +24,6 @@ extern void arm_branch_sets(void);
 
 #ifdef CONFIG_ARCH_X86
 l1iinfo_t l1i_prepare(uint64_t *monitored_sets) {
-  static uint8_t jmp[] = { JMP_OPCODE, 
-    				JMP_OFFSET & 0xff, 
-				(JMP_OFFSET >>8) & 0xff, 
-    				(JMP_OFFSET >> 16) & 0xff, 
-				(JMP_OFFSET >> 24) & 0xff};
   
   /*prepare the probing buffer according to the bitmask in monitored_sets*/
   l1iinfo_t l1 = (l1iinfo_t)malloc(sizeof(struct l1iinfo));

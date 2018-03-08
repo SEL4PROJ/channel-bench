@@ -15,17 +15,19 @@ TARGETS := $(notdir $(SOURCE_DIR)).bin
 # whoever loads us will
 LDFLAGS += -u __vsyscall_ptr 
 
-# Source files required to build the target     
+#asm files
 ASMFILES :=  $(patsubst $(SOURCE_DIR)/%,%,$(wildcard $(SOURCE_DIR)/src/*.S))
-
-ifdef CONFIG_ARCH_ARM 
-ASMFILES += $(patsubst $(SOURCE_DIR)/%,%,$(wildcard $(SOURCE_DIR)/src/mastik_arm/*.S))
-endif
 ifdef CONFIG_ARCH_X86
-ASMFILES += $(patsubst $(SOURCE_DIR)/%,%,$(wildcard $(SOURCE_DIR)/src/mastik/*.S))
+ASMFILES +=  $(patsubst $(SOURCE_DIR)/%,%,$(wildcard $(SOURCE_DIR)/src/mastik/*.S))
 endif
+ifdef CONFIG_ARCH_ARM 
+ASMFILES +=  $(patsubst $(SOURCE_DIR)/%,%,$(wildcard $(SOURCE_DIR)/src/mastik_arm/*.S))
+endif 
 
+#c files
 CFILES :=  $(patsubst $(SOURCE_DIR)/%,%,$(wildcard $(SOURCE_DIR)/src/*.c))
+CFILES +=  $(patsubst $(SOURCE_DIR)/%,%,$(wildcard $(SOURCE_DIR)/src/arch/$(ARCH)/*.c))
+
 ifdef CONFIG_ARCH_X86
 CFILES +=  $(patsubst $(SOURCE_DIR)/%,%,$(wildcard $(SOURCE_DIR)/src/aes/*.c))
 CFILES +=  $(patsubst $(SOURCE_DIR)/%,%,$(wildcard $(SOURCE_DIR)/src/mastik/*.c))
@@ -38,10 +40,7 @@ endif
 CFILES +=  $(patsubst $(SOURCE_DIR)/%,%,$(wildcard $(SOURCE_DIR)/src/mastik_common/*.c))
 
 
-
-#flags defined for MPI attack
-#header files in the mastik
-CFLAGS += -DDBG_MEMORY=0 -I $(SOURCE_DIR)/src/mastik/ -I $(SOURCE_DIR)/../ 
+CFLAGS += -DDBG_MEMORY=0 -I $(SOURCE_DIR)/src/ -I $(SOURCE_DIR)/src/mastik_common/ -I $(SOURCE_DIR)/../ 
 
 
 # Libraries
@@ -60,6 +59,4 @@ CFLAGS += -DOPENSSL_SYSNAME_LINUX
 
 
 include $(SEL4_COMMON)/common.mk
-
-
 

@@ -17,8 +17,9 @@
 #include <sel4platsupport/device.h>
 #include <platsupport/plat/hpet.h>
 #include <utils/util.h>
-
-#include "../../bench_support.h"
+#include <sel4utils/process.h>
+#include "bench_types.h"
+#include "bench_support.h"
 
 static inline sel4ps_irq_t
 hpet_irq(bench_env_t *env)

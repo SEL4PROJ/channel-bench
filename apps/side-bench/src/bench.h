@@ -13,7 +13,7 @@
 
 
 #include <sel4/sel4.h>
-
+#include "bench_types.h"
 
 /*init crypto services*/
 void crypto_init(void);
@@ -38,27 +38,27 @@ int mastik_victim(int ac, char **av);
 void mpi_victim(void);
 int mastik_spy(seL4_CPtr ep, char** av); 
 
-int l3_kd_trojan(bench_covert_t *);
-int l3_kd_spy(bench_covert_t *);
-int l1_trojan(bench_covert_t *env); 
-int l1_spy(bench_covert_t *env); 
-int l1i_trojan(bench_covert_t *env); 
-int l1i_spy(bench_covert_t *env);
-int l3_trojan(bench_covert_t *env); 
-int l3_spy(bench_covert_t *env); 
-int tlb_trojan(bench_covert_t *env); 
-int tlb_spy(bench_covert_t *env); 
-int btb_trojan(bench_covert_t *env); 
-int btb_spy(bench_covert_t *env); 
-int l3_trojan_single(bench_covert_t *env); 
-int l3_spy_single(bench_covert_t *env); 
+int l3_kd_trojan(bench_env_t *);
+int l3_kd_spy(bench_env_t *);
+int l1_trojan(bench_env_t *env); 
+int l1_spy(bench_env_t *env); 
+int l1i_trojan(bench_env_t *env); 
+int l1i_spy(bench_env_t *env);
+int l3_trojan(bench_env_t *env); 
+int l3_spy(bench_env_t *env); 
+int tlb_trojan(bench_env_t *env); 
+int tlb_spy(bench_env_t *env); 
+int btb_trojan(bench_env_t *env); 
+int btb_spy(bench_env_t *env); 
+int l3_trojan_single(bench_env_t *env); 
+int l3_spy_single(bench_env_t *env); 
+int bp_trojan(bench_env_t *env); 
+int bp_spy(bench_env_t *env); 
+
 
 /*the function correctness test */
-int funcs_receiver(bench_covert_t *env); 
-int funcs_sender(bench_covert_t *env);
-int bp_trojan(bench_covert_t *env); 
-int bp_spy(bench_covert_t *env); 
-
+int funcs_receiver(bench_env_t *env); 
+int funcs_sender(bench_env_t *env);
 #endif 
 
 

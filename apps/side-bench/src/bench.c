@@ -9,18 +9,6 @@
  */
 
 
-/*list of benchmarks
- * L1 Instruction cache   (prime + probe) the entire cache
- * L1 Data cache (prime + probe) the entire cache
-                                (evict + time) some cache patterns 
-                                * branch target buffer (prime + probe) all entires  
-                                * TLB (double page fault, containing the cached kernel entry translation)   require to use invalid TLB entries for kernel address space before switching back to user space, Intel machine (INVLPG) arm (invalidate TLB entry by MVA)
-                                *LLC  (flush + reload) does not working while no page duplication enabled 
-                                          (prime + probe) on a cache set 
-
-                                          covert channel with uncoloured kernel: using uncoloured kernel to evict some of the cache lines of the receiver, then receiver can monitor the progress changes with signals triggered by sender. such as: walking through root cnode, or interrupt vector table. 
- */
-
 #include <autoconf.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -28,15 +16,21 @@
 #include <utils/attribute.h>
 #include <sel4platsupport/platsupport.h>
 #include "../../bench_common.h"
+#include "../../bench_types.h"
 #include "bench.h"
+#include "bench_support.h"
 
-bench_covert_t covert_env; 
+/*the benchmark env created based on 
+  the arguments passed by the root thread*/
+bench_env_t bench_env; 
+
 #ifdef CONFIG_BENCH_CACHE_FLUSH
 extern char *morecore_area;
 extern size_t morecore_size;
-#endif 
+#endif
+
 #ifdef CONFIG_BENCH_COVERT_SINGLE
-static int (*covert_bench_fun[BENCH_COVERT_FUNS])(bench_covert_t *) = {NULL, 
+static int (*covert_bench_fun[BENCH_COVERT_FUNS])(bench_env_t *) = {NULL, 
     l1_trojan, l1_spy,  
     NULL, NULL, 
     NULL, NULL, 
@@ -50,15 +44,13 @@ static int (*covert_bench_fun[BENCH_COVERT_FUNS])(bench_covert_t *) = {NULL,
     bp_trojan, bp_spy,
 };
 #endif
+
 /* dummy global for libsel4muslcsys */
 char _cpio_archive[1];
 
-/*endpoint used for communicate with root task*/
-seL4_CPtr endpoint; 
 
 /*wait for init msg from manager*/ 
-static 
-int wait_init_msg_from(seL4_CPtr endpoint) {
+static int wait_init_msg_from(seL4_CPtr endpoint) {
 
     seL4_Word badge; 
     seL4_MessageInfo_t info; 
@@ -75,38 +67,6 @@ int wait_init_msg_from(seL4_CPtr endpoint) {
 }
 
 
-/*wait for shared frame address*/
-static inline void *wait_vaddr_from(seL4_CPtr endpoint)
-{
-    /* wait for a message */
-    seL4_Word badge;
-    seL4_MessageInfo_t info;
-
-    info = seL4_Recv(endpoint, &badge);
-
-    /* check the label and length*/
-    assert(seL4_MessageInfo_get_label(info) == seL4_Fault_NullFault);
-    assert(seL4_MessageInfo_get_length(info) == 1);
-
-    return (void *)seL4_GetMR(0);
-}
-
-/*wait for shared frame address*/
-static inline seL4_CPtr wait_ep_from(seL4_CPtr endpoint)
-{
-    /* wait for a message */
-    seL4_Word badge;
-    seL4_MessageInfo_t info;
-
-    info = seL4_Recv(endpoint, &badge);
-
-    /* check the label and length*/
-    assert(seL4_MessageInfo_get_label(info) == seL4_Fault_NullFault);
-    assert(seL4_MessageInfo_get_length(info) == 1);
-
-    return (seL4_CPtr)seL4_GetMR(0);
-}
-
 /*send benchmark result to the root task*/
 static inline void send_result_to(seL4_CPtr endpoint, seL4_Word w) {
 
@@ -116,36 +76,17 @@ static inline void send_result_to(seL4_CPtr endpoint, seL4_Word w) {
     seL4_Send(endpoint, info);
 }
 
-
+#ifdef CONFIG_BENCH_CACHE_FLUSH 
 /*benchmarking cache flush costs*/
-void run_bench_single (char **argv) {
+void run_bench_single (bench_env_t *bench_env) {
     
-    void *record_vaddr; 
+    bench_args_t *args = bench_env->args; 
     seL4_Word result UNUSED; 
     int ret; 
-    seL4_CPtr endpoint; 
+    seL4_CPtr endpoint = args->r_ep; 
+    void *record_vaddr = args->record_vaddr; 
 
-#ifdef CONFIG_DEBUG_BUILD
-    platsupport_serial_setup_simple(NULL, NULL, NULL); 
-#endif 
-
-    /*current format for argument: "name, endpoint slot, xxx"*/
-
-    //printf("side-bench running \n");
-    endpoint = (seL4_CPtr)atol(argv[1]);
-
-    /*waiting for init msg*/
-    ret = wait_init_msg_from(endpoint); 
-    assert(ret == BENCH_SUCCESS); 
-
-    /*waiting for virtual address given by root task*/
-    record_vaddr = wait_vaddr_from(endpoint); 
-    assert(record_vaddr != NULL); 
-    
-#ifdef CONFIG_DEBUG_BUILD
-    printf("side-bench starting, record vaddr: %p\n", record_vaddr);
-#endif 
-
+   
 #ifdef CONFIG_BENCH_DCACHE_ATTACK 
     crypto_init(); 
 
@@ -159,9 +100,9 @@ void run_bench_single (char **argv) {
 #ifdef CONFIG_BENCH_CACHE_FLUSH 
 
     /*init the more core space 64M to be used as the probe buffer*/
-    morecore_area = wait_vaddr_from(endpoint); 
+    morecore_area = args->hugepage_vaddr; 
     assert(morecore_area != NULL); 
-    morecore_size = 16 * 6 * 1024 * 1024; 
+    morecore_size = args->hugepage_size; 
 
 #ifdef CONFIG_DEBUG_BUILD
     printf("more core area in side bench %p \n", morecore_area);
@@ -171,26 +112,25 @@ void run_bench_single (char **argv) {
     result = bench_flush(endpoint, record_vaddr); 
     /*return result to root task*/
     send_result_to(endpoint, result); 
-
 #endif
 
-
 }
+#endif 
 
 #ifdef CONFIG_BENCH_IPC
-void run_bench_ipc(char **argv) {
+void run_bench_ipc(bench_env_t *bench_env) {
     seL4_Word test_num; 
-    seL4_CPtr ep, result_ep, null_ep; 
+    seL4_CPtr ep, result_ep; 
     void *record_vaddr = NULL;
+    
     /*get the test number*/
-    test_num = atol(argv[0]); 
-    ep = (seL4_CPtr)atol(argv[1]);
-    record_vaddr = (void *)atol(argv[2]);
+    test_num = bench_env->args->test_num;; 
+    ep = bench_env->args->ep;
+    result_ep = env->args->r_ep;  
+    
+    record_vaddr = env->args->record_vaddr;  
 
-    assert(record_vaddr != NULL); 
-//    null_ep = wait_ep_from(result_ep); 
-
-    ipc_bench(0, ep, test_num, record_vaddr);
+    ipc_bench(reply_ep, ep, test_num, record_vaddr);
 
     /*waiting on a endpoit which will never return*/
     wait_init_msg_from(ep);
@@ -200,50 +140,26 @@ void run_bench_ipc(char **argv) {
 #endif 
 #ifdef CONFIG_BENCH_COVERT_SINGLE
  
-int run_bench_covert(char **argv) {
-    seL4_Word badge; 
-    seL4_MessageInfo_t info; 
-    
-
-    covert_env.opt = atol(argv[0]); 
-    covert_env.syn_ep = (seL4_CPtr)atol(argv[1]);
-    covert_env.r_ep = (seL4_CPtr)atol(argv[2]);
-    
-#ifdef CONFIG_DEBUG_BUILD
-    platsupport_serial_setup_simple(NULL, NULL, NULL); 
-#endif 
-    info = seL4_Recv(covert_env.r_ep, &badge); 
-
-    if (seL4_MessageInfo_get_label(info) != seL4_Fault_NullFault)
-        return BENCH_FAILURE; 
-
-    if (seL4_MessageInfo_get_length(info) != BENCH_COVERT_MSG_LEN)
-        return BENCH_FAILURE; 
+int run_bench_covert(bench_env_t *bench_env) {
    
+    seL4_Word test_num = bench_env->args->test_num;
 
-    covert_env.p_buf = (void *)seL4_GetMR(0);
-    covert_env.ts_buf = (void *)seL4_GetMR(1); 
-    covert_env.notification_ep = (seL4_CPtr)seL4_GetMR(2); 
-    
     /*run bench*/
-    assert(covert_bench_fun[covert_env.opt] != NULL); 
-    return covert_bench_fun[covert_env.opt](&covert_env); 
-
+    assert(covert_bench_fun[test_num] != NULL); 
+    return covert_bench_fun[test_num](bench_env); 
 }
 #endif
+
 #ifdef CONFIG_MASTIK_ATTACK
- 
-void run_bench_mastik(char **argv) {
+void run_bench_mastik(bench_args_t *bench_evn) {
 
     seL4_Word test_num; 
     seL4_CPtr ep, reply_ep; 
-    /*get the test number*/
-    test_num = atol(argv[0]); 
-    ep = (seL4_CPtr)atol(argv[1]);
-    reply_ep = (seL4_CPtr)atol(argv[2]);
+    
+    test_num = bench_env->args->test_num;; 
+    ep = bench_env->args->ep;
+    reply_ep = env->args->r_ep;  
 
-    /*enable serial driver*/
-    platsupport_serial_setup_simple(NULL, NULL, NULL); 
 
    /*the covert channel multicore*/
     if (test_num == BENCH_MASTIK_TEST) 
@@ -265,25 +181,24 @@ void run_bench_mastik(char **argv) {
 }
 
 #endif
-#ifdef CONFIG_MANAGER_FUNC_TESTS
- 
-int run_bench_func_tests(char **argv) {
-    
 
-    covert_env.opt = atol(argv[0]); 
-    covert_env.syn_ep = (seL4_CPtr)atol(argv[1]);
-    covert_env.r_ep = (seL4_CPtr)atol(argv[2]);
+#ifdef CONFIG_MANAGER_FUNC_TESTS
+int run_bench_func_tests(benchmark_args_t *bench_env) {
     
-#ifdef CONFIG_DEBUG_BUILD
-    platsupport_serial_setup_simple(NULL, NULL, NULL); 
-#endif 
+    seL4_Word test_num; 
+    seL4_CPtr ep, reply_ep; 
+    
+    test_num = bench_env->args->test_num;; 
+    ep = bench_env->args->ep;
+    reply_ep = env->args->r_ep;  
+
     
     /*run bench*/
-    if (covert_env.opt == BENCH_FUNC_RECEIVER)
-        funcs_receiver(&covert_env); 
+    if (test_num == BENCH_FUNC_RECEIVER)
+        funcs_receiver(bench_env); 
         
-    if (covert_env.opt == BENCH_FUNC_SENDER)
-        funcs_sender(&covert_env);
+    if (test_num == BENCH_FUNC_SENDER)
+        funcs_sender(bench_env);
    
     return 0;
 }
@@ -291,31 +206,32 @@ int run_bench_func_tests(char **argv) {
 
 int main (int argc, char **argv) {
 
-
-    /*processing arguments*/
+#ifdef CONFIG_DEBUG_BUILD
+    platsupport_serial_setup_simple(NULL, NULL, NULL); 
+#endif 
     assert(argc == CONFIG_BENCH_ARGS);
 
+    bench_init_env(argc, argv, &bench_env); 
 
 #ifdef CONFIG_BENCH_IPC
-    run_bench_ipc(argv); 
+    run_bench_ipc(&bench_env); 
 #endif 
 #ifdef CONFIG_BENCH_COVERT_SINGLE
-    run_bench_covert(argv); 
+    run_bench_covert(&bench_env); 
 #endif
 
 #ifdef CONFIG_BENCH_CACHE_FLUSH 
-    run_bench_single(argv);
+    run_bench_single(&bench_env);
 #endif 
 #ifdef CONFIG_MASTIK_ATTACK
-    run_bench_mastik(argv);
+    run_bench_mastik(&bench_env);
 #endif 
 #ifdef CONFIG_MANAGER_FUNC_TESTS 
-    run_bench_func_tests(argv);
+    run_bench_func_tests(&bench_env);
 #endif 
 
     /*finished testing, halt*/
     while(1);
 
     return 0;
-
 }

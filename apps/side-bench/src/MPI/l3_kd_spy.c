@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <sel4/sel4.h>
 #include "bench_common.h"
+#include "bench_types.h"
 
 #include "mpi.h"
 
@@ -21,21 +22,19 @@ static inline uint32_t rdtscp() {
 }
 
 
-static void measure(bench_covert_t *env) 
+static void measure(bench_env_t *env) 
 {
   seL4_Word badge;
   seL4_MessageInfo_t info;
-
-  info = seL4_Recv(env->r_ep, &badge);
-  assert(seL4_MessageInfo_get_label(info) == seL4_Fault_NullFault);
+  bench_args_t *args = env->args; 
 
   /*the record address*/
-  r_addr = (struct bench_kernel_schedule *)seL4_GetMR(0);
+  r_addr = (struct bench_kernel_schedule *)args->record_vaddr;
   /*the shared address*/
-  uint32_t volatile *secret = (uint32_t *)seL4_GetMR(1);
+  uint32_t volatile *secret = args->shared_vaddr;
 
 
-  info = seL4_Recv(env->syn_ep, &badge);
+  info = seL4_Recv(args->ep, &badge);
   assert(seL4_MessageInfo_get_label(info) == seL4_Fault_NullFault);
 
   /*waiting for a start*/
@@ -44,7 +43,6 @@ static void measure(bench_covert_t *env)
   starts[0] = 1;
   curs[0] = 1;
   prevs[0] = 1;
-  int count = 0;
   uint64_t start = rdtscp_64();
   uint64_t prev = start;
   uint32_t prev_s = *secret; 
@@ -81,7 +79,7 @@ static void measure(bench_covert_t *env)
 
   info = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 1);
   seL4_SetMR(0, 0);
-  seL4_Send(env->r_ep, info);
+  seL4_Send(args->r_ep, info);
 
   for (;;) 
   {
@@ -89,7 +87,7 @@ static void measure(bench_covert_t *env)
   //exit(0);
 }
 
-int l3_kd_spy(bench_covert_t *env) {
+int l3_kd_spy(bench_env_t *env) {
   measure(env);
   MPI p = mpi_alloc(0);
   mpi_fromstr(p, "0xe1baf27f25bdd90774579c9df4160097fb5a6b927636d78762e45cf55d706b7443b2bb9220a0397479cd20a7e136e3bd6b3b1e41a913e70da107491cf7d6b3b0e36851246b9b93b1d902fbdc14cae6c4ca529664451138e840554ce2cb69d6a7bc552db92e86f41cc2b20ac4ce6c4f2798eb64c728e0664b6e7557e6d99d291a36e8b3889de12626ee7c18c2de07be01ceda394f96de2a2e5d22272fd6fbb8900460089a2667bd2ae9581417f3f51edd39d6bb2838be175f96ac4e347b7252d8cbbedcdbbfa0eb54dc516c90895e62241b4a5a225867a39c853aa00cefa770a59e3d12d41f09f8d3425a5c69f40ec1dff64d3f59600ff92145198b7bcf4a8e07");

@@ -6,10 +6,10 @@
 #include <assert.h>
 #include <stdlib.h>
 
-#include "../mastik_common/vlist.h"
+#include "vlist.h"
 #include "cachemap.h"
 #include "pp.h"
-#include "../mastik_common/low.h"
+#include "low.h"
 
 #define SIZE (16*1024*1024)
 

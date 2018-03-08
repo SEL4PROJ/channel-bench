@@ -7,17 +7,10 @@
 #include <sel4utils/process.h>
 #include <vka/object.h>
 #include <vka/capops.h>
-#if 0
-#ifdef CONFIG_KERNEL_STABLE 
-#include <simple-stable/simple-stable.h>
-#else 
-#include <simple-default/simpe-default.h>
-#endif
-#endif 
 #include <sel4platsupport/platsupport.h>
 #include <utils/ansi.h>
 #include "ipc.h"
-#include "../../bench_common.h"
+#include "bench_common.h"
 #include "manager.h"
 
 static ccnt_t get_result(seL4_CPtr ep) {
@@ -30,26 +23,13 @@ static ccnt_t get_result(seL4_CPtr ep) {
 
 static m_env_t *ipc_env; 
 
-/*send msg to a process via ep*/
-/*FIXME: currently support single word msg only*/
-static inline 
-void send_msg_to(seL4_CPtr ep, seL4_Word w) {
-
-    seL4_MessageInfo_t info = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 1);
-    
-    seL4_SetMR(0, w); 
-    seL4_Send(ep, info);
-}
-
-
-
 vka_object_t ipc_ep; 
 vka_object_t ipc_reply_ep;
 vka_object_t ipc_null_ep; 
 vka_t *ipc_vka; 
 
 /*the benchmarking enviornment for two ipc threads*/
-static bench_env_t thread1, thread2; 
+static bench_thread_t thread1, thread2; 
 
 struct bench_results results;
 ipc_test_pmu_t pmu_results; 
@@ -157,7 +137,7 @@ void process_pmu_results (ipc_test_pmu_t *results) {
 }
 
 
-void ipc_destroy_process(bench_env_t *t1, bench_env_t *t2) {
+void ipc_destroy_process(bench_thread_t *t1, bench_thread_t *t2) {
 
     /*destory the two processes used by ipc benchmarks*/
     sel4utils_destroy_process(&t1->process, t1->vka); 
@@ -199,26 +179,15 @@ void print_overhead(void) {
     
 
 }
-void ipc_overhead (bench_env_t *thread) {
+
+
+void ipc_overhead (bench_thread_t *thread) {
     sel4utils_process_t *process = &thread->process; 
     int error; 
-    cspacepath_t src, dest; 
-    int ret; 
     thread->prio = IPC_PROCESS_PRIO; 
     thread->test_num = IPC_OVERHEAD; 
-    /*copy the caps to map into the remote process*/
-    vka_cspace_make_path(&ipc_env->vka, vspace_get_cap(&ipc_env->vspace, 
-                ipc_env->record_vaddr), &src);
 
-
-    ret = vka_cspace_alloc(&ipc_env->vka, &thread->record_frames[0]); 
-    assert(ret == 0); 
-
-    vka_cspace_make_path(&ipc_env->vka, thread->record_frames[0], &dest); 
-    ret = vka_cnode_copy(&dest, &src, seL4_AllRights); 
-    assert(ret == 0); 
-
- 
+//    bench_args->record_pages = BENCH_RECORD_PAGES;
     create_thread(thread); 
     /*resume the thread*/ 
     error = seL4_TCB_Resume(process->thread.tcb.cptr); 
@@ -238,7 +207,7 @@ void ipc_overhead (bench_env_t *thread) {
 }
 
 
-void ipc_reply_wait_time_inter(bench_env_t *t1, bench_env_t *t2,
+void ipc_reply_wait_time_inter(bench_thread_t *t1, bench_thread_t *t2,
         ccnt_t *result, ccnt_t *pmu_counters) {
 
     ccnt_t end, start; 
@@ -275,16 +244,18 @@ void ipc_reply_wait_time_inter(bench_env_t *t1, bench_env_t *t2,
     //ipc_delete_eps(vka0);
 }
 
-void ipc_reply_wait_10_time_inter(bench_env_t *t1, bench_env_t *t2, ccnt_t *result) {
+void ipc_reply_wait_10_time_inter(bench_thread_t *t1, bench_thread_t *t2, ccnt_t *result) {
 
     ccnt_t end, start; 
 
     //ipc_alloc_eps(vka0); 
     t1->test_num = IPC_CALL_10; 
     t2->test_num = IPC_REPLY_WAIT_10; 
+    
     create_thread(t1); 
     create_thread(t2); 
-    
+
+
     end = get_result(ipc_reply_ep.cptr);
     start = get_result(ipc_reply_ep.cptr);
     assert(end > start); 
@@ -297,7 +268,7 @@ void ipc_reply_wait_10_time_inter(bench_env_t *t1, bench_env_t *t2, ccnt_t *resu
 
     //ipc_delete_eps(vka0);
 }
-void ipc_call_time_inter(bench_env_t *t1, bench_env_t *t2, 
+void ipc_call_time_inter(bench_thread_t *t1, bench_thread_t *t2, 
         ccnt_t *result, 
         ccnt_t *pmu_counters) {
 
@@ -306,8 +277,9 @@ void ipc_call_time_inter(bench_env_t *t1, bench_env_t *t2,
     //ipc_alloc_eps(vka0); 
     t1->test_num = IPC_CALL2; 
     t2->test_num = IPC_REPLY_WAIT2; 
-    create_thread(t1);
-    create_thread(t2);
+    
+    create_thread(t1); 
+    create_thread(t2); 
 
     end = get_result(ipc_reply_ep.cptr);
     start = get_result(ipc_reply_ep.cptr);
@@ -336,44 +308,25 @@ void ipc_call_time_inter(bench_env_t *t1, bench_env_t *t2,
 }
 
 /*latency of kernel switching*/
-void ipc_kernel_latency_inter(bench_env_t *t1, bench_env_t *t2) {
+void ipc_kernel_latency_inter(bench_thread_t *t1, bench_thread_t *t2) {
 
     sel4utils_process_t *process = NULL; 
     int error;
-    cspacepath_t src, dest; 
-    int ret; 
 
     for (int i = 0; i < IPC_RUNS; i++ ) {
         rt_v->call_time[i] = rt_v->reply_wait_time[i] = 0; 
     }
-
-    /*copy the caps to map into the remote process*/
-    vka_cspace_make_path(&ipc_env->vka, vspace_get_cap(&ipc_env->vspace, 
-                ipc_env->record_vaddr), &src);
-
-
-    ret = vka_cspace_alloc(&ipc_env->vka, &t1->record_frames[0]); 
-    assert(ret == 0); 
-
-    vka_cspace_make_path(&ipc_env->vka, t1->record_frames[0], &dest); 
-    ret = vka_cnode_copy(&dest, &src, seL4_AllRights); 
-    assert(ret == 0); 
-
- 
-    ret = vka_cspace_alloc(&ipc_env->vka, &t2->record_frames[0]); 
-    assert(ret == 0); 
-
-    vka_cspace_make_path(&ipc_env->vka, t2->record_frames[0], &dest); 
-    ret = vka_cnode_copy(&dest, &src, seL4_AllRights); 
-    assert(ret == 0);    
 
 
     //ipc_alloc_eps(vka0); 
     t1->test_num = IPC_LATENCY_CALL; 
     t2->test_num = IPC_LATENCY_REPLY_WAIT; 
     /*t1 has the sensitive attribute, with holdTime configured*/
-    create_thread(t1);
-    create_thread(t2);
+
+    create_thread(t1); 
+    create_thread(t2); 
+    /*t1 and t2 shares a record address (frame), also shared with master*/
+
 
     printf("kernel switching latency observed at user-level:\n");
     /*resume the thread*/ 
@@ -403,43 +356,24 @@ void ipc_kernel_latency_inter(bench_env_t *t1, bench_env_t *t2) {
 
 
 /*round trip call performance*/
-void ipc_rt_call_time_inter(bench_env_t *t1, bench_env_t *t2, 
+void ipc_rt_call_time_inter(bench_thread_t *t1, bench_thread_t *t2, 
         ccnt_t *result, 
         ccnt_t *pmu_counters) {
     sel4utils_process_t *process = NULL; 
     int error;
-    cspacepath_t src, dest; 
-    int ret; 
 
     for (int i = 0; i < IPC_RUNS; i++ ) {
         rt_v->call_rt_time[i] = 0; 
     }
-    /*copy the caps to map into the remote process*/
-    vka_cspace_make_path(&ipc_env->vka, vspace_get_cap(&ipc_env->vspace, 
-                ipc_env->record_vaddr), &src);
-
-
-    ret = vka_cspace_alloc(&ipc_env->vka, &t1->record_frames[0]); 
-    assert(ret == 0); 
-
-    vka_cspace_make_path(&ipc_env->vka, t1->record_frames[0], &dest); 
-    ret = vka_cnode_copy(&dest, &src, seL4_AllRights); 
-    assert(ret == 0); 
-
- 
-    ret = vka_cspace_alloc(&ipc_env->vka, &t2->record_frames[0]); 
-    assert(ret == 0); 
-
-    vka_cspace_make_path(&ipc_env->vka, t2->record_frames[0], &dest); 
-    ret = vka_cnode_copy(&dest, &src, seL4_AllRights); 
-    assert(ret == 0);    
-
 
     //ipc_alloc_eps(vka0); 
     t1->test_num = IPC_RT_CALL; 
     t2->test_num = IPC_RT_REPLY_WAIT; 
-    create_thread(t1);
-    create_thread(t2);
+    
+    create_thread(t1); 
+    create_thread(t2); 
+
+
 
     /*resume the thread*/ 
     process = &t2->process;
@@ -478,7 +412,7 @@ void ipc_rt_call_time_inter(bench_env_t *t1, bench_env_t *t2,
 }
 
 
-void ipc_call_10_time_inter(bench_env_t *t1, bench_env_t *t2,
+void ipc_call_10_time_inter(bench_thread_t *t1, bench_thread_t *t2,
         ccnt_t *result) {
 
     ccnt_t end, start; 
@@ -486,8 +420,11 @@ void ipc_call_10_time_inter(bench_env_t *t1, bench_env_t *t2,
    // ipc_alloc_eps(vka0); 
     t1->test_num = IPC_CALL2_10; 
     t2->test_num = IPC_REPLY_WAIT2_10; 
+    
     create_thread(t1); 
     create_thread(t2); 
+
+
 
     end = get_result(ipc_reply_ep.cptr);
     start = get_result(ipc_reply_ep.cptr);
@@ -501,7 +438,7 @@ void ipc_call_10_time_inter(bench_env_t *t1, bench_env_t *t2,
 
     //ipc_delete_eps(vka0); 
 }
-void ipc_send_time_inter(bench_env_t *t1, bench_env_t *t2, 
+void ipc_send_time_inter(bench_thread_t *t1, bench_thread_t *t2, 
         ccnt_t *result) {
 
     ccnt_t end, start; 
@@ -509,8 +446,10 @@ void ipc_send_time_inter(bench_env_t *t1, bench_env_t *t2,
 
     t1->test_num = IPC_SEND; 
     t2->test_num = IPC_WAIT; 
-    create_thread(t1);
-    create_thread(t2);
+    
+    create_thread(t1); 
+    create_thread(t2); 
+
 
     start = get_result(ipc_reply_ep.cptr);
     end = get_result(ipc_reply_ep.cptr);
@@ -526,7 +465,7 @@ void ipc_send_time_inter(bench_env_t *t1, bench_env_t *t2,
 }
 
 
-static void ipc_benchmark (bench_env_t *thread1, bench_env_t *thread2) {
+static void ipc_benchmark (bench_thread_t *thread1, bench_thread_t *thread2) {
 
 
     /*set up one thread to measure the overhead*/
@@ -630,7 +569,7 @@ static void ipc_benchmark (bench_env_t *thread1, bench_env_t *thread2) {
 }
 
 /*lanuching the ipc bench on various cores*/
-static void multi_bench_ipc(bench_env_t *t1, bench_env_t *t2) {
+static void multi_bench_ipc(bench_thread_t *t1, bench_thread_t *t2) {
 
 
     /*t1 and t2 on the same core*/
@@ -662,7 +601,7 @@ static void multi_bench_ipc(bench_env_t *t1, bench_env_t *t2) {
 }
 
 
-void multi_bench_kernel_latency(bench_env_t *t1, bench_env_t *t2) {
+void multi_bench_kernel_latency(bench_thread_t *t1, bench_thread_t *t2) {
 
     uint32_t low = 0 , high = 0; 
 
@@ -697,11 +636,12 @@ void launch_bench_ipc(m_env_t *env) {
     thread2.vspace = thread1.vspace = &env->vspace;
     ipc_env = env; 
 
+    /*TODO: fixing the benchmark according to the new strcuture*/
 
     /*create frames that act as record buffer, mapping 
      to benchmark processes*/
     env->record_vaddr = vspace_new_pages(&env->vspace, seL4_AllRights, 
-            BENCH_PMU_PAGES, PAGE_BITS_4K); 
+            BENCH_RECORD_PAGES, PAGE_BITS_4K); 
     assert(env->record_vaddr != NULL); 
    // pmu_v = env->record_vaddr; 
     rt_v = env->record_vaddr; 
@@ -718,7 +658,6 @@ void launch_bench_ipc(m_env_t *env) {
     thread2.ipc_vka = thread1.ipc_vka = &env->vka_colour[0]; 
     thread2.ep = thread1.ep = ipc_ep;
     thread2.reply_ep = thread1.reply_ep = ipc_reply_ep;
-    thread2.null_ep = thread1.null_ep = ipc_null_ep; 
 
     printf("\n"); 
     printf("ipc inter colour benchmarks\n");
@@ -743,7 +682,6 @@ void launch_bench_ipc(m_env_t *env) {
     
     thread2.ep = thread1.ep = ipc_ep;
     thread2.reply_ep = thread1.reply_ep = ipc_reply_ep;
-    thread2.null_ep = thread1.null_ep = ipc_null_ep; 
 
     thread2.kernel = thread1.kernel = env->kernel;
     thread2.vka = thread1.vka = &env->vka; 
@@ -757,15 +695,12 @@ void launch_bench_ipc(m_env_t *env) {
 
     thread2.ep = thread1.ep = ipc_ep;
     thread2.reply_ep = thread1.reply_ep = ipc_reply_ep;
-    thread2.null_ep = thread1.null_ep = ipc_null_ep; 
 
    
     printf("\n"); 
     printf("ipc original kernel benchmarks\n");
     printf("========================\n");
     multi_bench_ipc(&thread1, &thread2); 
-
-
 
 #endif
 }

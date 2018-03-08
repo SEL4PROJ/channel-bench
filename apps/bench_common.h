@@ -29,7 +29,7 @@
 
 /*name, ep, option*/
 /*num of arguments passed to benchmark tests*/
-#define CONFIG_BENCH_ARGS    3
+#define CONFIG_BENCH_ARGS    1
 
 /*num of digits used for maximum unsigned int*/
 #define CONFIG_BENCH_MAX_UNIT   10 
@@ -246,8 +246,7 @@ struct ipc_results {
 #endif 
 
 
-#define BENCH_PMU_PAGES    1
-#define BENCH_COVERT_TIME_PAGES 21  /*ts structure defined in timestats.c*/
+#define BENCH_RECORD_PAGES    1
 #define BENCH_COVERT_BUF_PAGES  4096 /*trojan/probe buffers*/
 
 /*the page used for functional test correctness*/
@@ -296,16 +295,7 @@ typedef struct {
     uint64_t t[N_PT_B][N_L1D_SETS];
 } d_time_t; 
 
-/*running enviorment for bench covert 
- capacity*/
-typedef struct bench_covert {
-    void *p_buf; /*private, contiguous buffer, spy/trojan buffers*/
-    void *ts_buf;    /*time statistic, ts_alloc*/
-    seL4_CPtr syn_ep; /*comm trojan and receiver, tr_start_slave*/ 
-    seL4_CPtr r_ep; /*comm between receiver and manager*/
-    seL4_CPtr notification_ep; /*notification ep used only within a domain*/ 
-    seL4_Word opt;        /*running option, trojan, probe, etc*/
-}bench_covert_t; 
+
 
 #define BENCH_PAGE_SIZE  4096
 
@@ -423,7 +413,6 @@ typedef struct bench_covert {
 
 /*one system tick is 1ms, 3400000 cycles, 3.4GHZ sandybridge machine*/
 #define KERNEL_SCHEDULE_TICK_LENTH   1000000
-#define NUM_KERNEL_SCHEDULE_SHARED_PAGE  1
 #define NUM_L1D_SHARED_PAGE  1
 /*ARM V7 tick length 1ms 800 MHZ*/
 #define KERNEL_SCHEDULE_TICK_LENGTH    10000
@@ -447,15 +436,6 @@ struct bench_kernel_schedule {
     uint32_t volatile cur_sec[NUM_KERNEL_SCHEDULE_DATA];
 };
 #endif 
-struct bench_l1 {
-    /*L1 data/instruction cache 64 sets, the result contains the 
-     total cost on probing L1 D/I cache*/
-    uint32_t volatile result[CONFIG_BENCH_DATA_POINTS];
-    uint32_t volatile sec[CONFIG_BENCH_DATA_POINTS];
-#ifdef CONFIG_MANAGER_PMU_COUNTER 
-    uint32_t volatile pmu[CONFIG_BENCH_DATA_POINTS][BENCH_PMU_COUNTERS]; 
-#endif 
-};
 
 #ifdef CONFIG_ARCH_X86
 static inline uint64_t rdtscp_64(void) {
@@ -473,6 +453,33 @@ static inline uint64_t rdtscp_64(void) {
 }
 
 #endif
+
+static inline int wait_msg(seL4_CPtr ep) {
+    seL4_MessageInfo_t info;
+
+    info = seL4_Recv(ep, NULL);
+    if (seL4_MessageInfo_get_label(info) != seL4_Fault_NullFault)
+       return BENCH_FAILURE;
+
+    return BENCH_SUCCESS;
+
+}
+
+static inline seL4_CPtr wait_msg_from(seL4_CPtr endpoint)
+{
+    /* wait for a message */
+    seL4_Word badge;
+    seL4_MessageInfo_t info;
+
+    info = seL4_Recv(endpoint, &badge);
+
+    /* check the label and length*/
+    assert(seL4_MessageInfo_get_label(info) == seL4_Fault_NullFault);
+    assert(seL4_MessageInfo_get_length(info) == 1);
+
+    return (seL4_CPtr)seL4_GetMR(0);
+}
+
 
 
 /*sandy bridge machine frequency 3.4GHZ*/

@@ -3,8 +3,9 @@
 #include <stdint.h>
 #include <sel4/sel4.h>
 
-#include "../mastik_common/low.h"
-#include "../../../bench_common.h"
+#include "low.h"
+#include "bench_common.h"
+#include "bench_types.h"
 
 #define WARMUP_ROUNDS 0x1000 
 
@@ -45,67 +46,57 @@ static void btb_jmp(uint32_t s) {
 
 }
 
-int btb_trojan(bench_covert_t *env) {
+int btb_trojan(bench_env_t *env) {
 
   uint32_t total_sec = 2048 + 1, secret;
-  seL4_Word badge;
   seL4_MessageInfo_t info;
-
+  bench_args_t *args = env->args;
   srandom(rdtscp());
-
-  info = seL4_Recv(env->r_ep, &badge);
-  assert(seL4_MessageInfo_get_label(info) == seL4_Fault_NullFault);
 
 
   /*receive the shared address to record the secret*/
-  volatile uint32_t *share_vaddr = (uint32_t *)seL4_GetMR(0);
+  volatile uint32_t *share_vaddr = args->shared_vaddr; 
   *share_vaddr = SYSTEM_TICK_SYN_FLAG; 
-  
+
   info = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 1);
   seL4_SetMR(0, 0); 
-  seL4_Send(env->r_ep, info);
+  seL4_Send(args->r_ep, info);
 
-   /*ready to do the test*/
-  seL4_Send(env->syn_ep, info);
-  
-for (int i = 0; i < CONFIG_BENCH_DATA_POINTS; i++) {
+  /*ready to do the test*/
+  seL4_Send(args->ep, info);
+
+  for (int i = 0; i < CONFIG_BENCH_DATA_POINTS; i++) {
       secret = (random() % total_sec ) + 3072; 
 
       /*waiting for a system tick*/
       newTimeSlice();
-     
-       /*do the probe*/
-       btb_jmp(secret);
-           
+
+      /*do the probe*/
+      btb_jmp(secret);
+
       /*update the secret read by low*/ 
       *share_vaddr = secret; 
   }
   while (1);
- 
+
   return 0;
 }
 
 
-
-
-int btb_spy(bench_covert_t *env) {
+int btb_spy(bench_env_t *env) {
   seL4_Word badge;
   seL4_MessageInfo_t info;
   uint32_t start; 
-
-  info = seL4_Recv(env->r_ep, &badge);
-  assert(seL4_MessageInfo_get_label(info) == seL4_Fault_NullFault);
-
+  bench_args_t *args = env->args; 
 
   /*the record address*/
-  struct bench_l1 *r_addr = (struct bench_l1 *)seL4_GetMR(0);
+  struct bench_l1 *r_addr = (struct bench_l1 *)args->record_vaddr; 
   /*the shared address*/
-  volatile uint32_t *secret = (uint32_t *)seL4_GetMR(1);
+  volatile uint32_t *secret = args->shared_vaddr; 
 
   /*syn with trojan*/
-  info = seL4_Recv(env->syn_ep, &badge);
+  info = seL4_Recv(args->ep, &badge);
   assert(seL4_MessageInfo_get_label(info) == seL4_Fault_NullFault);
-
 
   /*waiting for a start*/
   while (*secret == SYSTEM_TICK_SYN_FLAG) ;
@@ -125,7 +116,7 @@ int btb_spy(bench_covert_t *env) {
   /*send result to manager, spy is done*/
   info = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 1);
   seL4_SetMR(0, 0);
-  seL4_Send(env->r_ep, info);
+  seL4_Send(args->r_ep, info);
 
   while (1);
 

@@ -89,13 +89,6 @@ menu   "Timing Channel Benchmarks"
         help 
               reply the prime + probe attack published in Tromer_OS_10, extracting AES private keys. synchronous known-data attack.
 
-        config BENCH_ICACHE_ATTACK 
-        bool "simulate the L1 icache attack (Zhang_JRR_12)"
-        depends on APP_SIDE_BENCH 
-        default n 
-        help 
-            reply the prime + probe attack on icache, identifying the square and multiply instruction path 
-
 
        config BENCH_IPC  
        bool "ipc benchmarking" 
