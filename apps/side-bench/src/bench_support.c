@@ -307,9 +307,6 @@ void bench_init_env(int argc, char **argv,
 
     if (args->timer_enabled) {
         
-        cspacepath_t path = allocman_cspace_make_path(env->allocman, 
-                args->to.objs[0].obj.cptr);
-
         error = allocman_add_untypeds_from_timer_objects(env->allocman, &args->to);
         assert(error == 0);
     }

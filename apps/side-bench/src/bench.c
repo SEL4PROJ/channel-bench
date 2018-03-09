@@ -42,6 +42,7 @@ static int (*covert_bench_fun[BENCH_COVERT_FUNS])(bench_env_t *) = {NULL,
     btb_trojan, btb_spy,
     l3_trojan_single, l3_spy_single,
     bp_trojan, bp_spy,
+    timer_high, timer_low,
 };
 #endif
 

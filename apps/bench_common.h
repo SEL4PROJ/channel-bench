@@ -321,9 +321,11 @@ typedef struct {
 #define BENCH_COVERT_LLC_SINGLE_TROJAN   19 
 #define BENCH_COVERT_LLC_SINGLE_SPY      20
 
-#define BENCH_COVERT_BP_TROJAN		     21
-#define BENCH_COVERT_BP_SPY		        22
-#define BENCH_COVERT_FUNS                23
+#define BENCH_COVERT_BP_TROJAN		 21
+#define BENCH_COVERT_BP_SPY              22
+#define BENCH_COVERT_TIMER_HIGH          23 
+#define BENCH_COVERT_TIMER_LOW           24
+#define BENCH_COVERT_FUNS                25
 
 
 /*the benchmarking tets for the function correctness */
@@ -389,6 +391,12 @@ typedef struct {
 #define BENCH_COVERT_TROJAN      BENCH_COVERT_BP_TROJAN
 #define BENCH_COVERT_SPY         BENCH_COVERT_BP_SPY
 #endif
+
+#ifdef CONFIG_BENCH_COVERT_TIMER 
+#define BENCH_COVERT_TROJAN     BENCH_COVERT_TIMER_HIGH 
+#define BENCH_COVERT_SPY        BENCH_COVERT_TIMER_LOW 
+#endif 
+
 
 /*used by kernel determinsitic scheduling benchmark*/
 #ifdef CONFIG_LIB_SEL4_CACHECOLOURING

@@ -139,6 +139,9 @@ menu   "Timing Channel Benchmarks"
 
                config BENCH_COVERT_BP
                bool "Branch prediction"
+               
+               config BENCH_COVERT_TIMER
+               bool "Timer interrupt (HIGH)"
 
       endchoice
 

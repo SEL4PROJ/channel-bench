@@ -54,6 +54,9 @@ int l3_trojan_single(bench_env_t *env);
 int l3_spy_single(bench_env_t *env); 
 int bp_trojan(bench_env_t *env); 
 int bp_spy(bench_env_t *env); 
+int timer_high(bench_env_t *env); 
+int timer_low(bench_env_t *env); 
+
 
 
 /*the function correctness test */
