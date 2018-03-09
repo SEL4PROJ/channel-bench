@@ -207,8 +207,6 @@ static int copy_untyped(sel4utils_process_t *process, vka_t *vka,
 }
 
 
-
-
 static void create_thread(bench_thread_t *t) {
 
     sel4utils_process_t *process = &t->process; 
@@ -285,7 +283,6 @@ static void launch_thread(bench_thread_t *t) {
     
     /* this is the last cap we copy - initialise the first free cap */           
     args->first_free = args->untyped_cptr[CONFIG_BENCH_UNTYPE_COUNT - 1] + 1;                                     
-    printf("spawn process\n");
     /*start process*/ 
     error = sel4utils_spawn_process_v(process, t->vka, 
             t->vspace, 1, argv, 1);
@@ -313,7 +310,6 @@ static void sw_sleep(unsigned int microsec) {
         cur = sel4bench_get_cycle_count(); 
 #endif 
     }
-
 }
 
 static int alive(m_env_t *env) {
@@ -381,8 +377,6 @@ static void map_shared_buf(bench_thread_t *owner, bench_thread_t *share,
             n_p, PAGE_BITS_4K, seL4_AllRights, true);
     assert(args_s->shared_vaddr); 
 }
-
-
 
 static void create_huge_pages(bench_thread_t *owner, uint32_t size) {
 

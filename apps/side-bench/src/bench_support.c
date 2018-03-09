@@ -26,8 +26,7 @@ static char allocator_mem_pool[ALLOCATOR_STATIC_POOL_SIZE];
 
 static allocman_t*
 init_allocator(simple_t *simple, vka_t *vka) { 
-    int error = 0; 
-
+    
     /* set up allocator */
     allocman_t *allocator = bootstrap_new_1level_simple(simple, 
             CONFIG_SEL4UTILS_CSPACE_SIZE_BITS, ALLOCATOR_STATIC_POOL_SIZE,
@@ -59,7 +58,8 @@ init_allocator_vspace(allocman_t *allocator, vspace_t *vspace)
             seL4_AllRights, 1, &vaddr);
     assert(error == 0); 
 
-    bootstrap_configure_virtual_pool(allocator, vaddr, ALLOCMAN_VIRTUAL_SIZE, SEL4UTILS_PD_SLOT);
+    bootstrap_configure_virtual_pool(allocator, vaddr, 
+            ALLOCMAN_VIRTUAL_SIZE, SEL4UTILS_PD_SLOT);
 }
 
 static size_t
@@ -125,7 +125,6 @@ init_vspace(bench_env_t *env) {
     assert(error == 0); 
 
     free(existing_frames); 
-
 }
 
 
@@ -174,7 +173,6 @@ static int get_cap_count(void *data) {
        and if we're not on the RT kernel two more unused slots */
 
     int last = ((bench_env_t *) data)->args->first_free;
-
     /* skip the null slot */
     last--;
 
@@ -271,13 +269,11 @@ int benchmark_init_timer(bench_env_t *env)
     int error = sel4platsupport_init_timer_irqs(&env->vka, 
             &env->simple, env->ntfn.cptr,
             &env->timer, &env->args->to);
-
     if (error) 
         return error; 
 
     error = sel4platsupport_new_io_mapper(env->vspace, 
             env->vka, &ops.io_mapper);
-    
     if (error) 
         return error; 
 
@@ -303,19 +299,23 @@ void bench_init_env(int argc, char **argv,
     /*the virtual address contained the argument, passed by the root task*/
     env->args = (void *)atol(argv[0]);
     args = env->args; 
-
+    
     init_simple(env);
 
     env->allocman = init_allocator(&env->simple, &env->vka); 
+    assert(env->allocman); 
 
     if (args->timer_enabled) {
-    
+        
+        cspacepath_t path = allocman_cspace_make_path(env->allocman, 
+                args->to.objs[0].obj.cptr);
+
         error = allocman_add_untypeds_from_timer_objects(env->allocman, &args->to);
         assert(error == 0);
     }
 
     init_vspace(env); 
-
+    
     init_allocator_vspace(env->allocman, &env->vspace);
 
     /* In case we used any FPU during our setup we will attempt to put the system
@@ -327,7 +327,6 @@ void bench_init_env(int argc, char **argv,
 #endif
     /* allocate a notification for timers */                                       
     if (args->timer_enabled) {
-
         error = vka_alloc_notification(&env->vka, &env->ntfn);  
         assert(error == 0);
     }
