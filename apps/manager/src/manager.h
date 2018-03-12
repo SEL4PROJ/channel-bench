@@ -248,6 +248,10 @@ static void create_thread(bench_thread_t *t) {
     assert(error == 0);
 #endif 
     
+    /*assign the priority*/ 
+    error = seL4_TCB_SetPriority(process->thread.tcb.cptr, t->prio);
+    assert(error == 0);  
+
     /*copy caps used for communication*/
     bench_args->ep = sel4utils_copy_cap_to_process(process, t->ipc_vka, t->ep.cptr);
     assert(bench_args->ep); 

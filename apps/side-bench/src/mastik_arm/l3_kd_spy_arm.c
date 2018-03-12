@@ -25,11 +25,11 @@
 #define KD_TROJAN_LINES 256
 
 
-uint32_t prev_sec[NUM_KERNEL_SCHEDULE_DATA];
-uint32_t cur_sec[NUM_KERNEL_SCHEDULE_DATA];
-uint32_t starts[NUM_KERNEL_SCHEDULE_DATA];
-uint32_t curs[NUM_KERNEL_SCHEDULE_DATA];
-uint32_t prevs[NUM_KERNEL_SCHEDULE_DATA];
+uint32_t prev_sec[CONFIG_BENCH_DATA_POINTS];
+uint32_t cur_sec[CONFIG_BENCH_DATA_POINTS];
+uint32_t starts[CONFIG_BENCH_DATA_POINTS];
+uint32_t curs[CONFIG_BENCH_DATA_POINTS];
+uint32_t prevs[CONFIG_BENCH_DATA_POINTS];
 
 /*accessing N number of L1 D cache sets*/
 void data_access(char *buf, uint32_t sets) {
@@ -150,7 +150,7 @@ int l3_kd_spy(bench_env_t *env) {
     info = seL4_Recv(args->ep, &badge);
     assert(seL4_MessageInfo_get_label(info) == seL4_Fault_NullFault);
        
-    for (int i = 0; i < NUM_KERNEL_SCHEDULE_DATA;) {
+    for (int i = 0; i < CONFIG_BENCH_DATA_POINTS;) {
          FENCE(); 
 
 
@@ -174,7 +174,7 @@ int l3_kd_spy(bench_env_t *env) {
         FENCE(); 
     }
         
-    for (int i = 0; i < NUM_KERNEL_SCHEDULE_DATA; i++) {
+    for (int i = 0; i < CONFIG_BENCH_DATA_POINTS; i++) {
 
         r_addr->prevs[i] = prevs[i]; 
         r_addr->starts[i] = starts[i]; 

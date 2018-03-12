@@ -7,11 +7,11 @@
 #include "mpi.h"
 
 
-uint32_t prev_sec[NUM_KERNEL_SCHEDULE_DATA];
-uint32_t cur_sec[NUM_KERNEL_SCHEDULE_DATA];
-uint64_t starts[NUM_KERNEL_SCHEDULE_DATA];
-uint64_t curs[NUM_KERNEL_SCHEDULE_DATA];
-uint64_t prevs[NUM_KERNEL_SCHEDULE_DATA];
+uint32_t prev_sec[CONFIG_BENCH_DATA_POINTS];
+uint32_t cur_sec[CONFIG_BENCH_DATA_POINTS];
+ccnt_t starts[CONFIG_BENCH_DATA_POINTS];
+ccnt_t curs[CONFIG_BENCH_DATA_POINTS];
+ccnt_t prevs[CONFIG_BENCH_DATA_POINTS];
 
 struct bench_kernel_schedule *r_addr = NULL;
 
@@ -46,10 +46,10 @@ static void measure(bench_env_t *env)
   uint64_t start = rdtscp_64();
   uint64_t prev = start;
   uint32_t prev_s = *secret; 
-  for (int i = 0; i < NUM_KERNEL_SCHEDULE_DATA;) {
+  for (int i = 0; i < CONFIG_BENCH_DATA_POINTS;) {
     uint64_t cur = rdtscp_64(); 
     /*at the begining of the current tick*/
-    if (cur - prev > KERNEL_SCHEDULE_TICK_LENTH) {
+    if (cur - prev > KERNEL_SCHEDULE_TICK_LENGTH) {
       prevs[i] = prev;
       starts[i] = start;
       curs[i] = cur;
@@ -65,7 +65,7 @@ static void measure(bench_env_t *env)
   }
   
   //printf("Trojan: prev start cur -> on off tot\n");
-  for (int i = 0; i < NUM_KERNEL_SCHEDULE_DATA; i++) {
+  for (int i = 0; i < CONFIG_BENCH_DATA_POINTS; i++) {
 
       r_addr->prevs[i] = prevs[i]; 
       r_addr->starts[i] = starts[i]; 

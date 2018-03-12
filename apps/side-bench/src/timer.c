@@ -18,8 +18,8 @@
 #include "bench_types.h"
 #include "bench_support.h"
 
-#define INTERRUPT_PERIOD_NS (10 * NS_IN_MS)
-
+#define INTERRUPT_PERIOD_NS (100 * NS_IN_US)
+#define TIMER_DETECT_INTERVAL_NS ( 1 * NS_IN_US)
 
 
 int timer_high(bench_env_t *env) {
@@ -27,7 +27,7 @@ int timer_high(bench_env_t *env) {
     bench_args_t *args = env->args; 
     int error; 
     seL4_CPtr timer_signal = env->ntfn.cptr; 
-    seL4_Word badge; 
+    seL4_Word badge = 0;  
     ccnt_t start, end; 
     seL4_MessageInfo_t info;
 
@@ -35,7 +35,7 @@ int timer_high(bench_env_t *env) {
     assert(results); 
 
     assert(args->timer_enabled); 
-
+    
     error = benchmark_init_timer(env);
     assert(error == BENCH_SUCCESS); 
 
@@ -44,34 +44,35 @@ int timer_high(bench_env_t *env) {
     info = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 1);
     seL4_SetMR(0, 0); 
     seL4_Send(args->r_ep, info);
-
+    
+    /*msg LOW: HIGH is ready*/
+    seL4_Send(args->ep, info);
+       
     error = ltimer_reset(&env->timer.ltimer);
     assert(error == 0); 
-
+    
     error = ltimer_set_timeout(&env->timer.ltimer, INTERRUPT_PERIOD_NS, TIMEOUT_PERIODIC);
     assert(error == 0); 
 
-    SEL4BENCH_READ_CCNT(start); 
-
     for (int i = 0; i < CONFIG_BENCH_DATA_POINTS; i++) {
 
+        badge = 0; 
+        start = rdtscp_64();
         /* wait for irq */
         seL4_Wait(timer_signal, &badge);
         /* record result */
-        SEL4BENCH_READ_CCNT(end);
-        sel4platsupport_handle_timer_irq(&env->timer, badge);
+        end = rdtscp_64();
         results[i] = end - start;
-
-        start = end; 
+        sel4platsupport_handle_timer_irq(&env->timer, badge);
     }
-
+#if 0
     printf("timer intervas are: \n"); 
 
     for (int i = 0; i < CONFIG_BENCH_DATA_POINTS; i++) {
 
         printf("%u\n", results[i]); 
     }
-
+#endif 
     free(results); 
 
     return 0;
@@ -79,6 +80,46 @@ int timer_high(bench_env_t *env) {
 
 
 int timer_low(bench_env_t *env) {
+
+    /*the low detect the timer counter jump recording as the 
+     online time*/
+    seL4_Word badge;
+    seL4_MessageInfo_t info;
+    bench_args_t *args = env->args; 
+    struct bench_timer_online *r_addr; 
+
+    ccnt_t start, cur, prev; 
+    
+    /*the record address*/
+    r_addr = (struct bench_timer_online *)args->record_vaddr;
+
+    /*syn with HIGH*/
+    info = seL4_Recv(args->ep, &badge);
+    assert(seL4_MessageInfo_get_label(info) == seL4_Fault_NullFault);
+   
+    start = rdtscp_64(); 
+
+    prev = start;
+    for (int i = 0; i < CONFIG_BENCH_DATA_POINTS;) {
+        
+        cur = rdtscp_64();
+
+        /*at the begining of the current tick*/
+        if (cur - prev > TIMER_DETECT_INTERVAL_NS) {
+            
+            /*online time (prevs - starts)*/
+            r_addr->prevs[i] = prev;
+            r_addr->starts[i] = start;
+            start = cur;
+            i++;
+        }
+        prev = cur;
+    }
+
+    /*send result to manager, benchmark is done*/
+    info = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 1);
+    seL4_SetMR(0, 0);
+    seL4_Send(args->r_ep, info);
 
     return 0; 
 }

@@ -35,10 +35,14 @@ static vka_object_t syn_ep, t_ep, s_ep;
 /*init covert bench for single core*/
 void init_single(m_env_t *env) {
 
-#ifdef CONFIG_BENCH_COVERT_LLC_KERNEL_SCHEDULE
-    uint32_t n_p = (sizeof (struct bench_kernel_schedule) / BENCH_PAGE_SIZE) + 1;
-#else    
     uint32_t n_p = (sizeof (struct bench_l1) / BENCH_PAGE_SIZE) + 1;
+
+    /*over write according to the benchmark*/
+#ifdef CONFIG_BENCH_COVERT_LLC_KERNEL_SCHEDULE
+    n_p = (sizeof (struct bench_kernel_schedule) / BENCH_PAGE_SIZE) + 1;
+#endif 
+#ifdef CONFIG_BENCH_COVERT_TIMER 
+    n_p = (sizeof (struct bench_timer_online) / BENCH_PAGE_SIZE) + 1;
 #endif 
     uint32_t share_phy; 
     int error; 
@@ -194,7 +198,7 @@ int run_single_llc_kernel_schedule(m_env_t *env) {
     r_d =  (struct bench_kernel_schedule *)env->record_vaddr;
     printf("online time start\n");
 
-    for (int i = 3; i < NUM_KERNEL_SCHEDULE_DATA; i++) {
+    for (int i = 3; i < CONFIG_BENCH_DATA_POINTS; i++) {
 
         printf("%d "CCNT_FORMAT"\n", 
                 r_d->prev_sec[i], r_d->prevs[i] - r_d->starts[i]);
@@ -203,7 +207,7 @@ int run_single_llc_kernel_schedule(m_env_t *env) {
     printf("online time end\n");
 
     printf("offline time start\n");
-    for (int i = 3; i < NUM_KERNEL_SCHEDULE_DATA; i++) {
+    for (int i = 3; i < CONFIG_BENCH_DATA_POINTS; i++) {
         printf("%d "CCNT_FORMAT"\n", 
                 r_d->cur_sec[i], r_d->curs[i] - r_d->prevs[i]);
     }
@@ -215,6 +219,32 @@ int run_single_llc_kernel_schedule(m_env_t *env) {
     printf("done covert benchmark\n");
     return BENCH_SUCCESS;
 }
+
+
+int run_single_timer(m_env_t *env) {
+
+    seL4_MessageInfo_t info;
+    struct bench_timer_online *r_d = (struct bench_timer_online *)env->record_vaddr;
+    info = seL4_Recv(t_ep.cptr, NULL);
+    if (seL4_MessageInfo_get_label(info) != seL4_Fault_NullFault)
+       return BENCH_FAILURE;
+    printf("HIGH is ready\n");
+
+    info = seL4_Recv(s_ep.cptr, NULL);
+    if (seL4_MessageInfo_get_label(info) != seL4_Fault_NullFault)
+        return BENCH_FAILURE;
+    printf("benchmark result ready\n");
+
+    for (int i = 3; i < CONFIG_BENCH_DATA_POINTS; i++) {
+
+        printf(CCNT_FORMAT"\n", 
+                r_d->prevs[i] - r_d->starts[i]);
+    }
+
+    printf("done covert benchmark\n");
+    return BENCH_SUCCESS;
+}
+
 
 /*running the single core attack*/ 
 int run_single(m_env_t *env) {
@@ -234,6 +264,10 @@ int run_single(m_env_t *env) {
 #ifdef CONFIG_BENCH_COVERT_LLC_KERNEL_SCHEDULE
     return run_single_llc_kernel_schedule(env); 
 #endif 
+
+#ifdef CONFIG_BENCH_COVERT_TIMER 
+    return run_single_timer(env); 
+#endif
 
     return run_single_l1(env); 
 }
@@ -378,9 +412,14 @@ void launch_bench_covert (m_env_t *env) {
     ret = vka_alloc_notification(spy.vka, &spy.notification_ep); 
     assert(ret == 0); 
  
-    spy.prio  = 100;
     trojan.prio = 100;
-    
+    spy.prio = 100; 
+
+#ifdef CONFIG_BENCH_COVERT_TIMER 
+    /*HIGH has higher prio for receving the timer int*/
+    trojan.prio = 101; 
+#endif 
+
     /*set the actual testing num in bench_common.h*/
     spy.test_num = BENCH_COVERT_SPY;
     trojan.test_num = BENCH_COVERT_TROJAN; 

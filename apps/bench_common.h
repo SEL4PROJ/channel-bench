@@ -413,36 +413,19 @@ typedef struct {
 #define CONFIG_BENCH_DATA_POINTS  1
 #endif 
 
-#define NUM_KERNEL_SCHEDULE_DATA (CONFIG_BENCH_DATA_POINTS)
 #define SYSTEM_TICK_SYN_FLAG   0xffff
 #define SPY_SYN_FLAG           0x87654321
 #define TROJAN_SYN_FLAG        0x12345678
 
 
-/*one system tick is 1ms, 3400000 cycles, 3.4GHZ sandybridge machine*/
-#define KERNEL_SCHEDULE_TICK_LENTH   1000000
 #define NUM_L1D_SHARED_PAGE  1
+
+/*one system tick is 1ms, 3400000 cycles, 3.4GHZ sandybridge machine*/
+#ifdef CONFIG_ARCH_X86
+#define KERNEL_SCHEDULE_TICK_LENGTH   1000000
+#else 
 /*ARM V7 tick length 1ms 800 MHZ*/
 #define KERNEL_SCHEDULE_TICK_LENGTH    10000
-
-
-#ifdef CONFIG_ARCH_X86
-struct bench_kernel_schedule {
-    uint64_t volatile prevs[NUM_KERNEL_SCHEDULE_DATA];
-    uint64_t volatile starts[NUM_KERNEL_SCHEDULE_DATA];
-    uint64_t volatile curs[NUM_KERNEL_SCHEDULE_DATA];
-    uint32_t volatile prev_sec[NUM_KERNEL_SCHEDULE_DATA];
-    uint32_t volatile cur_sec[NUM_KERNEL_SCHEDULE_DATA];
-};
-#else
-/*arm platform*/
-struct bench_kernel_schedule {
-    uint32_t volatile prevs[NUM_KERNEL_SCHEDULE_DATA];
-    uint32_t volatile starts[NUM_KERNEL_SCHEDULE_DATA];
-    uint32_t volatile curs[NUM_KERNEL_SCHEDULE_DATA];
-    uint32_t volatile prev_sec[NUM_KERNEL_SCHEDULE_DATA];
-    uint32_t volatile cur_sec[NUM_KERNEL_SCHEDULE_DATA];
-};
 #endif 
 
 #ifdef CONFIG_ARCH_X86

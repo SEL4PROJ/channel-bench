@@ -19,7 +19,7 @@
 #include <sel4utils/vspace.h>
 #include <simple/simple.h>
 #include <sel4platsupport/timer.h>
-
+#include <sel4bench/sel4bench.h>
 #include "bench_common.h"
 
 struct bench_l1 {
@@ -30,6 +30,21 @@ struct bench_l1 {
 #ifdef CONFIG_MANAGER_PMU_COUNTER 
     uint32_t volatile pmu[CONFIG_BENCH_DATA_POINTS][BENCH_PMU_COUNTERS]; 
 #endif 
+};
+
+struct bench_kernel_schedule {
+    ccnt_t volatile prevs[CONFIG_BENCH_DATA_POINTS];
+    ccnt_t volatile starts[CONFIG_BENCH_DATA_POINTS];
+    ccnt_t volatile curs[CONFIG_BENCH_DATA_POINTS];
+    uint32_t volatile prev_sec[CONFIG_BENCH_DATA_POINTS];
+    uint32_t volatile cur_sec[CONFIG_BENCH_DATA_POINTS];
+};
+
+
+struct bench_timer_online {
+    /*online time: prevs = starts*/
+    ccnt_t volatile prevs[CONFIG_BENCH_DATA_POINTS];
+    ccnt_t volatile starts[CONFIG_BENCH_DATA_POINTS];
 };
 
 /*the argument passes to the benchmarking thread*/
