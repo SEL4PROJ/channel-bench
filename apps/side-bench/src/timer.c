@@ -18,7 +18,7 @@
 #include "bench_types.h"
 #include "bench_support.h"
 
-#define INTERRUPT_PERIOD_NS (100 * NS_IN_US)
+#define INTERRUPT_PERIOD_NS (1000 * NS_IN_US)
 #define TIMER_DETECT_INTERVAL_NS ( 1 * NS_IN_US)
 
 
@@ -47,13 +47,14 @@ int timer_high(bench_env_t *env) {
     
     /*msg LOW: HIGH is ready*/
     seL4_Send(args->ep, info);
-       
+
+
+#if 1   
     error = ltimer_reset(&env->timer.ltimer);
     assert(error == 0); 
     
     error = ltimer_set_timeout(&env->timer.ltimer, INTERRUPT_PERIOD_NS, TIMEOUT_PERIODIC);
     assert(error == 0); 
-
     for (int i = 0; i < CONFIG_BENCH_DATA_POINTS; i++) {
 
         badge = 0; 
@@ -65,6 +66,7 @@ int timer_high(bench_env_t *env) {
         results[i] = end - start;
         sel4platsupport_handle_timer_irq(&env->timer, badge);
     }
+#endif 
 #if 0
     printf("timer intervas are: \n"); 
 
@@ -74,6 +76,9 @@ int timer_high(bench_env_t *env) {
     }
 #endif 
     free(results); 
+
+    /*waiting on ep never return*/
+    seL4_Wait(args->ep, &badge);
 
     return 0;
 }
@@ -96,7 +101,7 @@ int timer_low(bench_env_t *env) {
     /*syn with HIGH*/
     info = seL4_Recv(args->ep, &badge);
     assert(seL4_MessageInfo_get_label(info) == seL4_Fault_NullFault);
-   
+  
     start = rdtscp_64(); 
 
     prev = start;
