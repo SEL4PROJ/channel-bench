@@ -144,7 +144,7 @@ static int create_ki(m_env_t *env, vka_t *vka, bench_ki_t *kimage) {
     /*creating multiple kernel memory objects*/
     for (int mems = 0; mems < k_size; mems++) {
 
-        ret = vka_alloc_kernel_mem(vka, &kimage->kmems[mems]); 
+        ret = vka_alloc_kernel_mem(vka, kimage->kmems + mems); 
         if (ret) 
             return BENCH_FAILURE; 
         kmem_caps[mems] = kimage->kmems[mems].cptr; 
