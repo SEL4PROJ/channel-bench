@@ -415,10 +415,8 @@ void launch_bench_covert (m_env_t *env) {
     trojan.prio = 100;
     spy.prio = 100; 
 
-#ifdef CONFIG_BENCH_COVERT_TIMER 
-    /*HIGH has higher prio for receving the timer int*/
-    trojan.prio = 101; 
-#endif 
+    spy.kernel_prio = 3;
+    trojan.kernel_prio = 0;
 
     /*set the actual testing num in bench_common.h*/
     spy.test_num = BENCH_COVERT_SPY;

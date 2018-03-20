@@ -55,15 +55,20 @@ int timer_high(bench_env_t *env) {
     
     error = ltimer_set_timeout(&env->timer.ltimer, INTERRUPT_PERIOD_NS, TIMEOUT_PERIODIC);
     assert(error == 0); 
-    for (int i = 0; i < CONFIG_BENCH_DATA_POINTS; i++) {
-
+    //for (int i = 0; i < CONFIG_BENCH_DATA_POINTS; i++) {
+    while(1) {
         badge = 0; 
         start = rdtscp_64();
         /* wait for irq */
-        seL4_Wait(timer_signal, &badge);
+        //seL4_Wait(timer_signal, &badge);
+        /*polling for the int until the int is received*/
+        do {
+            seL4_Poll(timer_signal, &badge);
+        } while (!badge);
+
         /* record result */
         end = rdtscp_64();
-        results[i] = end - start;
+    //    results[i] = end - start;
         sel4platsupport_handle_timer_irq(&env->timer, badge);
     }
 #endif 

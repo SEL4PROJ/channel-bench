@@ -88,6 +88,7 @@ typedef struct bench_thread {
     vspace_t *vspace;        /*virtual address space of the root task*/
     char *image;            /*binary name of benchmarking elf file*/
     seL4_Word prio;         /*priority of benchmarking thread*/
+    uint8_t kernel_prio;    /*priority of the kernel image*/
     sel4utils_process_t process;  /*internal process context*/ 
     seL4_Word test_num;      /*test number*/
  
@@ -236,10 +237,15 @@ static void create_thread(bench_thread_t *t) {
     NAME_THREAD(process->thread.tcb.cptr, t->name);
 
 #ifdef CONFIG_MULTI_KERNEL_IMAGES 
-    /*configure the kernel image to the process*/
+    
     printf("set kernel image\n");
     error = seL4_TCB_SetKernel(process->thread.tcb.cptr, t->kernel);
     assert(error == 0);
+
+    printf("set Kernel priority\n"); 
+    error = seL4_X86_KernelImage_SetPriority(t->kernel, t->kernel_prio); 
+    assert(error == 0);
+
 #endif
 
 #if (CONFIG_MAX_NUM_NODES > 1)
