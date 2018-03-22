@@ -67,6 +67,10 @@ void init_single(m_env_t *env) {
     assert(error == 0); 
     trojan.bench_args->timer_enabled = true; 
 
+    /*associate the timer irq with the kernel image*/
+    error = sel4utils_set_timer_caps_to_kernel(trojan.to, trojan.kernel); 
+    assert(error == 0); 
+
 
 #ifdef CONFIG_MANAGER_HUGE_PAGES
     printf("creating huge pages for spy and trojan\n"); 
