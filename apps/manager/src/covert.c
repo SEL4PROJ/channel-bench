@@ -67,10 +67,11 @@ void init_single(m_env_t *env) {
     assert(error == 0); 
     trojan.bench_args->timer_enabled = true; 
 
+#ifdef CONFIG_MULTI_KERNEL_IMAGES 
     /*associate the timer irq with the kernel image*/
     error = sel4utils_set_timer_caps_to_kernel(trojan.to, trojan.kernel); 
     assert(error == 0); 
-
+#endif 
 
 #ifdef CONFIG_MANAGER_HUGE_PAGES
     printf("creating huge pages for spy and trojan\n"); 
@@ -358,8 +359,13 @@ void launch_bench_covert (m_env_t *env) {
 #endif
 
     spy.root_vka = trojan.root_vka = &env->vka;
+
+    spy.simple = trojan.simple = &env->simple;
+
     /*sharing the timer object*/
     spy.to = trojan.to = &env->to; 
+
+
 
 #if 0
     /*setting the kernel sensitivity*/

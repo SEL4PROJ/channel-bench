@@ -85,6 +85,10 @@ typedef struct bench_thread {
     vka_t *ipc_vka;          /*used for endpoint*/
     vka_t *root_vka;         /*vka used by root task*/ 
 
+    /*abstracts over kernel version and boot envior*/
+    simple_t *simple; 
+
+
     vspace_t *vspace;        /*virtual address space of the root task*/
     char *image;            /*binary name of benchmarking elf file*/
     seL4_Word prio;         /*priority of benchmarking thread*/
@@ -213,6 +217,7 @@ static void create_thread(bench_thread_t *t) {
     sel4utils_process_t *process = &t->process; 
     bench_args_t *bench_args = NULL; 
     
+    sel4utils_process_config_t config;
     int error = 0; 
 
     /*allocating a page for arguments*/
@@ -225,10 +230,11 @@ static void create_thread(bench_thread_t *t) {
     /*test number*/
     bench_args->test_num = t->test_num; 
 
-    /*configure process, requiring a seperate vspace and cspace*/ 
-    error = sel4utils_configure_process(process, 
-            t->vka, t->vspace,  
-            t->image); 
+    assert(t->simple);
+
+    config = process_config_default_simple(t->simple, t->image, t->prio);
+    config = process_config_mcp(config, seL4_MaxPrio);
+    error = sel4utils_configure_process_custom(process, t->vka, t->vspace, config);
     assert(error == 0); 
 
     bench_args->stack_pages = CONFIG_SEL4UTILS_STACK_SIZE / SIZE_BITS_TO_BYTES(seL4_PageBits);
@@ -254,10 +260,6 @@ static void create_thread(bench_thread_t *t) {
     assert(error == 0);
 #endif 
     
-    /*assign the priority*/ 
-    error = seL4_TCB_SetPriority(process->thread.tcb.cptr, t->prio);
-    assert(error == 0);  
-
     /*copy caps used for communication*/
     bench_args->ep = sel4utils_copy_cap_to_process(process, t->ipc_vka, t->ep.cptr);
     assert(bench_args->ep); 
