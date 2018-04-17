@@ -10,14 +10,8 @@
 
 #define WARMUP_ROUNDS 0x1000 
 
-#ifdef CONFIG_ARCH_X86_SKYLAKE
 #define SPY_TLB_PAGES 32
 #define TROJAN_TLB_PAGES 64
-
-#else
-#define SPY_TLB_PAGES 32
-#define TROJAN_TLB_PAGES 64//128
-#endif
 
 
 #define TS_THRESHOLD 100000
