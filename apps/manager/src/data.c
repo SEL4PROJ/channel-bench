@@ -61,90 +61,6 @@ static void print_dcache_attack(m_env_t *env) {
 }
 
 #endif 
-#ifdef CONFIG_MANAGER_CACHE_FLUSH
-static void print_bench_cache_flush(void *record) {
-
-    sel4bench_counter_t *r_buf = (sel4bench_counter_t *)record;
-    uint32_t start = CONFIG_BENCH_FLUSH_START; 
-    uint32_t count = 0, recorded;
-    uint32_t nlog_kernel; 
-
-#ifdef CONFIG_BENCH_CACHE_FLUSH_READ 
-    printf("benchmarking read operation at user-level\n"); 
-#else 
-    printf("benchmarking write operation at user-level\n"); 
-#endif
-
-    /*finalise the log in kernel*/
-    seL4_BenchmarkFinalizeLog(); 
-    nlog_kernel = seL4_BenchmarkLogSize();
-    printf("num of logs in kenrel  %d \n overheads: ", nlog_kernel);
-
-    /*the overhead of doing benchmark in kernel*/
-    recorded = seL4_BenchmarkDumpLog(count, CONFIG_KERNEL_BENCH_OVERHEADS);
-    /*skip the first round because it depends on the pipeline state*/
-    for (int i = 1; i < recorded; i++) {
-        /*skip the key field in the log entry given by kernel*/
-        printf("%u\t", seL4_GetMR(i * 2 + 1));
-    }
-    printf("\n");
-    count += CONFIG_KERNEL_BENCH_OVERHEADS; 
-
-    while (start <= CONFIG_BENCH_CACHE_BUFFER) {
-
-        printf("user-level buffer %d words: \n", start);
-
-#ifndef CONFIG_MANAGER_CACHE_FLUSH_NONE 
-        /*printing out the result of cache flush benchmark*/ 
-        /*skip the warm up section*/
-        seL4_BenchmarkDumpLog(count, WARMUPS);
-
-        count += WARMUPS; 
-
-        uint32_t recorded = seL4_BenchmarkDumpLog(count, CONFIG_BENCH_FLUSH_RUNS);
-        printf("cost in kernel:  ");
-        for (int i = 0; i < recorded; i++) {
-            /*skip the key field in the log entry given by kernel*/
-            printf("%u\t", seL4_GetMR(i * 2 + 1));
-        }
-        printf("\n");
-#endif
-        /*Then the user-level data*/
-        
-        r_buf += WARMUPS; 
-
-        for (int i = 0; i < CONFIG_BENCH_FLUSH_RUNS; i++) { 
-#ifdef CONFIG_ARCH_X86
-            printf("%llu\t", *r_buf);
-#else 
-            printf("%u\t", *r_buf);
-#endif 
-            r_buf++;
-        }
-        printf("\n");
-
-
-        start *= 2;
-        count += CONFIG_BENCH_FLUSH_RUNS;
-    }
-
-    /*dump the overhead measurment*/
-    printf("overhead measurments:");
-    for (int i = 0; i < OVERHEAD_RUNS; i++) {
-#ifdef CONFIG_ARCH_X86
-        printf("%llu\t", *r_buf);
-#else 
-        printf("%u\t", *r_buf);
-#endif 
-        r_buf++;
-    }
-    printf("\n");
-
-    printf("done covert benchmark\n");
-}
-
-#endif
-
 /*analysing benchmark record in shared frames*/
 void bench_process_data(m_env_t *env, seL4_Word result) {
 
@@ -156,9 +72,4 @@ void bench_process_data(m_env_t *env, seL4_Word result) {
 #ifdef CONFIG_MANAGER_DCACHE_ATTACK
     print_dcache_attack(env);
 #endif 
-
-#ifdef CONFIG_MANAGER_CACHE_FLUSH
-    print_bench_cache_flush(env->record_vaddr);
-#endif 
-
 }

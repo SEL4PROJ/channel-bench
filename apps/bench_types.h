@@ -25,26 +25,31 @@
 struct bench_l1 {
     /*L1 data/instruction cache 64 sets, the result contains the 
      total cost on probing L1 D/I cache*/
-    uint32_t volatile result[CONFIG_BENCH_DATA_POINTS];
-    uint32_t volatile sec[CONFIG_BENCH_DATA_POINTS];
+    uint32_t result[CONFIG_BENCH_DATA_POINTS];
+    uint32_t sec[CONFIG_BENCH_DATA_POINTS];
 #ifdef CONFIG_MANAGER_PMU_COUNTER 
-    uint32_t volatile pmu[CONFIG_BENCH_DATA_POINTS][BENCH_PMU_COUNTERS]; 
+    uint32_t pmu[CONFIG_BENCH_DATA_POINTS][BENCH_PMU_COUNTERS]; 
 #endif 
 };
 
 struct bench_kernel_schedule {
-    ccnt_t volatile prevs[CONFIG_BENCH_DATA_POINTS];
-    ccnt_t volatile starts[CONFIG_BENCH_DATA_POINTS];
-    ccnt_t volatile curs[CONFIG_BENCH_DATA_POINTS];
-    uint32_t volatile prev_sec[CONFIG_BENCH_DATA_POINTS];
-    uint32_t volatile cur_sec[CONFIG_BENCH_DATA_POINTS];
+    ccnt_t prevs[CONFIG_BENCH_DATA_POINTS];
+    ccnt_t starts[CONFIG_BENCH_DATA_POINTS];
+    ccnt_t curs[CONFIG_BENCH_DATA_POINTS];
+    uint32_t prev_sec[CONFIG_BENCH_DATA_POINTS];
+    uint32_t cur_sec[CONFIG_BENCH_DATA_POINTS];
 };
 
 
 struct bench_timer_online {
     /*online time: prevs = starts*/
-    ccnt_t volatile prevs[CONFIG_BENCH_DATA_POINTS];
-    ccnt_t volatile starts[CONFIG_BENCH_DATA_POINTS];
+    ccnt_t  prevs[CONFIG_BENCH_DATA_POINTS];
+    ccnt_t  starts[CONFIG_BENCH_DATA_POINTS];
+};
+
+struct bench_cache_flush {
+    ccnt_t overhead; 
+    ccnt_t costs[BENCH_CACHE_FLUSH_RUNS];
 };
 
 /*the argument passes to the benchmarking thread*/

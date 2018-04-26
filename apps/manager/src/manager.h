@@ -71,6 +71,9 @@ typedef struct {
  
     /*endpoint that root thread is waiting on*/ 
     seL4_CPtr bench_ep;
+
+    /*the kernel log buffer for read only*/
+    void *kernel_log_vaddr; 
 } m_env_t;  /*environment used by the manager*/  
 
 /*parameters for setting up a benchmark process*/ 
@@ -88,11 +91,10 @@ typedef struct bench_thread {
     /*abstracts over kernel version and boot envior*/
     simple_t *simple; 
 
-
     vspace_t *vspace;        /*virtual address space of the root task*/
     char *image;            /*binary name of benchmarking elf file*/
     seL4_Word prio;         /*priority of benchmarking thread*/
-    uint8_t kernel_prio;    /*priority of the kernel image*/
+    uint8_t kernel_prio;    /*priority of the kernel image, instruction masking*/
     sel4utils_process_t process;  /*internal process context*/ 
     seL4_Word test_num;      /*test number*/
  
@@ -459,5 +461,9 @@ void launch_bench_covert(m_env_t *env);
 /*entry point of the functional correctness test
  in func_test.c*/
 void launch_bench_func_test(m_env_t *env);
+
+/*entry point of launch only a single benchmarking thread*/
+void launch_bench_single (m_env_t *env);
+
 #endif   /*__MANAGER_H*/
 

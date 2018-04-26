@@ -31,6 +31,14 @@ menu    "Manager task for benchmarking tests"
         depends on APP_MANAGER 
         help 
              allocating 1<<N untype for each of the benchmarking thread.  
+        
+       config MANAGER_MITIGATION 
+        bool "setting up system for mitigating timing channels" 
+        default n 
+        depends on APP_MANAGER 
+        help  
+               setting up kernel objects, and endpointers for testing mitigation mechanisms. 
+
 
         config MANAGER_IPC
         bool "ipc performance"
@@ -74,13 +82,6 @@ menu    "Manager task for benchmarking tests"
         depends on APP_MANAGER 
         help 
             enable covert channel benchmarks 
-
-        config MANAGER_COVERT_MITIGATION 
-        bool "setting up system for mitigating timing channels" 
-        default n 
-        depends on MANAGER_COVERT_BENCH 
-        help  
-               setting up kernel objects, and endpointers for testing mitigation mechanisms. 
 
         config COVERT_TROJAN_SENSITIVE 
         bool "trojan sensitive" 

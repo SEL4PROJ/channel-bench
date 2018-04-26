@@ -1,8 +1,15 @@
-/*a covert channel benchmark 
- setting up two threads: trojan and receiver
- currently only support single core*/ 
+/*
+ * Copyright 2017, Data61
+ * Commonwealth Scientific and Industrial Research Organisation (CSIRO)
+ * ABN 41 687 119 230.
+ *
+ * This software may be distributed and modified according to the terms of
+ * the BSD 2-Clause license. Note that NO WARRANTY is provided.
+ * See "LICENSE_BSD2.txt" for details.
+ *
+ * @TAG(DATA61_BSD)
+ */
 
-/*Kconfig variables*/
 #include <autoconf.h>
 
 #include <stdio.h>
@@ -339,8 +346,7 @@ void launch_bench_covert (m_env_t *env) {
     trojan.vspace = spy.vspace = &env->vspace;
     trojan.name = "trojan"; 
     spy.name = "spy";
-    
-#ifdef CONFIG_MANAGER_COVERT_MITIGATION 
+#ifdef CONFIG_MANAGER_MITIGATION 
     /*using sperate kernels*/
     trojan.kernel = env->kimages[0].ki.cptr; 
     spy.kernel = env->kimages[1].ki.cptr;
@@ -349,7 +355,7 @@ void launch_bench_covert (m_env_t *env) {
     trojan.kernel = spy.kernel = env->kernel;
 #endif 
 
-#ifdef CONFIG_MANAGER_COVERT_MITIGATION 
+#ifdef CONFIG_MANAGER_MITIGATION 
     trojan.vka = &env->vka_colour[0]; 
     spy.vka = &env->vka_colour[1]; 
     env->ipc_vka = &env->vka_colour[0];

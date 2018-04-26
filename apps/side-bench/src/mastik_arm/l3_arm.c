@@ -338,7 +338,7 @@ static int probemap(l3pp_t l3) {
 
 static int ptemap(l3pp_t l3) {
 
-#ifdef CONFIG_MANAGER_COVERT_MITIGATION 
+#ifdef CONFIG_MANAGER_MITIGATION 
   l3->ngroups = 8;
 #else
   l3->ngroups = 16;

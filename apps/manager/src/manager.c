@@ -78,16 +78,7 @@ seL4_CPtr copy_cap_to(sel4utils_process_t *pro, seL4_CPtr cap) {
     return copy;
 }
 
-/*map the N frame caps to a process*/
-static inline 
-void *map_frames_to(sel4utils_process_t *pro, seL4_CPtr *caps, int n, int size) {
 
-    void *vaddr = vspace_map_pages(&pro->vspace, 
-            caps, NULL, seL4_AllRights, n, size, 1);
-
-    assert(vaddr); 
-    return vaddr; 
-}
 
 /*init run time environment*/
 void init_env (m_env_t *env) {
@@ -308,6 +299,7 @@ static void init_pmu_counters(void) {
 static void *main_continued (void* arg) {
     
     int error = 0; 
+    seL4_CPtr kernel_log_cap; 
 
     printf("Done\n"); 
 
@@ -315,6 +307,21 @@ static void *main_continued (void* arg) {
     error = sel4platsupport_init_default_timer_caps(&env.vka, &env.vspace, &env.simple, &env.to);
     assert(error == 0); 
     
+#ifdef CONFIG_BENCHMARK_USE_KERNEL_LOG_BUFFER
+    
+    /*init the kernel log buffer, only read at user side*/
+    env.kernel_log_vaddr = vspace_new_pages(&env.vspace, 
+            seL4_CanRead,
+            1, seL4_LargePageBits);
+    assert(env.kernel_log_vaddr); 
+
+    kernel_log_cap = vspace_get_cap(&env.vspace, env.kernel_log_vaddr);
+    assert(kernel_log_cap != seL4_CapNull); 
+
+    error = seL4_BenchmarkSetLogBuffer(kernel_log_cap);
+    assert(error == seL4_NoError); 
+
+#endif 
     /*init the benchmarking functions*/
     sel4bench_init();
 
@@ -325,12 +332,15 @@ static void *main_continued (void* arg) {
 #ifdef CONFIG_MANAGER_IPC
     launch_bench_ipc(&env); 
 #endif 
+
 #ifdef CONFIG_MANAGER_CACHE_FLUSH 
-    launch_bench_single(arg);
+    launch_bench_single(&env);
 #endif
+
 #ifdef CONFIG_MANAGER_COVERT_BENCH
     launch_bench_covert(&env); 
 #endif 
+
 #ifdef CONFIG_MANAGER_FUNC_TESTS 
     launch_bench_func_test(&env); 
 #endif 

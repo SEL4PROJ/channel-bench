@@ -24,12 +24,6 @@
   the arguments passed by the root thread*/
 bench_env_t bench_env; 
 
-#ifdef CONFIG_BENCH_CACHE_FLUSH
-extern char *morecore_area;
-extern size_t morecore_size;
-#endif
-
-#ifdef CONFIG_BENCH_COVERT_SINGLE
 static int (*covert_bench_fun[BENCH_COVERT_FUNS])(bench_env_t *) = {NULL, 
     l1_trojan, l1_spy,  
     NULL, NULL, 
@@ -44,7 +38,9 @@ static int (*covert_bench_fun[BENCH_COVERT_FUNS])(bench_env_t *) = {NULL,
     bp_trojan, bp_spy,
     timer_high, timer_low,
 };
-#endif
+
+static int (*flush_bench_fun[BENCH_CACHE_FLUSH_FUNS])(bench_env_t *) = 
+{ l1_cache_flush, NULL, NULL};  
 
 /* dummy global for libsel4muslcsys */
 char _cpio_archive[1];
@@ -77,7 +73,8 @@ static inline void send_result_to(seL4_CPtr endpoint, seL4_Word w) {
     seL4_Send(endpoint, info);
 }
 
-#ifdef CONFIG_BENCH_CACHE_FLUSH 
+
+#ifdef CONFIG_BENCH_DCACHE_ATTACK 
 /*benchmarking cache flush costs*/
 void run_bench_single (bench_env_t *bench_env) {
     
@@ -86,9 +83,7 @@ void run_bench_single (bench_env_t *bench_env) {
     int ret; 
     seL4_CPtr endpoint = args->r_ep; 
     void *record_vaddr = args->record_vaddr; 
-
    
-#ifdef CONFIG_BENCH_DCACHE_ATTACK 
     crypto_init(); 
 
     /*passing the record vaddr in */
@@ -96,24 +91,6 @@ void run_bench_single (bench_env_t *bench_env) {
     /*return result to root task*/
     send_result_to(endpoint, result); 
 
-#endif 
-   
-#ifdef CONFIG_BENCH_CACHE_FLUSH 
-
-    /*init the more core space 64M to be used as the probe buffer*/
-    morecore_area = args->hugepage_vaddr; 
-    assert(morecore_area != NULL); 
-    morecore_size = args->hugepage_size; 
-
-#ifdef CONFIG_DEBUG_BUILD
-    printf("more core area in side bench %p \n", morecore_area);
-#endif
-
-    /*measuring the cost of flushing caches*/
-    result = bench_flush(endpoint, record_vaddr); 
-    /*return result to root task*/
-    send_result_to(endpoint, result); 
-#endif
 
 }
 #endif 
@@ -139,7 +116,6 @@ void run_bench_ipc(bench_env_t *bench_env) {
 
 }
 #endif 
-#ifdef CONFIG_BENCH_COVERT_SINGLE
  
 int run_bench_covert(bench_env_t *bench_env) {
    
@@ -149,7 +125,17 @@ int run_bench_covert(bench_env_t *bench_env) {
     assert(covert_bench_fun[test_num] != NULL); 
     return covert_bench_fun[test_num](bench_env); 
 }
-#endif
+
+
+int run_bench_cache_flush(bench_env_t *bench_env) {
+
+    int test_num = bench_env->args->test_num; 
+    assert(flush_bench_fun[test_num - BENCH_CACHE_FLUSH_FUN_START]); 
+
+    return flush_bench_fun[test_num - BENCH_CACHE_FLUSH_FUN_START](bench_env);
+
+}
+
 
 #ifdef CONFIG_MASTIK_ATTACK
 void run_bench_mastik(bench_args_t *bench_evn) {
@@ -221,9 +207,10 @@ int main (int argc, char **argv) {
     run_bench_covert(&bench_env); 
 #endif
 
-#ifdef CONFIG_BENCH_CACHE_FLUSH 
-    run_bench_single(&bench_env);
-#endif 
+#ifdef CONFIG_BENCH_CACHE_FLUSH
+    run_bench_cache_flush(&bench_env);
+#endif
+
 #ifdef CONFIG_MASTIK_ATTACK
     run_bench_mastik(&bench_env);
 #endif 

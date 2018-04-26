@@ -12,80 +12,6 @@
 #define PTR(set, way, ptr) (void *)(((uintptr_t)l1->memory) + ((set) * L1_CACHELINE) + ((way) * L1_STRIDE) + ((ptr)*sizeof(void *)))
 #define LNEXT(p) (*(void **)(p))
 
-static int probelist_flush(void *pp, int segments, int seglen, uint16_t *results) {
-  void *p = pp;
-  uint32_t s,res; 
-
-#ifdef CONFIG_ARCH_ARM
-  READ_COUNTER_ARMV7(s);
-#endif 
-#ifdef CONFIG_ARCH_X86
-  s = rdtscp();
-#endif 
-  while (segments--) {
-    for (int i = seglen; i--; ) {
-      // Under normal circumstances, p is never NULL. 
-      // We need this test to ensure the optimiser does not kill the whole loop...
-      if (p == NULL)
-	break;
-#ifndef CONFIG_BENCH_CACHE_FLUSH_READ 
-        *(uint32_t*) ((uint32_t*)p + 4 ) = 0xff;
-#endif 
-        p = LNEXT(p);
-    }
-   }
- #ifdef CONFIG_ARCH_ARM 
-    READ_COUNTER_ARMV7(res); 
-    res -= s; 
-#endif 
-#ifdef CONFIG_ARCH_X86
-    res = rdtscp() - s;
-#endif 
-
-  /*FIXME: the cost should not exceed the max 16 65536, otherwise incorrect*/
-  *results = res > UINT16_MAX ? UINT16_MAX : res;
-
-  return p == pp;
-}
-
-static int probelist_clflush(void *pp, int segments, int seglen, uint16_t *results) {
-  void *p = pp;
-  uint32_t s,res; 
-
-#ifdef CONFIG_ARCH_ARM
-  READ_COUNTER_ARMV7(s);
-#endif 
-#ifdef CONFIG_ARCH_X86
-  s = rdtscp();
-#endif 
-  while (segments--) {
-      for (int i = seglen; i--; ) {
-          // Under normal circumstances, p is never NULL. 
-          // We need this test to ensure the optimiser does not kill the whole loop...
-          if (p == NULL)
-              break;
-          /*FIXME: what is the cache flush command on arm??*/
-#ifdef CONFIG_ARCH_X86
-          clflush(p);
-#endif 
-          p = LNEXT(p);
-      }
-  }
-#ifdef CONFIG_ARCH_ARM 
-    READ_COUNTER_ARMV7(res); 
-    res -= s; 
-#endif 
-#ifdef CONFIG_ARCH_X86
-    res = rdtscp() - s;
-#endif 
-
-  /*FIXME: the cost should not exceed the max 16 65536, otherwise incorrect*/
-  *results = res > UINT16_MAX ? UINT16_MAX : res;
-
-  return p == pp;
-}
-
-
 static int probelist(void *pp, int segments, int seglen, uint16_t *results) {
   void *p = pp;
   uint32_t s, res; 
@@ -192,16 +118,10 @@ void l1_randomise(l1info_t l1) {
 }
 
 int l1_probe(l1info_t l1, uint16_t *results) {
-#ifdef CONFIG_BENCH_CACHE_FLUSH
-  return probelist_flush(l1->fwdlist, l1->nsets, L1_ASSOCIATIVITY, results);
-#else 
   return probelist(l1->fwdlist, l1->nsets, L1_ASSOCIATIVITY, results);
-#endif 
 }
 
-int l1_probe_clflush(l1info_t l1, uint16_t *results) {
-  return probelist_clflush(l1->fwdlist, l1->nsets, L1_ASSOCIATIVITY, results);
-}
+
 
 void l1_bprobe(l1info_t l1, uint16_t *results) {
   probelist(l1->bkwlist, l1->nsets, L1_ASSOCIATIVITY, results);
@@ -211,7 +131,4 @@ void l1_bprobe(l1info_t l1, uint16_t *results) {
 void *l1_prime(l1info_t l1) {
   return primelist(l1->fwdlist, l1->nsets, L1_ASSOCIATIVITY);
 }
-
-
-
 

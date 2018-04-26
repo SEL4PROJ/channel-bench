@@ -6,6 +6,7 @@
 
 #include "../../bench_common.h"
 
+
 typedef seL4_Word (*ipc_bench_func)(seL4_CPtr ep, seL4_CPtr result_ep); 
 
 

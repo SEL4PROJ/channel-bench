@@ -88,15 +88,14 @@
       that we don't want it to. The reason for preventing optimization is so that things like
          overhead calculations aren't unduly influenced */
 #define FENCE() asm volatile("" ::: "memory")
+
+
 /*for cache flushing benchmark*/
-#define WARMUPS 10
-#define OVERHEAD_RUNS 10
-#define OVERHEAD_RETRIES 4
-
-#define NLATENCY  16 
-
+#define BENCH_CACHE_FLUSH_RUNS    10
 
 /*ipc benchmark, same as sel4bench*/
+
+#define NLATENCY  16 
 #define IPC_RUNS    16
 #define IPC_WARMUPS 16
 #define IPC_OVERHEAD_RETRIES  4 
@@ -112,20 +111,10 @@
 
 /*dividing cache colours into security domains*/
 #define CC_NUM_DOMAINS     2
+
 #ifdef CONFIG_ARCH_X86 
-
-#ifdef CONFIG_MANAGER_FUNC_TESTS 
+/*spliting according to the L2 cache colours, total 8 colours*/
 #define CC_DIV             4
-#endif
-
-#ifdef CONFIG_BENCH_COVERT_SINGLE 
-#define CC_DIV             4    /*spliting the L2 caches, 8 colours in total*/
-#endif 
-
-#ifdef CONFIG_MANAGER_COVERT_MULTI
-#define CC_DIV             4    /*spliting the L2 caches, 8 colours in total*/
-#endif 
-//#define CC_DIV             16 LLC cache 
 #endif  /*x86*/
 
 #ifdef CONFIG_PLAT_HIKEY
@@ -327,6 +316,24 @@ typedef struct {
 #define BENCH_COVERT_TIMER_LOW           24
 #define BENCH_COVERT_FUNS                25
 
+
+#define BENCH_CACHE_FLUSH_FUN_START      100
+#define BENCH_CACHE_FLUSH_L1D            100 
+#define BENCH_CACHE_FLUSH_L1I            101 
+#define BENCH_CACHE_FLUSH_LLC            102
+#define BENCH_CACHE_FLUSH_FUNS           3
+
+#ifdef CONFIG_BENCH_CACHE_FLUSH_L1_CACHES 
+#define BENCH_FLUSH_THREAD_NUM        BENCH_CACHE_FLUSH_L1D 
+#endif 
+
+#ifdef CONFIG_BENCH_CACHE_FLUSH_L1_CACHES_INSTRUCTION 
+#define BENCH_FLUSH_THREAD_NUM       BENCH_CACHE_FLUSH_L1I 
+#endif 
+
+#ifdef CONFIG_BENCH_CACHE_FLUSH_ALL_CACHES 
+#define BENCH_FLUSH_THREAD_NUM      BENCH_CACHE_FLUSH_LLC 
+#endif 
 
 /*the benchmarking tets for the function correctness */
 #define BENCH_FUNC_RECEIVER              80 

@@ -16,72 +16,51 @@ menu   "Timing Channel Benchmarks"
         help 
              a seperate benchmarking thread for measuring chosen features.
 
-        config BENCH_CACHE_LINE_SIZE 
-        int "cache line size (Bytes)" 
-        default 64 
-        depends on APP_SIDE_BENCH 
-        help 
-              the cache line size of benchmarked platform. 
-
         config BENCH_CACHE_FLUSH 
         bool "cost of flushing caches"
         default n 
         depends on APP_SIDE_BENCH 
         help 
-             the indirect cost of flushing caches with write operations 
+             The cache flushing benchmark. 
         
-        config BENCH_CACHE_FLUSH_READ
-        bool "cost of flushing caches with read operations"
+     
+        config BENCH_CACHE_FLUSH_L1_CACHES
+        bool "L1 cache flush (L1D attack)"
+        depends on BENCH_CACHE_FLUSH 
+        default n
+        help 
+             Testing the direct and indirect cost of flushing L1 caches.
+             The buffer is the same used for conducting the timing channel 
+             prob, the L1d prime + probe covert channel. 
+             Direct cost represent the cost of doing L1 cache flushing in kernel
+             (on x86, it is flushed used a chained buffer). 
+             Indirect cost means the performance increase at user-level 
+             for accessing the testing buffer. 
+        
+        config BENCH_CACHE_FLUSH_L1_CACHES_INSTRUCTION
+        bool "L1 cache flush (L1I attack)"
         default n 
-        depends on APP_SIDE_BENCH 
-        help 
-             the indirect cost of flushing caches with reading operations 
-      
-        choice 
-               prompt "Flushing Range"
-               
-               config BENCH_CACH_FLUSH_NONE 
-               bool "Flushing none"
-
-               config BENCH_CACHE_FLUSH_L1D
-               bool "Flushing L1 data cache"
-
-               config BENCH_CACHE_FLUSH_L1I
-               bool "Flushing L1 instruction cache"
-
-               config BENCH_CACHE_FLUSH_ALL 
-               bool "Flushing all caches"
-        endchoice
-       
-        config BENCH_CACHE_BUFFER 
-        int "buffer size representing maximum working set (number of uint * 4 bytes)"
         depends on BENCH_CACHE_FLUSH 
-        default 32768
         help 
-               the buffer size for measuring indirect cost of flushing caches. Benchmarking thread writes or reads each buffer lines which equal the size of cache line. 
-       
-
-        config BENCH_FLUSH_START 
-        int "starting size (number of unit)"
+             Testing the direct and indirect cost of flushing L1 caches.
+             The buffer is the same used for conducting the timing channel 
+             prob, the L1I prime + probe covert channel. 
+             Direct cost represent the cost of doing L1 cache flushing in kernel
+             (on x86, it is flushed used a chained buffer). 
+             Indirect cost means the performance increase at user-level 
+             for accessing the testing buffer.             T
+   
+        config BENCH_CACHE_FLUSH_ALL_CACHES 
+        bool "LLC cache flush (LLC attack)"
         depends on BENCH_CACHE_FLUSH 
-        default 8192
+        default n
         help 
-              the starting size for testing the flushing cost, the working set size stepping for the power of 2 in each set.
+            Testing the direct and indirect cost of flushing all the caches.
+             The buffer is the same used for the LLC side channel attack.
+             Direct cost represent the cost of doing all the cache flush in kernel.
+             Indirect cost means the performance increase at user-level 
+             for accessing the testing buffer. 
               
-        config BENCH_FLUSH_STEPPING 
-        int "stepping size on the defined buffer"
-        depends on BENCH_CACHE_FLUSH 
-        default 16
-        help 
-              the stepping size should be the cache lines size divided by the unit size (unsigned int) of the flushing buffer
-
-        config BENCH_FLUSH_RUNS 
-        int "number of runs for cache flushing" 
-        depends on BENCH_CACHE_FLUSH 
-        default 10 
-        help 
-                number of runs for measuring the indirect cost of flushing caches. 
-
         config BENCH_DCACHE_ATTACK 
         bool "simulate the L1 dcache attack (Tromer_OS_10)"
         depends on APP_SIDE_BENCH 

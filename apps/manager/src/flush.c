@@ -9,153 +9,134 @@
  *
  * @TAG(DATA61_BSD)
  */
+#include <autoconf.h>
 
+#include <stdio.h>
+#include <assert.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sel4/sel4.h>
+#include <sel4utils/vspace.h>
+#include <sel4utils/process.h>
+#include <sel4utils/mapping.h>
+#include <vka/object.h>
+#include <simple/simple.h>
+#include <sel4bench/kernel_logging.h>
 
-/*TODO: fixing this benchmark setup*/
+#include "manager.h"
+#include "bench_types.h"
+#include "bench_helper.h"
+#include "bench_common.h"
 
-#ifdef CONFIG_MANAGER_CACHE_FLUSH
-static void launch_bench_single (void *arg) {
+static bench_thread_t flush_thread;
 
-    cspacepath_t src, dest; 
-    int ret; 
-    void *r_cp, *vaddr; 
-    seL4_Word bench_result;
-    uint32_t total, huge_page_size;
+/*ep for reply*/
+static vka_object_t reply_ep, syn_ep;
 
-    /*current format for argument: "name, endpoint slot, xxx"*/
-    char *arg0 = CONFIG_BENCH_THREAD_NAME;
-    char arg1[CONFIG_BENCH_MAX_UNIT] = {0};
-    char arg2[CONFIG_BENCH_MAX_UNIT] = {0}; 
-    char *argv[CONFIG_BENCH_ARGS] = {arg0, arg1, arg2};
+static void print_bench_cache_flush(void *user_log_vaddr, 
+        void *kernel_log_vaddr) {
 
-    printf("\n"); 
-    printf("Flushing cache benchmark, preparing...\n");
+    uint32_t count, nlog_kernel;
+    seL4_Word duration; 
 
-    /*create frames that act as record buffer, mapping 
-     to benchmark processes*/
-    env.record_vaddr = vspace_new_pages(&env.vspace, seL4_AllRights, 
-            CONFIG_BENCH_RECORD_PAGES, PAGE_BITS_4K); 
-    assert(env.record_vaddr != NULL); 
+    kernel_log_entry_t *klogs = kernel_log_vaddr; 
+    struct bench_cache_flush *ulogs = user_log_vaddr; 
 
-    /*copy the caps to map into the remote process*/
-    for (int i = 0; i < CONFIG_BENCH_RECORD_PAGES; i++) {
-	
-	vaddr = env.record_vaddr + i * PAGE_SIZE_4K; 
-        vka_cspace_make_path(&env.vka, vspace_get_cap(&env.vspace, 
-                    vaddr), &src); 
-        ret = vka_cspace_alloc(&env.vka, env.record_frames + i); 
-        assert(ret == 0); 
+#ifdef CONFIG_BENCHMARK_USE_KERNEL_LOG_BUFFER
+    /*finalise the log in kernel*/
+    nlog_kernel = seL4_BenchmarkFinalizeLog(); 
+    assert(nlog_kernel != (BENCH_CACHE_FLUSH_RUNS + BENCH_WARMUPS)); 
 
-        vka_cspace_make_path(&env.vka, env.record_frames[i], &dest); 
-        ret = vka_cnode_copy(&dest, &src, seL4_AllRights); 
-        assert(ret == 0); 
-
+    printf("cost in kernel : \n");
+    /*skip the warmup rounds*/
+    for (count = 0; count < BENCH_CACHE_FLUSH_RUNS; count++) {
+        duration = kernel_logging_entry_get_data(klogs + BENCH_WARMUPS + count); 
+        printf(" %u", duration); 
     }
+    printf("\n");
 
-   /*creating the large page that uses as the probe buffer 
-    for testing, mapping to the benchmark process, and passing in 
-    the pointer and the size to the benchmark thread*/ 
-
-    total = 16 * 6 * 1024 * 1024; 
-
-#ifdef CONFIG_ARCH_X86
-    huge_page_size = seL4_LargePageBits; 
-#endif 
-
-#ifdef CONFIG_ARCH_ARM 
-     huge_page_size = vka_get_object_size(seL4_ARM_SuperSectionObject, 0); 
-#endif 
-
-    if (total % (1 << huge_page_size)) { 
-        total += 1 << huge_page_size; 
-    }
-    total /= 1 << huge_page_size; 
-    env.huge_vaddr = vspace_new_pages(&env.vspace, seL4_AllRights, total, 
-            huge_page_size);
-
-    for (uint32_t i = 0; i < total; i++) {
-
-        vaddr = env.huge_vaddr + i * (1 << huge_page_size); 
-        vka_cspace_make_path(&env.vka, vspace_get_cap(&env.vspace, 
-                    vaddr), &src); 
-        ret = vka_cspace_alloc(&env.vka, env.huge_frames + i); 
-        assert(ret == 0); 
-
-        vka_cspace_make_path(&env.vka, env.huge_frames[i], &dest); 
-        ret = vka_cnode_copy(&dest, &src, seL4_AllRights); 
-        assert(ret == 0); 
-    }
-    
-    /*configure benchmark thread*/ 
-    printf("Config benchmark thread...\n");
-    ret = sel4utils_configure_process(&env.bench_thread, &env.vka, 
-        &env.vspace, CONFIG_BENCH_PRIORITY, 
-        CONFIG_BENCH_THREAD_NAME);
-    assert(ret == 0); 
-
-
-    /*copy the fault endpoint to benchmaring thread for communicate*/
-    env.bench_ep = copy_cap_to(&env.bench_thread, 
-            env.bench_thread.fault_endpoint.cptr); 
-
-    /*set up args for the benchmark process
-     benchmark thread is resumed afterwards.*/ 
-    snprintf(arg1, CONFIG_BENCH_MAX_UNIT, "%d", env.bench_ep);
-
-    /*entry point, system V ABI compliant*/
-    ret = sel4utils_spawn_process_v(&env.bench_thread, &env.vka, 
-            &env.vspace, CONFIG_BENCH_ARGS, argv, 1); 
-    assert(ret == 0); 
-
-    printf("sending init msg...\n"); 
-
-    /*send an init msg*/ 
-    send_msg_to(env.bench_thread.fault_endpoint.cptr, BENCH_INIT_MSG); 
-
-    /*map the frames for data recording into benchmark pro*/
-    r_cp = map_frames_to(&env.bench_thread, env.record_frames, 
-            CONFIG_BENCH_RECORD_PAGES, PAGE_BITS_4K); 
-    
-    printf("frames map to benchmark, manager: %p, side-bench: %p\n", 
-           env.record_vaddr, r_cp );
-
-    printf("sending record vaddr... \n");
-    send_msg_to(env.bench_thread.fault_endpoint.cptr, (seL4_Word)r_cp); 
-
-    r_cp = map_frames_to(&env.bench_thread, env.huge_frames, 
-            total, huge_page_size); 
-    
-    printf("huge frames map to benchmark, manager: %p, side-bench: %p, %d pages\n", 
-            env.huge_vaddr, r_cp, total );
-
-    printf("sending huge page vaddr... \n");
-    send_msg_to(env.bench_thread.fault_endpoint.cptr, (seL4_Word)r_cp); 
-
-#ifdef CONFIG_ARCH_ARM 
-
-        wait_msg_from(env.bench_thread.fault_endpoint.cptr); 
-
-        printf("clean and invalidate the huge pages from cache....\n"); 
-        for (uint32_t i = 0; i < total; i++) {
-
-            seL4_ARM_Page_CleanInvalidate_Data(env.huge_frames[i], 0, (1 << huge_page_size)); 
-            seL4_ARM_Page_CleanInvalidate_Data(env.huge_frames[i], 0, (1 << huge_page_size)); 
-        }
-        printf("starting benchmark in side-bench... \n");
-        send_msg_to(env.bench_thread.fault_endpoint.cptr, 0); 
 #endif
-    
-    printf("waiting on results... \n");
-    /*waiting on benchmark to finish*/
-    bench_result = wait_msg_from(env.bench_thread.fault_endpoint.cptr); 
-    
 
-    assert(bench_result != BENCH_FAILURE); 
+    printf("cost in user-level : \n");
+    for (count = 0; count < BENCH_CACHE_FLUSH_RUNS; count++) {
+        printf(" "CCNT_FORMAT" ", ulogs->costs[count]); 
+    }
+    printf("\n");
 
+    printf("overhead for user-level measurement: "CCNT_FORMAT" \n", ulogs->overhead);
+
+    printf("done covert benchmark\n");
+}
+
+
+void launch_bench_single (m_env_t *env) {
+
+    int ret; 
+    uint32_t n_p = (sizeof (struct bench_cache_flush) / BENCH_PAGE_SIZE) + 1;
+    seL4_MessageInfo_t info;
+  
+    flush_thread.image = CONFIG_BENCH_THREAD_NAME;
+
+    flush_thread.vspace = &env->vspace;
+
+    flush_thread.name = "flush"; 
+
+#ifdef CONFIG_MANAGER_MITIGATION 
+    /*using sperate kernels*/
+    flush_thread.kernel = env->kimages[0].ki.cptr; 
+
+#else 
+    /*by default the kernel is shared*/
+    flush_thread.kernel = env->kernel;
+#endif 
+
+#ifdef CONFIG_MANAGER_MITIGATION 
+    flush_thread.vka = &env->vka_colour[0]; 
+    env->ipc_vka = &env->vka_colour[0];
+#else 
+    flush_thread.vka = &env->vka; 
+    env->ipc_vka = &env->vka;
+#endif
+
+    flush_thread.root_vka = &env->vka;
+    flush_thread.simple = &env->simple;
+
+    /*ep for communicate*/
+    ret = vka_alloc_endpoint(env->ipc_vka, &reply_ep);
+    assert(ret == 0);
+
+    ret = vka_alloc_endpoint(env->ipc_vka, &syn_ep);
+    assert(ret == 0);
+ 
+    flush_thread.ipc_vka = env->ipc_vka; 
+    flush_thread.reply_ep = reply_ep;
+    flush_thread.ep = syn_ep; 
+
+    flush_thread.prio = 100;
+
+    flush_thread.kernel_prio = 0;
+
+    flush_thread.test_num = BENCH_FLUSH_THREAD_NUM; 
+
+    /*initing the thread*/
+    printf("Flushing cache benchmark, creating thread...");
+    create_thread(&flush_thread); 
+
+    printf("done. \n");
+
+    printf("creating recording frames for benchmarking thread.\n"); 
+    map_r_buf(env, n_p, &flush_thread);
+
+    launch_thread(&flush_thread); 
+
+    info = seL4_Recv(reply_ep.cptr, NULL);
+    assert(seL4_MessageInfo_get_label(info) == seL4_Fault_NullFault); 
+    
+    printf("benchmark result ready\n");
+ 
     /*processing record*/
-    bench_process_data(&env, bench_result); 
+    print_bench_cache_flush(env->record_vaddr, env->kernel_log_vaddr);
 
 }
-#endif 
 
 

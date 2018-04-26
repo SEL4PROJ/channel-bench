@@ -8,10 +8,10 @@
 #include "l1.h"
 #include "bench_common.h"
 #include "bench_types.h"
-
-
+#include "bench_helper.h"
 
 #define TS_THRESHOLD 10000
+
 
 static void  newTimeSlice(){
   asm("");
@@ -23,6 +23,7 @@ static void  newTimeSlice(){
     prev = cur;
   }
 }
+
 
 static void access_buffer(char *buffer, uint32_t sets) {
 
@@ -48,7 +49,7 @@ int l1_trojan(bench_env_t *env) {
 
     bench_args_t *args = env->args; 
 
-    uint32_t volatile *share_vaddr = args->shared_vaddr; 
+    uint32_t *share_vaddr = args->shared_vaddr; 
     *share_vaddr = SYSTEM_TICK_SYN_FLAG; 
 
     /*manager: trojan is ready*/
@@ -145,6 +146,55 @@ int l1_spy(bench_env_t *env) {
     }
 
     /*send result to manager, spy is done*/
+    info = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 1);
+    seL4_SetMR(0, 0);
+    seL4_Send(args->r_ep, info);
+
+    while (1);
+
+    return 0;
+}
+
+
+int l1_cache_flush(bench_env_t *env) {
+    seL4_MessageInfo_t info;
+    ccnt_t overhead, start, end;
+
+    uint64_t monitored_mask[1] = {~0LLU};
+
+    bench_args_t *args = env->args; 
+
+    l1info_t l1_1 = l1_prepare(monitored_mask);
+
+    /*the record address*/
+    struct bench_cache_flush *r_addr = (struct bench_cache_flush *)args->record_vaddr;
+
+    /*measuring the overhead: reading the timestamp counter*/
+    measure_overhead(&overhead);
+    r_addr->overhead = overhead; 
+    
+    /*warming up*/
+    for (int i = 0; i < BENCH_WARMUPS; i++) {
+        start = sel4bench_get_cycle_count(); 
+        l1_prime(l1_1); 
+        end = sel4bench_get_cycle_count(); 
+
+        seL4_Yield();
+    }
+    /*running benchmark*/
+    for (int i = 0; i < BENCH_CACHE_FLUSH_RUNS; i++) {
+
+        start = sel4bench_get_cycle_count(); 
+        l1_prime(l1_1); 
+        end = sel4bench_get_cycle_count(); 
+
+        /*ping kernel for taking the measurements in kernel
+          a context swtich is invovled*/
+        seL4_Yield(); 
+        r_addr->costs[i] = end - start - overhead; 
+    }
+
+    /*send result to manager, benchmarking is done*/
     info = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 1);
     seL4_SetMR(0, 0);
     seL4_Send(args->r_ep, info);
