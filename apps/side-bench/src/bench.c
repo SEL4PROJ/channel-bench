@@ -40,7 +40,7 @@ static int (*covert_bench_fun[BENCH_COVERT_FUNS])(bench_env_t *) = {NULL,
 };
 
 static int (*flush_bench_fun[BENCH_CACHE_FLUSH_FUNS])(bench_env_t *) = 
-{ l1_cache_flush, NULL, NULL};  
+{l1_cache_flush, NULL, NULL, bench_idle};  
 
 /* dummy global for libsel4muslcsys */
 char _cpio_archive[1];
@@ -130,6 +130,7 @@ int run_bench_covert(bench_env_t *bench_env) {
 int run_bench_cache_flush(bench_env_t *bench_env) {
 
     int test_num = bench_env->args->test_num; 
+
     assert(flush_bench_fun[test_num - BENCH_CACHE_FLUSH_FUN_START]); 
 
     return flush_bench_fun[test_num - BENCH_CACHE_FLUSH_FUN_START](bench_env);

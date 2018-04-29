@@ -321,7 +321,8 @@ typedef struct {
 #define BENCH_CACHE_FLUSH_L1D            100 
 #define BENCH_CACHE_FLUSH_L1I            101 
 #define BENCH_CACHE_FLUSH_LLC            102
-#define BENCH_CACHE_FLUSH_FUNS           3
+#define BENCH_CACHE_FLUSH_IDLE           103 
+#define BENCH_CACHE_FLUSH_FUNS           4
 
 #ifdef CONFIG_BENCH_CACHE_FLUSH_L1_CACHES 
 #define BENCH_FLUSH_THREAD_NUM        BENCH_CACHE_FLUSH_L1D 

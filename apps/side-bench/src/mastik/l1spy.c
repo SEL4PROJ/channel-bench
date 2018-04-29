@@ -134,7 +134,6 @@ int l1_spy(bench_env_t *env) {
             r_addr->pmu[i][counter] = pmu_end[counter] - pmu_start[counter]; 
 
 #endif
-
         /*result is the total probing cost
           secret is updated by trojan in the previous system tick*/
         r_addr->result[i] = 0; 
@@ -172,7 +171,12 @@ int l1_cache_flush(bench_env_t *env) {
     /*measuring the overhead: reading the timestamp counter*/
     measure_overhead(&overhead);
     r_addr->overhead = overhead; 
-    
+
+    /*syn with the idle thread */
+    info = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 1);
+    seL4_SetMR(0, 0); 
+    seL4_Send(args->ep, info);
+
     /*warming up*/
     for (int i = 0; i < BENCH_WARMUPS; i++) {
         start = sel4bench_get_cycle_count(); 
@@ -189,7 +193,7 @@ int l1_cache_flush(bench_env_t *env) {
         end = sel4bench_get_cycle_count(); 
 
         /*ping kernel for taking the measurements in kernel
-          a context swtich is invovled*/
+          a context switch is invovled, switching to the idle user-level thread*/
         seL4_Yield(); 
         r_addr->costs[i] = end - start - overhead; 
     }

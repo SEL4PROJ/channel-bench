@@ -299,7 +299,6 @@ static void init_pmu_counters(void) {
 static void *main_continued (void* arg) {
     
     int error = 0; 
-    seL4_CPtr kernel_log_cap; 
 
     printf("Done\n"); 
 
@@ -307,21 +306,6 @@ static void *main_continued (void* arg) {
     error = sel4platsupport_init_default_timer_caps(&env.vka, &env.vspace, &env.simple, &env.to);
     assert(error == 0); 
     
-#ifdef CONFIG_BENCHMARK_USE_KERNEL_LOG_BUFFER
-    
-    /*init the kernel log buffer, only read at user side*/
-    env.kernel_log_vaddr = vspace_new_pages(&env.vspace, 
-            seL4_CanRead,
-            1, seL4_LargePageBits);
-    assert(env.kernel_log_vaddr); 
-
-    kernel_log_cap = vspace_get_cap(&env.vspace, env.kernel_log_vaddr);
-    assert(kernel_log_cap != seL4_CapNull); 
-
-    error = seL4_BenchmarkSetLogBuffer(kernel_log_cap);
-    assert(error == seL4_NoError); 
-
-#endif 
     /*init the benchmarking functions*/
     sel4bench_init();
 
@@ -408,6 +392,23 @@ int main (void) {
     /*enable serial driver*/
     err = platsupport_serial_setup_simple(&env.vspace, &env.simple, &env.vka); 
     assert(err == 0);
+
+#ifdef CONFIG_BENCHMARK_USE_KERNEL_LOG_BUFFER
+    
+    seL4_CPtr kernel_log_cap; 
+    /*init the kernel log buffer, only read at user side*/
+    env.kernel_log_vaddr = vspace_new_pages(&env.vspace, 
+            seL4_CanRead,
+            1, seL4_LargePageBits);
+    assert(env.kernel_log_vaddr); 
+
+    kernel_log_cap = vspace_get_cap(&env.vspace, env.kernel_log_vaddr);
+    assert(kernel_log_cap != seL4_CapNull); 
+
+    error = seL4_BenchmarkSetLogBuffer(kernel_log_cap);
+    assert(error == seL4_NoError); 
+
+#endif 
 
 #ifdef CONFIG_MULTI_KERNEL_IMAGES
     create_kernel_pd(&env); 
