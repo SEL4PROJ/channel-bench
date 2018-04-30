@@ -52,6 +52,96 @@ struct bench_cache_flush {
     ccnt_t costs[BENCH_CACHE_FLUSH_RUNS];
 };
 
+
+/*pmu counter result structure*/
+typedef struct {
+
+    ccnt_t pmuc[IPC_ALL][BENCH_PMU_COUNTERS]; 
+} ipc_pmu_t;  
+
+typedef struct {
+    /* Raw results from benchmarking. These get checked for sanity */
+    ccnt_t call_time_inter[IPC_RUNS][BENCH_PMU_COUNTERS];
+    ccnt_t reply_wait_time_inter[IPC_RUNS][BENCH_PMU_COUNTERS];
+    ccnt_t call_time_inter_low[IPC_RUNS][BENCH_PMU_COUNTERS];
+    ccnt_t reply_wait_time_inter_high[IPC_RUNS][BENCH_PMU_COUNTERS];
+    ccnt_t call_time_inter_high[IPC_RUNS][BENCH_PMU_COUNTERS];
+    ccnt_t reply_wait_time_inter_low[IPC_RUNS][BENCH_PMU_COUNTERS];
+    ccnt_t send_time_inter[IPC_RUNS][BENCH_PMU_COUNTERS];
+    ccnt_t wait_time_inter[IPC_RUNS][BENCH_PMU_COUNTERS];
+    ccnt_t call_10_time_inter[IPC_RUNS][BENCH_PMU_COUNTERS];
+    ccnt_t reply_wait_10_time_inter[IPC_RUNS][BENCH_PMU_COUNTERS];
+} ipc_test_pmu_t; 
+
+typedef struct {
+    /* Raw results from benchmarking. rt only */
+   volatile ccnt_t call_rt_time[IPC_RUNS];
+   volatile ccnt_t call_reply_wait_overhead;
+   volatile ccnt_t call_time[IPC_RUNS]; 
+   volatile ccnt_t reply_wait_time[IPC_RUNS];
+} ipc_rt_result_t; 
+ 
+#ifdef CONFIG_ARCH_X86
+#define CCNT64BIT
+typedef uint64_t ccnt_t;
+#else
+#define CCNT32BIT
+typedef uint32_t ccnt_t;
+#endif
+
+struct bench_results {
+    /* Raw results from benchmarking. These get checked for sanity */
+    ccnt_t call_overhead[IPC_RUNS];
+    ccnt_t reply_wait_overhead[IPC_RUNS];
+    ccnt_t call_10_overhead[IPC_RUNS];
+    ccnt_t reply_wait_10_overhead[IPC_RUNS];
+    ccnt_t send_overhead[IPC_RUNS];
+    ccnt_t wait_overhead[IPC_RUNS];
+    ccnt_t call_time_inter[IPC_RUNS];
+    ccnt_t reply_wait_time_inter[IPC_RUNS];
+    ccnt_t call_time_intra[IPC_RUNS];
+    ccnt_t reply_wait_time_intra[IPC_RUNS];
+    ccnt_t call_time_inter_low[IPC_RUNS];
+    ccnt_t reply_wait_time_inter_high[IPC_RUNS];
+    ccnt_t call_time_inter_high[IPC_RUNS];
+    ccnt_t reply_wait_time_inter_low[IPC_RUNS];
+    ccnt_t send_time_inter[IPC_RUNS];
+    ccnt_t wait_time_inter[IPC_RUNS];
+    ccnt_t call_10_time_inter[IPC_RUNS];
+    ccnt_t reply_wait_10_time_inter[IPC_RUNS];
+    /* A worst case overhead */
+    ccnt_t call_reply_wait_overhead;
+    ccnt_t call_reply_wait_10_overhead;
+    ccnt_t send_wait_overhead;
+    /* Calculated results to print out */
+    ccnt_t call_cycles_inter;
+    ccnt_t reply_wait_cycles_inter;
+    ccnt_t call_cycles_intra;
+    ccnt_t reply_wait_cycles_intra;
+    ccnt_t call_cycles_inter_low;
+    ccnt_t reply_wait_cycles_inter_high;
+    ccnt_t call_cycles_inter_high;
+    ccnt_t reply_wait_cycles_inter_low;
+    ccnt_t send_cycles_inter;
+    ccnt_t wait_cycles_inter;
+    ccnt_t call_10_cycles_inter;
+    ccnt_t reply_wait_10_cycles_inter;
+};
+
+typedef seL4_Word (*ipc_bench_func)(seL4_CPtr ep, seL4_CPtr result_ep); 
+
+
+/*data maxtix for probing result (x,y) = (Plain text 
+  value, set number)*/
+//typedef uint64_t d_time_t [N_PT_B][N_L1D_SETS];
+typedef struct {
+
+    uint64_t t[N_PT_B][N_L1D_SETS];
+} d_time_t; 
+
+
+
+
 /*the argument passes to the benchmarking thread*/
 typedef struct {
 

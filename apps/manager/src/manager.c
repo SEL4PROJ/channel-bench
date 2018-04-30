@@ -313,12 +313,8 @@ static void *main_continued (void* arg) {
     init_pmu_counters(); 
 #endif 
 
-#ifdef CONFIG_MANAGER_IPC
-    launch_bench_ipc(&env); 
-#endif 
-
-#ifdef CONFIG_MANAGER_CACHE_FLUSH 
-    launch_bench_single(&env);
+#if defined( CONFIG_MANAGER_CACHE_FLUSH) || defined (CONFIG_MANAGER_IPC) 
+    launch_bench_flush(&env);
 #endif
 
 #ifdef CONFIG_MANAGER_COVERT_BENCH

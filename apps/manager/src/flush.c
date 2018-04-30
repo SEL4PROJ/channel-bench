@@ -27,13 +27,14 @@
 #include "bench_types.h"
 #include "bench_helper.h"
 #include "bench_common.h"
-#ifdef CONFIG_MANAGER_CACHE_FLUSH 
+
 
 static bench_thread_t flush_thread, idle_thread; 
 
 /*ep for reply*/
 static vka_object_t reply_ep, syn_ep, idle_ep;
 
+#ifdef CONFIG_MANAGER_CACHE_FLUSH 
 static void print_bench_cache_flush(void *user_log_vaddr, 
         void *kernel_log_vaddr) {
 
@@ -91,14 +92,46 @@ static void print_bench_cache_flush(void *user_log_vaddr,
 
     printf("overhead for user-level measurement: "CCNT_FORMAT" \n", ulogs->overhead);
 
-    printf("done covert benchmark\n");
+}
+
+#endif 
+
+static void print_ipc_result(void *record_vaddr) {
+
+    ipc_rt_result_t *rt_v = (ipc_rt_result_t*)record_vaddr;
+
+    printf("call reply wait overhead "CCNT_FORMAT"\n", rt_v->call_reply_wait_overhead); 
+    printf("round trip IPC  after overhead is taken off: \n"); 
+
+    for (int i = 0; i < IPC_RUNS; i++ ) {
+        printf(" "CCNT_FORMAT" ", rt_v->call_rt_time[i]); 
+    }
+    printf("\n");
+#ifdef CONFIG_MANAGER_PMU_COUNTER 
+    /*get pmu counter value*/
+    for (int i = 0; i < BENCH_PMU_COUNTERS; i++) {
+
+        assert(pmu_v->pmuc[IPC_REPLY_WAIT2][i] >=
+                pmu_v->pmuc[IPC_CALL2][i]);
+
+        pmu_counters[i] = pmu_v->pmuc[IPC_REPLY_WAIT2][i] - 
+            pmu_v->pmuc[IPC_CALL2][i];  
+
+    }
+#endif
 }
 
 
-void launch_bench_single (m_env_t *env) {
+void launch_bench_flush (m_env_t *env) {
 
     int ret; 
+
+#ifdef CONFIG_MANAGER_IPC 
+    uint32_t n_p = (sizeof (ipc_rt_result_t) / BENCH_PAGE_SIZE) + 1; 
+#else
     uint32_t n_p = (sizeof (struct bench_cache_flush) / BENCH_PAGE_SIZE) + 1;
+#endif
+
     seL4_MessageInfo_t info;
   
     idle_thread.image = flush_thread.image = CONFIG_BENCH_THREAD_NAME;
@@ -158,7 +191,7 @@ void launch_bench_single (m_env_t *env) {
      the INT enabled in a domain.*/
 
     flush_thread.test_num = BENCH_FLUSH_THREAD_NUM; 
-    idle_thread.test_num = BENCH_CACHE_FLUSH_IDLE;  
+    idle_thread.test_num = BENCH_IDLE_THREAD_NUM;  
 
     /*initing the thread*/
     create_thread(&flush_thread); 
@@ -177,8 +210,14 @@ void launch_bench_single (m_env_t *env) {
     printf("benchmark result ready\n");
  
     /*processing record*/
-    print_bench_cache_flush(env->record_vaddr, env->kernel_log_vaddr);
+#ifdef CONFIG_MANAGER_IPC 
 
+    print_ipc_result(env->record_vaddr);
+
+#else 
+    print_bench_cache_flush(env->record_vaddr, env->kernel_log_vaddr);
+#endif 
+
+    printf("done covert benchmark\n");
 }
 
-#endif 

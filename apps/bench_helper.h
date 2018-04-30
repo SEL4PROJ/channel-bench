@@ -74,3 +74,9 @@ static inline bool measure_overhead(ccnt_t *overhead) {
     return false;
 }
 
+/* The fence is designed to try and prevent the compiler optimizing across code boundaries
+   that we don't want it to. The reason for preventing optimization is so that things like
+   overhead calculations aren't unduly influenced */
+#define FENCE() asm volatile("" ::: "memory")
+
+#define ALLOW_UNSTABLE_OVERHEAD 

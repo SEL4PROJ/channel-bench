@@ -452,9 +452,6 @@ static inline void send_msg_to(seL4_CPtr endpoint, seL4_Word w) {
 /*analysing benchmark results*/
 void bench_process_data(m_env_t *env, seL4_Word result); 
 
-/*interface in ipc.c*/
-/*lanuch ipc benchmarking threads*/ 
-void launch_bench_ipc(m_env_t *);
 /*interface in covert.c*/
 /*entry point of covert channel benchmark*/
 void launch_bench_covert(m_env_t *env);
@@ -462,8 +459,7 @@ void launch_bench_covert(m_env_t *env);
  in func_test.c*/
 void launch_bench_func_test(m_env_t *env);
 
-/*entry point of launch only a single benchmarking thread*/
-void launch_bench_single (m_env_t *env);
+void launch_bench_flush (m_env_t *env);
 
 #endif   /*__MANAGER_H*/
 

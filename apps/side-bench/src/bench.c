@@ -104,11 +104,11 @@ void run_bench_ipc(bench_env_t *bench_env) {
     /*get the test number*/
     test_num = bench_env->args->test_num;; 
     ep = bench_env->args->ep;
-    result_ep = env->args->r_ep;  
+    result_ep = bench_env->args->r_ep;  
     
-    record_vaddr = env->args->record_vaddr;  
+    record_vaddr = bench_env->args->record_vaddr;  
 
-    ipc_bench(reply_ep, ep, test_num, record_vaddr);
+    ipc_bench(result_ep, ep, test_num, record_vaddr);
 
     /*waiting on a endpoit which will never return*/
     wait_init_msg_from(ep);

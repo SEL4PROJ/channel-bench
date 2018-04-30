@@ -5,7 +5,38 @@
 #include <sel4/sel4.h>
 #include "bench_common.h"
 #include "bench_types.h"
-#include "ipc_test.h"
+#include "bench_helper.h"
+
+#ifdef CONFIG_ARCH_X86_64
+#include "ipc_x86_64.h"
+#endif 
+
+seL4_Word ipc_call_func(seL4_CPtr ep, seL4_CPtr result_ep);
+seL4_Word ipc_call_func2(seL4_CPtr ep, seL4_CPtr result_ep);
+seL4_Word ipc_call_10_func(seL4_CPtr ep, seL4_CPtr result_ep);
+seL4_Word ipc_call_10_func2(seL4_CPtr ep, seL4_CPtr result_ep);
+
+
+seL4_Word ipc_reply_wait_func(seL4_CPtr ep, seL4_CPtr result_ep); 
+
+seL4_Word ipc_reply_wait_func2(seL4_CPtr ep, seL4_CPtr result_ep); 
+
+seL4_Word ipc_reply_wait_10_func(seL4_CPtr ep, seL4_CPtr result_ep); 
+
+seL4_Word ipc_reply_wait_10_func2(seL4_CPtr ep, seL4_CPtr result_ep); 
+
+seL4_Word ipc_rt_reply_wait_func(seL4_CPtr ep, seL4_CPtr result_ep); 
+seL4_Word ipc_rt_call_func(seL4_CPtr ep, seL4_CPtr result_ep); 
+seL4_Word ipc_latency_reply_wait_func(seL4_CPtr ep, seL4_CPtr result_ep); 
+seL4_Word ipc_latency_call_func(seL4_CPtr ep, seL4_CPtr result_ep); 
+
+
+/*interfaces*/
+void ipc_measure_overhead(seL4_CPtr reply_ep, struct bench_results *results); 
+seL4_Word ipc_wait_func(seL4_CPtr ep, seL4_CPtr result_ep); 
+seL4_Word ipc_send_func(seL4_CPtr ep, seL4_CPtr result_ep);
+
+
 
 #ifdef CONFIG_BENCH_IPC 
 #if defined(CCNT32BIT)
@@ -24,6 +55,48 @@ static void send_result(seL4_CPtr ep, ccnt_t result) {
 #else
 #error Unknown ccnt size
 #endif
+
+
+#define MEASURE_OVERHEAD(op, dest, decls) do { \
+    uint32_t i; \
+    for (i = 0; i < IPC_OVERHEAD_RETRIES; i++) { \
+        uint32_t j; \
+        for (j = 0; j < IPC_RUNS; j++) { \
+            uint32_t k; \
+            decls; \
+            ccnt_t start, end; \
+            FENCE(); \
+            for (k = 0; k < IPC_WARMUPS; k++) { \
+                READ_COUNTER_BEFORE(start); \
+                op; \
+                READ_COUNTER_AFTER(end); \
+            } \
+            FENCE(); \
+            dest[j] = end - start; \
+        } \
+        if (results_stable(dest)) break; \
+    } \
+} while(0)
+
+
+static inline void dummy_seL4_Send(seL4_CPtr ep, seL4_MessageInfo_t tag) {
+    (void)ep;
+    (void)tag;
+}
+
+static inline void dummy_seL4_Call(seL4_CPtr ep, seL4_MessageInfo_t tag) {
+    (void)ep;
+    (void)tag;
+}
+
+static inline void dummy_seL4_Wait(seL4_CPtr ep, void *badge) {
+    (void)ep;
+    (void)badge;
+}
+
+static inline void dummy_seL4_Reply(seL4_MessageInfo_t tag) {
+    (void)tag;
+}
 
 #undef IPC_BENCH_PRINTOUT
 #ifdef CONFIG_BENCH_PMU_COUNTER
@@ -47,13 +120,7 @@ NULL};
 
 struct bench_results results; 
 
-#if 0
-ipc_bench_func ipc_bench_call[4] = {ipc_call_func, ipc_call_func2, ipc_call_10_func, ipc_call_10_func2};
-
-ipc_bench_func ipc_bench_reply_wait[4] = {ipc_reply_wait_func, ipc_reply_wait_func2, ipc_reply_wait_10_func, ipc_reply_wait_10_func2};
-#endif 
-
-void print_pmu_results(sel4bench_counter_t *r) {
+void print_pmu_results(ccnt_t *r) {
 
 
     for (int j = 0; j < BENCH_PMU_COUNTERS; j++) 
@@ -191,6 +258,7 @@ seL4_Word ipc_call_10_func2(seL4_CPtr ep, seL4_CPtr result_ep) {
 seL4_Word ipc_reply_wait_func(seL4_CPtr ep, seL4_CPtr result_ep) { 
     uint32_t i; 
     ccnt_t start UNUSED, end UNUSED; 
+    seL4_Word badge UNUSED; 
     seL4_MessageInfo_t tag = seL4_MessageInfo_new(0, 0, 0, 0); 
 #ifdef CONFIG_BENCH_PMU_COUNTER
     sel4bench_counter_t pmuc[BENCH_PMU_COUNTERS]; 
@@ -202,7 +270,7 @@ seL4_Word ipc_reply_wait_func(seL4_CPtr ep, seL4_CPtr result_ep) {
         sel4bench_get_counters(BENCH_PMU_BITS, pmuc);  
 #endif
         READ_COUNTER_BEFORE(start); 
-        DO_REAL_REPLY_WAIT(ep, tag); 
+        DO_REAL_REPLY_RECV(ep, tag, badge); 
         READ_COUNTER_AFTER(end); 
     } 
     FENCE(); 
@@ -220,6 +288,7 @@ seL4_Word ipc_reply_wait_func2(seL4_CPtr ep, seL4_CPtr result_ep) {
     uint32_t i; 
     ccnt_t start UNUSED, end UNUSED; 
     seL4_MessageInfo_t tag = seL4_MessageInfo_new(0, 0, 0, 0); 
+    seL4_Word badge UNUSED; 
 #ifdef CONFIG_BENCH_PMU_COUNTER
     sel4bench_counter_t pmuc[BENCH_PMU_COUNTERS]; 
 #endif 
@@ -227,7 +296,7 @@ seL4_Word ipc_reply_wait_func2(seL4_CPtr ep, seL4_CPtr result_ep) {
     FENCE(); 
     for (i = 0; i < IPC_WARMUPS; i++) { 
         READ_COUNTER_BEFORE(start);
-        DO_REAL_REPLY_WAIT(ep, tag); 
+        DO_REAL_REPLY_RECV(ep, tag, badge); 
         READ_COUNTER_AFTER(end); 
 #ifdef CONFIG_BENCH_PMU_COUNTER 
         sel4bench_get_counters(BENCH_PMU_BITS, pmuc);  
@@ -249,12 +318,13 @@ seL4_Word ipc_reply_wait_func2(seL4_CPtr ep, seL4_CPtr result_ep) {
 seL4_Word ipc_reply_wait_10_func(seL4_CPtr ep, seL4_CPtr result_ep) { 
     uint32_t i; 
     ccnt_t start UNUSED, end UNUSED; 
+    seL4_Word badge UNUSED; 
     seL4_MessageInfo_t tag = seL4_MessageInfo_new(0, 0, 0, 10); 
     seL4_Recv(ep, NULL); 
     FENCE(); 
     for (i = 0; i < IPC_WARMUPS; i++) { 
         READ_COUNTER_BEFORE(start); 
-        DO_REAL_REPLY_WAIT_10(ep, tag); 
+        DO_REAL_REPLY_RECV_10(ep, tag, badge); 
         READ_COUNTER_AFTER(end); 
     } 
     FENCE(); 
@@ -267,11 +337,13 @@ seL4_Word ipc_reply_wait_10_func2(seL4_CPtr ep, seL4_CPtr result_ep) {
     uint32_t i; 
     ccnt_t start UNUSED, end UNUSED; 
     seL4_MessageInfo_t tag = seL4_MessageInfo_new(0, 0, 0, 10); 
+    seL4_Word badge UNUSED; 
+ 
     seL4_Recv(ep, NULL); 
     FENCE(); 
     for (i = 0; i < IPC_WARMUPS; i++) { 
         READ_COUNTER_BEFORE(start); 
-        DO_REAL_REPLY_WAIT_10(ep, tag); 
+        DO_REAL_REPLY_RECV_10(ep, tag, badge); 
         READ_COUNTER_AFTER(end); 
     } 
     FENCE(); 
@@ -281,22 +353,23 @@ seL4_Word ipc_reply_wait_10_func2(seL4_CPtr ep, seL4_CPtr result_ep) {
 }
 
 
-uint32_t ipc_wait_func(seL4_CPtr ep, seL4_CPtr result_ep) {
+seL4_Word ipc_wait_func(seL4_CPtr ep, seL4_CPtr result_ep) {
     uint32_t i;
     ccnt_t start UNUSED, end UNUSED;
+    seL4_Word badge UNUSED; 
     FENCE();
     for (i = 0; i < IPC_WARMUPS; i++) {
         READ_COUNTER_BEFORE(start);
-        DO_REAL_WAIT(ep);
+        DO_REAL_RECV(ep, badge);
         READ_COUNTER_AFTER(end);
     }
     FENCE();
-    DO_REAL_WAIT(ep);
+    DO_REAL_RECV(ep, badge);
     send_result(result_ep, end);
     return 0;
 }
 
-uint32_t ipc_send_func(seL4_CPtr ep, seL4_CPtr result_ep) {
+seL4_Word ipc_send_func(seL4_CPtr ep, seL4_CPtr result_ep) {
     uint32_t i;
     ccnt_t start UNUSED, end UNUSED;
     seL4_MessageInfo_t tag = seL4_MessageInfo_new(0, 0, 0, 0);
@@ -436,23 +509,10 @@ void ipc_measure_overhead(seL4_CPtr reply_ep, struct bench_results *results) {
     MEASURE_OVERHEAD(DO_NOP_CALL(0, tag),
                      results->call_overhead,
                      seL4_MessageInfo_t tag = seL4_MessageInfo_new(0, 0, 0, 0));
-    MEASURE_OVERHEAD(DO_NOP_REPLY_WAIT(0, tag),
+    MEASURE_OVERHEAD(DO_NOP_REPLY_RECV(0, tag, 0),
                      results->reply_wait_overhead,
                      seL4_MessageInfo_t tag = seL4_MessageInfo_new(0, 0, 0, 0));
-#if 0
-    MEASURE_OVERHEAD(DO_NOP_SEND(0, tag),
-                     results->send_overhead,
-                     seL4_MessageInfo_t tag = seL4_MessageInfo_new(0, 0, 0, 0));
-    MEASURE_OVERHEAD(DO_NOP_WAIT(0),
-                     results->wait_overhead,
-                     {});
-    MEASURE_OVERHEAD(DO_NOP_CALL_10(0, tag10),
-                     results->call_10_overhead,
-                     seL4_MessageInfo_t tag10 = seL4_MessageInfo_new(0, 0, 0, 10));
-    MEASURE_OVERHEAD(DO_NOP_REPLY_WAIT_10(0, tag10),
-                     results->reply_wait_10_overhead,
-                     seL4_MessageInfo_t tag10 = seL4_MessageInfo_new(0, 0, 0, 10));
-#endif  
+ 
     if (check_overhead(results)) {
         COMPILER_BARRIER; 
         rt_v->call_reply_wait_overhead = results->call_reply_wait_overhead;
@@ -475,7 +535,7 @@ seL4_Word ipc_rt_call_func(seL4_CPtr ep, seL4_CPtr result_ep) {
         
         for (int j = 0; j < IPC_WARMUPS; j++) { 
             READ_COUNTER_BEFORE(start); 
-            DO_REAL_CALL(ep, tag); 
+            DO_REAL_CALL(ep, tag);
             READ_COUNTER_AFTER(end); 
         } 
 
@@ -488,10 +548,10 @@ seL4_Word ipc_rt_call_func(seL4_CPtr ep, seL4_CPtr result_ep) {
 #ifdef CONFIG_BENCH_PMU_COUNTER
     memcpy((void *)pmu_v->pmuc[IPC_CALL], (void *)pmuc, 
             (sizeof (sel4bench_counter_t)) * BENCH_PMU_COUNTERS); 
-#endif 
-    //seL4_Send(ep, tag); 
+#endif
+    /*ping the root task, test is done*/
+    seL4_Send(result_ep, tag); 
     return 0; 
-
 }
 
 /*round trip ipc performance testing*/
@@ -501,16 +561,17 @@ seL4_Word ipc_rt_reply_wait_func(seL4_CPtr ep, seL4_CPtr result_ep) {
 #ifdef CONFIG_BENCH_PMU_COUNTER
     sel4bench_counter_t pmuc[BENCH_PMU_COUNTERS]; 
 #endif 
+    seL4_Word badge UNUSED; 
     FENCE();
     
     for (int i = 0; i < IPC_RUNS; i++) {
     
-        seL4_Recv(ep, NULL); 
+        DO_REAL_RECV(ep, badge); 
         for (int j = 0; j < IPC_WARMUPS; j++) { 
 #ifdef CONFIG_BENCH_PMU_COUNTER 
             sel4bench_get_counters(BENCH_PMU_BITS, pmuc);  
 #endif
-            DO_REAL_REPLY_WAIT(ep, tag); 
+            DO_REAL_REPLY_RECV(ep, tag, badge);
         } 
     }
     FENCE(); 
@@ -556,13 +617,14 @@ seL4_Word ipc_latency_reply_wait_func(seL4_CPtr ep, seL4_CPtr result_ep) {
     ccnt_t  end UNUSED; 
     
     seL4_MessageInfo_t tag = seL4_MessageInfo_new(0, 0, 0, 0); 
-    
+  
+    seL4_Word badge UNUSED; 
     for (int i = 0; i < IPC_RUNS; i++) {
     
         FENCE();
         seL4_Recv(ep, NULL); 
         for (int j = 0; j < IPC_WARMUPS - 1; j++) { 
-            DO_REAL_REPLY_WAIT(ep, tag); 
+            DO_REAL_REPLY_RECV(ep, tag, badge); 
             READ_COUNTER_AFTER(end); 
         } 
  
@@ -580,9 +642,8 @@ seL4_Word ipc_bench(seL4_CPtr result_ep, seL4_CPtr test_ep, int test_n,
     
     rt_v = (ipc_rt_result_t *)record_vaddr; 
 
-    if (test_n == IPC_OVERHEAD) {
+    if (test_n == IPC_RT_CALL) {
         ipc_measure_overhead(result_ep, &results); 
-        return BENCH_SUCCESS;
     }
 
 #ifdef CONFIG_BENCH_PMU_COUNTER 
@@ -590,8 +651,7 @@ seL4_Word ipc_bench(seL4_CPtr result_ep, seL4_CPtr test_ep, int test_n,
     pmu_v = record_vaddr; 
 #endif 
 
-    if (!ipc_funs[test_n])
-        return BENCH_FAILURE;
+    assert(ipc_funs[test_n]);
 
     ipc_funs[test_n](test_ep, result_ep);
  

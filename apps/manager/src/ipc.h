@@ -3,21 +3,6 @@
 
 #include "../../bench_common.h"
 
-#if 0
-/*benchmark running sequence number*/
-#define IPC_BENCH_CALL_START 0 
-#define IPC_BENCH_CALL_END   3 
-#define IPC_BENCH_REPLY_WAIT_START 4 
-#define IPC_BENCH_REPLY_WAIT_END   7
-#define IPC_WAIT        8 
-#define IPC_SEND        9 
-#define IPC_OVERHEAD    10
-#define EEMBC_TEST      11
-#define COVERT_SENDER   12 
-#define COVERT_RECEIVER1 13 
-#define COVERT_RECEIVER2  14
-#endif 
-
 
 #define READ_COUNTER_X86(var) do { \
     uint32_t low, high; \
@@ -61,7 +46,7 @@
 #define READ_COUNTER_BEFORE READ_COUNTER_ARMV7
 #define READ_COUNTER_AFTER  READ_COUNTER_ARMV7
 #elif defined(CONFIG_ARCH_X86)
-#ifdef CONFIG_X86_64
+#ifdef CONFIG_ARCH_X86_64
 #define READ_COUNTER_BEFORE READ_COUNTER_X64_BEFORE
 #define READ_COUNTER_AFTER  READ_COUNTER_X64_AFTER
 #define ALLOW_UNSTABLE_OVERHEAD
@@ -74,46 +59,6 @@
 #error Unsupported arch
 #endif
 
-
-
-struct bench_results {
-    /* Raw results from benchmarking. These get checked for sanity */
-    ccnt_t call_overhead[IPC_RUNS];
-    ccnt_t reply_wait_overhead[IPC_RUNS];
-    ccnt_t call_10_overhead[IPC_RUNS];
-    ccnt_t reply_wait_10_overhead[IPC_RUNS];
-    ccnt_t send_overhead[IPC_RUNS];
-    ccnt_t wait_overhead[IPC_RUNS];
-    ccnt_t call_time_inter[IPC_RUNS];
-    ccnt_t reply_wait_time_inter[IPC_RUNS];
-    ccnt_t call_time_intra[IPC_RUNS];
-    ccnt_t reply_wait_time_intra[IPC_RUNS];
-    ccnt_t call_time_inter_low[IPC_RUNS];
-    ccnt_t reply_wait_time_inter_high[IPC_RUNS];
-    ccnt_t call_time_inter_high[IPC_RUNS];
-    ccnt_t reply_wait_time_inter_low[IPC_RUNS];
-    ccnt_t send_time_inter[IPC_RUNS];
-    ccnt_t wait_time_inter[IPC_RUNS];
-    ccnt_t call_10_time_inter[IPC_RUNS];
-    ccnt_t reply_wait_10_time_inter[IPC_RUNS];
-    /* A worst case overhead */
-    ccnt_t call_reply_wait_overhead;
-    ccnt_t call_reply_wait_10_overhead;
-    ccnt_t send_wait_overhead;
-    /* Calculated results to print out */
-    ccnt_t call_cycles_inter;
-    ccnt_t reply_wait_cycles_inter;
-    ccnt_t call_cycles_intra;
-    ccnt_t reply_wait_cycles_intra;
-    ccnt_t call_cycles_inter_low;
-    ccnt_t reply_wait_cycles_inter_high;
-    ccnt_t call_cycles_inter_high;
-    ccnt_t reply_wait_cycles_inter_low;
-    ccnt_t send_cycles_inter;
-    ccnt_t wait_cycles_inter;
-    ccnt_t call_10_cycles_inter;
-    ccnt_t reply_wait_10_cycles_inter;
-};
 
 
 #endif 

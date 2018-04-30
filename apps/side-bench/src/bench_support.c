@@ -176,7 +176,7 @@ static int get_cap_count(void *data) {
     /* skip the null slot */
     last--;
 
-    if (config_set(CONFIG_X86_64)) {
+    if (config_set(CONFIG_ARCH_X86_64)) {
         /* skip the ASID pool slot */
         last--;
     }
@@ -201,7 +201,7 @@ static seL4_CPtr get_nth_cap(void *data, int n)
         n++;
 
         /* introduce a 1 cptr hole if we on x86_64, as it does not have an ASID pool */
-        if (config_set(CONFIG_X86_64) && n >= SEL4UTILS_ASID_POOL_SLOT) {
+        if (config_set(CONFIG_ARCH_X86_64) && n >= SEL4UTILS_ASID_POOL_SLOT) {
             n++;
         }
         /* now introduce a 2 cptr hole if we're not on the RT kernel */

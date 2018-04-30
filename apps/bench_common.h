@@ -136,16 +136,6 @@
 #define BENCH_CAP_SINGLE  1  /*running the benchmark on single core*/
 #define BENCH_CAP_SLAVE 1
 
-#if 0
-#define IPC_BENCH_CALL_START 0 
-#define IPC_BENCH_CALL_END   3 
-#define IPC_BENCH_REPLY_WAIT_START 4 
-#define IPC_BENCH_REPLY_WAIT_END   7
-#define IPC_WAIT        8 
-#define IPC_SEND        9 
-#define IPC_OVERHEAD    10
-#endif 
-
 /*ipc bench serial number*/
 enum ipc_funs{
     IPC_CALL, 
@@ -165,54 +155,6 @@ enum ipc_funs{
     IPC_OVERHEAD, 
     IPC_ALL
 };
-
-#if 0
-enum ipc_benchmarks {
-    INTRA_CALL, 
-    INTRA_REPLYWAIT, 
-    INTER_CALL, 
-    INTER_REPLYWAIT, 
-    INTER_CALL_LOW_TO_HIGH, 
-    INTER_REPLYWAIT_LOW_TO_HIGH, 
-    INTER_CALL_HIGH_TO_LOW, 
-    INTER_REPLYWAIT_HIGH_TO_LOW, 
-    INTER_SEND, 
-    INTER_CALL_10,
-    INTER_REPLYWAIT_10, 
-    NIPCBENCHMARKS
-}
-
-enum ipc_overhead_benchmarks {
-    CALL_OVERHEAD,
-    REPLY_WAIT_OVERHEAD,
-    SEND_OVERHEAD,
-    WAIT_OVERHEAD,
-    CALL_10_OVERHEAD,
-    REPLY_WAIT_10_OVERHEAD,
-    /******/
-    NOVERHEADBENCHMARKS
-};
-
-enum ipc_overheads {
-    CALL_REPLY_WAIT_OVERHEAD,
-    CALL_REPLY_WAIT_10_OVERHEAD,
-    SEND_WAIT_OVERHEAD,
-    /******/
-    NOVERHEADS
-};
-
-
-struct ipc_results {
-    /* Raw results from benchmarking. These get checked for sanity */
-    ccnt_t overhead_benchmarks[NOVERHEADBENCHMARKS][IPC_RUNS];
-    ccnt_t benchmarks[NIPCBENCHMARKS][IPC_RUNS];
-    /* A worst case overhead */
-    ccnt_t overheads[NOVERHEADS];
-    /* Calculated results to print out */
-    ccnt_t results[NIPCBENCHMARKS];
-
-};
-#endif 
 
 #ifdef CONFIG_ARCH_X86 
 #define BENCH_PMU_BITS 0x1
@@ -242,47 +184,6 @@ struct ipc_results {
 #define BENCH_FUNC_TEST_PAGES    1
 
 #define BENCH_MORECORE_HUGE_SIZE  (16 * 1024 * 1024) /* huge pages created by master for benchmarking thread */
-
-
-/*pmu counter result structure*/
-typedef struct {
-
-    ccnt_t pmuc[IPC_ALL][BENCH_PMU_COUNTERS]; 
-} ipc_pmu_t;  
-
-typedef struct {
-    /* Raw results from benchmarking. These get checked for sanity */
-    ccnt_t call_time_inter[IPC_RUNS][BENCH_PMU_COUNTERS];
-    ccnt_t reply_wait_time_inter[IPC_RUNS][BENCH_PMU_COUNTERS];
-    ccnt_t call_time_inter_low[IPC_RUNS][BENCH_PMU_COUNTERS];
-    ccnt_t reply_wait_time_inter_high[IPC_RUNS][BENCH_PMU_COUNTERS];
-    ccnt_t call_time_inter_high[IPC_RUNS][BENCH_PMU_COUNTERS];
-    ccnt_t reply_wait_time_inter_low[IPC_RUNS][BENCH_PMU_COUNTERS];
-    ccnt_t send_time_inter[IPC_RUNS][BENCH_PMU_COUNTERS];
-    ccnt_t wait_time_inter[IPC_RUNS][BENCH_PMU_COUNTERS];
-    ccnt_t call_10_time_inter[IPC_RUNS][BENCH_PMU_COUNTERS];
-    ccnt_t reply_wait_10_time_inter[IPC_RUNS][BENCH_PMU_COUNTERS];
-} ipc_test_pmu_t; 
-
-typedef struct {
-    /* Raw results from benchmarking. rt only */
-   volatile ccnt_t call_rt_time[IPC_RUNS];
-   volatile ccnt_t call_reply_wait_overhead;
-   volatile ccnt_t call_time[IPC_RUNS]; 
-   volatile ccnt_t reply_wait_time[IPC_RUNS];
-} ipc_rt_result_t; 
-           
-
-
-
-
-/*data maxtix for probing result (x,y) = (Plain text 
-  value, set number)*/
-//typedef uint64_t d_time_t [N_PT_B][N_L1D_SETS];
-typedef struct {
-
-    uint64_t t[N_PT_B][N_L1D_SETS];
-} d_time_t; 
 
 
 
@@ -336,6 +237,18 @@ typedef struct {
 #define BENCH_FLUSH_THREAD_NUM      BENCH_CACHE_FLUSH_LLC 
 #endif 
 
+#ifdef CONFIG_MANAGER_CACHE_FLUSH 
+#define BENCH_IDLE_THREAD_NUM        BENCH_CACHE_FLUSH_IDLE
+#endif 
+
+
+/*ipc round trip performance*/
+#ifdef CONFIG_MANAGER_IPC
+#define BENCH_FLUSH_THREAD_NUM          IPC_RT_CALL 
+#define BENCH_IDLE_THREAD_NUM           IPC_RT_REPLY_WAIT 
+#endif 
+
+
 /*the benchmarking tets for the function correctness */
 #define BENCH_FUNC_RECEIVER              80 
 #define BENCH_FUNC_SENDER                81 
@@ -358,6 +271,9 @@ typedef struct {
 #define BENCH_COVERT_TROJAN    BENCH_COVERT_LLC_KERNEL_TROJAN 
 #define BENCH_COVERT_SPY       BENCH_COVERT_LLC_KERNEL_SPY 
 #endif 
+
+
+
 
 /*LLC covert channel, single core*/
 #ifdef CONFIG_BENCH_COVERT_LLC 
