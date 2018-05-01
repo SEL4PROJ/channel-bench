@@ -38,7 +38,7 @@ menu    "Manager task for benchmarking tests"
         depends on APP_MANAGER 
         help  
                setting up kernel objects, and endpointers for testing mitigation mechanisms. 
-
+        
 
         config MANAGER_IPC
         bool "ipc performance"
@@ -46,6 +46,23 @@ menu    "Manager task for benchmarking tests"
         depends on APP_MANAGER 
         help 
              ipc benchmarks
+       
+        config MANAGER_IPC_SAME_COLOUR
+        bool "Testing the IPC within a coloured domain" 
+        default n 
+        depends on MANAGER_IPC && MANAGER_MITIGATION
+        help  
+             The caller and receiver are built from a same cache colour (half of the L2 cache), 
+             also using the same kernel image. 
+
+        config MANAGER_IPC_CACHE_DIV_UNEVEN
+        bool "Giving the testing thread n-1 of the L2 cache colours" 
+        default n 
+        depends on MANAGER_IPC_SAME_COLOUR
+        help  
+               The caller and receiver are built from n-1 L2 cache colours.
+
+
         
         config MANAGER_PMU_COUNTER 
         bool "using pmu counter to monitor events" 

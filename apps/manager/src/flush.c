@@ -146,7 +146,6 @@ void launch_bench_flush (m_env_t *env) {
     /*using sperate kernels*/
     flush_thread.kernel = env->kimages[0].ki.cptr; 
     idle_thread.kernel = env->kimages[1].ki.cptr; 
-
 #else 
     /*by default the kernel is shared*/
     flush_thread.kernel = env->kernel;
@@ -163,6 +162,11 @@ void launch_bench_flush (m_env_t *env) {
     env->ipc_vka = &env->vka;
 #endif
 
+#ifdef CONFIG_MANAGER_IPC_SAME_COLOUR 
+    idle_thread.kernel = env->kimages[0].ki.cptr; 
+    idle_thread.vka = &env->vka_colour[0]; 
+#endif 
+    
     idle_thread.root_vka = flush_thread.root_vka = &env->vka;
     idle_thread.simple = flush_thread.simple = &env->simple;
 

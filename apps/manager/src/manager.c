@@ -114,7 +114,11 @@ static void init_env_colour(m_env_t *env) {
     color_allocator_t *init_allocator; 
     color_allocator_t *color_allocator[CC_NUM_DOMAINS]; 
     reservation_t v_reserve; 
+#ifdef CONFIG_MANAGER_IPC_CACHE_DIV_UNEVEN
+    size_t div[CC_NUM_DOMAINS] = {7, 1}; 
+#else  
     size_t div[CC_NUM_DOMAINS] = {CC_DIV, CC_DIV}; 
+#endif 
     int error = 0; 
     void *vaddr; 
 
