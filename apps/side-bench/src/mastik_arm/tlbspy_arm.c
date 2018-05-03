@@ -12,6 +12,8 @@
 #include "../../../bench_common.h"
 #include "../mastik_common/low.h"
 #include "../ipc_test.h"
+#include "../../../bench_types.h"
+
 
 #ifdef CONFIG_PLAT_SABRE
 #define TLB_ENTRIES  128 
@@ -75,7 +77,7 @@ static inline void random_seq (uint32_t *seq, uint32_t s) {
 }
 #endif 
 
-int tlb_trojan(bench_covert_t *env) {
+int tlb_trojan(bench_env_t *env) {
 
     uint32_t secret;
     seL4_Word badge;
@@ -147,7 +149,7 @@ int tlb_trojan(bench_covert_t *env) {
     return 0;
 }
 
-int tlb_spy(bench_covert_t *env) {
+int tlb_spy(bench_env_t *env) {
   seL4_Word badge;
   seL4_MessageInfo_t info;
   uint32_t start, after;

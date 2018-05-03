@@ -18,6 +18,9 @@
 #include "bench_types.h"
 #include "bench_support.h"
 
+#ifdef CONFIG_BENCH_COVERT_TIMER
+
+
 #define INTERRUPT_PERIOD_NS (1000 * NS_IN_US)
 #define TIMER_DETECT_INTERVAL_NS ( 1 * NS_IN_US)
 
@@ -133,3 +136,4 @@ int timer_low(bench_env_t *env) {
 
     return 0; 
 }
+#endif 

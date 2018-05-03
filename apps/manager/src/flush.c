@@ -29,6 +29,9 @@
 #include "bench_common.h"
 
 
+
+#if defined(CONFIG_MANAGER_CACHE_FLUSH) || defined (CONFIG_MANAGER_IPC)
+
 static bench_thread_t flush_thread, idle_thread; 
 
 /*ep for reply*/
@@ -224,4 +227,4 @@ void launch_bench_flush (m_env_t *env) {
 
     printf("done covert benchmark\n");
 }
-
+#endif 

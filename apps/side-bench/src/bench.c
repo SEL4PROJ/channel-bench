@@ -36,7 +36,9 @@ static int (*covert_bench_fun[BENCH_COVERT_FUNS])(bench_env_t *) = {NULL,
     btb_trojan, btb_spy,
     l3_trojan_single, l3_spy_single,
     bp_trojan, bp_spy,
+#ifdef CONFIG_BENCH_COVERT_TIMER
     timer_high, timer_low,
+#endif 
 };
 
 static int (*flush_bench_fun[BENCH_CACHE_FLUSH_FUNS])(bench_env_t *) = 

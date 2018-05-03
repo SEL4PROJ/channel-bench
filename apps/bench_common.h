@@ -96,8 +96,8 @@
 /*ipc benchmark, same as sel4bench*/
 
 #define NLATENCY  16 
-#define IPC_RUNS    16
-#define IPC_WARMUPS 16
+#define IPC_RUNS    32
+#define IPC_WARMUPS 32
 #define IPC_OVERHEAD_RETRIES  4 
 
 #define IPC_PROCESS_PRIO_LOW 50 
