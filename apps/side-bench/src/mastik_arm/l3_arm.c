@@ -46,7 +46,7 @@
 
 static void fillL3Info(l3pp_t l3) {
   l3->l3info.associativity = L3_ASSOCIATIVITY;
-  l3->l3info.bufsize = L3_SIZE * 2; /*16 * 16 * 4096 *2*/
+  l3->l3info.bufsize = L3_SIZE * 2; 
 }
 
 #if 0
@@ -338,18 +338,14 @@ static int probemap(l3pp_t l3) {
 
 static int ptemap(l3pp_t l3) {
 
-#ifdef CONFIG_MANAGER_MITIGATION 
-  l3->ngroups = 8;
-#else
-  l3->ngroups = 16;
-#endif
+  l3->ngroups = L3_PROBE_GROUPS; 
 
   l3->groups = (vlist_t *)calloc(l3->ngroups, sizeof(vlist_t));
   for (int i = 0; i < l3->ngroups; i++) {
     l3->groups[i] = vl_new();
 
-    /*starting of a page in the group 16 pages for the uncoloured 
-     32 pages for the coloured system*/
+    /*starting of a page in the group 32 pages for the uncoloured 
+     64 pages for the coloured system*/
     for (int p = i * 4096; p < l3->l3info.bufsize; p += 4096*l3->ngroups) {
       vl_push(l3->groups[i], l3->buffer + p);
     }
@@ -390,7 +386,7 @@ l3pp_t l3_prepare(void) {
     if (!ptemap(l3))
         probemap(l3);
 
-#if 0
+#ifdef CONFIG_DEBUG_BUILD 
     for (int i = 0; i < l3->ngroups; i++) {
         printf("%2d:", i);
         for (int j = 0; j < vl_len(l3->groups[i]); j++)
@@ -402,7 +398,7 @@ l3pp_t l3_prepare(void) {
     // Allocate monitored set info
     /*8 or 16 groups, 128 sets per page = total sets monitored*/
     /*colouring: 1024 sets, normal 2048 sets*/
-    l3->monitoredbitmap = (uint32_t *)calloc(l3->ngroups * l3->groupsize / 32, sizeof(uint32_t));
+    l3->monitoredbitmap = (uint32_t *)calloc(l3->ngroups * l3->groupsize / sizeof(uint32_t), sizeof(uint32_t));
     if (!l3->monitoredbitmap) 
         return NULL; 
 
@@ -456,7 +452,7 @@ int l3_unmonitor(l3pp_t l3, int line) {
 
 void l3_unmonitorall(l3pp_t l3) {
   l3->nmonitored = 0;
-  for (int i = 0; i < l3->ngroups*l3->groupsize/32; i++)
+  for (int i = 0; i < l3->ngroups*l3->groupsize / sizeof (uint32_t); i++)
     l3->monitoredbitmap[i] = 0;
 }
 
@@ -542,7 +538,7 @@ int probeloop(l3pp_t l3, uint16_t *results, int count, int slot) {
         READ_COUNTER_ARMV7(time_e);
     } while ((time_e - time_s) < slot);
   }
-#if DEBUG
+#ifdef CONFIG_DEBUG_BUILD 
   if (results - start == 0)
     printf("Groups: %d\n", l3->ngroups);
 #endif

@@ -143,6 +143,16 @@
 // The number of cache sets in each page
 #define L3_SETS_PER_PAGE   128
 
+/*the total probing group = groups * sets per page*/
+/*there are total 16 colours on L3 cache*/
+
+#ifdef CONFIG_MANAGER_MITIGATION 
+#define L3_PROBE_GROUPS    8
+#else 
+#define L3_PROBE_GROUPS    16 
+#endif 
+
+
 #endif /* CONFIG_PLAT_SABRE  */
 
 

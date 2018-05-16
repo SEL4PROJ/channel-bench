@@ -345,12 +345,8 @@ enum ipc_funs{
 #define NUM_L1D_SHARED_PAGE  1
 
 /*one system tick is 1ms, 3400000 cycles, 3.4GHZ sandybridge machine*/
-#ifdef CONFIG_ARCH_X86
-#define KERNEL_SCHEDULE_TICK_LENGTH   1000000
-#else 
 /*ARM V7 tick length 1ms 800 MHZ*/
-#define KERNEL_SCHEDULE_TICK_LENGTH    10000
-#endif 
+#define KERNEL_SCHEDULE_TICK_LENGTH   100000
 
 #ifdef CONFIG_ARCH_X86
 static inline uint64_t rdtscp_64(void) {
