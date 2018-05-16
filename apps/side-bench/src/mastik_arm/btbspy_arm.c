@@ -132,14 +132,11 @@ int btb_trojan(bench_env_t *env) {
         }
         FENCE();
 
-#ifndef CONFIG_BENCH_DATA_SEQUENTIAL 
         secret = random() % (BTAC_TROJAN_SETS + 1); 
-#endif
 
 #ifdef CONFIG_BENCH_BRANCH_ALIGN 
         /*using the instructions to probe*/
         branch_probe_lines(secret);
-
 #else
         /*using L1 I cache sets to probe */
         for (int s = 0; s < I_MONITOR_MASK; s++ ) {
@@ -161,10 +158,7 @@ int btb_trojan(bench_env_t *env) {
         //branch_probe(secret);
        /*update the secret read by low*/ 
         *share_vaddr = secret; 
-#ifdef CONFIG_BENCH_DATA_SEQUENTIAL 
-        if (++secret == BTAC_TROJAN_SETS + 1)
-            secret = 0; 
-#endif 
+        
         /*wait until spy set the flag*/
         *syn_vaddr = SPY_SYN_FLAG;
 

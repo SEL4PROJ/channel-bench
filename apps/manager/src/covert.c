@@ -263,11 +263,7 @@ int run_single(m_env_t *env) {
 
     printf("starting covert channel benchmark\n");
 
-#ifdef CONFIG_BENCH_DATA_SEQUENTIAL 
-    printf("data points %d with sequential sequence\n", CONFIG_BENCH_DATA_POINTS);
-#else 
     printf("data points %d with random sequence\n", CONFIG_BENCH_DATA_POINTS);
-#endif 
 
 #ifdef CONFIG_BENCH_COVERT_LLC_KERNEL 
     return run_single_llc_kernel(env); 

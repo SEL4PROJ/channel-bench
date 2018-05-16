@@ -65,17 +65,12 @@ int l1_trojan(bench_env_t *env) {
         }
         FENCE();
 
-#ifndef CONFIG_BENCH_DATA_SEQUENTIAL 
         secret = random() % (L1D_TROJAN_SETS + 1); 
-#endif
 
         data_access(data, secret);
 
         *share_vaddr = secret; 
-#ifdef CONFIG_BENCH_DATA_SEQUENTIAL 
-        if (++secret == L1D_TROJAN_SETS + 1)
-            secret = 0; 
-#endif 
+        
         /*wait until spy set the flag*/
         *syn_vaddr = SPY_SYN_FLAG;
 

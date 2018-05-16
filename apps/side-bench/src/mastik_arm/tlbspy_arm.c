@@ -127,18 +127,12 @@ int tlb_trojan(bench_env_t *env) {
             READ_COUNTER_ARMV7(cur); 
         }
         FENCE();
-#ifndef CONFIG_BENCH_DATA_SEQUENTIAL 
         secret = random() % (TLB_ENTRIES + 1); 
-#endif
 
         tlb_access(buf, seq, secret);
 
         /*update the secret read by low*/ 
         *share_vaddr = secret; 
-#ifdef CONFIG_BENCH_DATA_SEQUENTIAL 
-        if (++secret == TLB_ENTRIES + 1)
-            secret = 0; 
-#endif 
     }
 
 

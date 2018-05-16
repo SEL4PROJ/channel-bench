@@ -103,10 +103,8 @@ int l3_trojan_single(bench_env_t *env) {
         }
         FENCE();
 
-#ifndef CONFIG_BENCH_DATA_SEQUENTIAL 
        //secret = random() % (nsets + 1); 
        secret = random() % (L3_SINGLE_TROJAN_RANGE + 1); 
-#endif
 
 #if 0 
         l3_unmonitorall(l3);
@@ -119,12 +117,7 @@ int l3_trojan_single(bench_env_t *env) {
         trojan_access(secret);
         /*update the secret read by low*/ 
         *share_vaddr = secret; 
-#ifdef CONFIG_BENCH_DATA_SEQUENTIAL 
-      //if (++secret == nsets + 1)
-        //   secret = 0; 
-        if (++secret == L3_SINGLE_TROJAN_RANGE + 1)
-            secret = 0;
-#endif 
+
         *syn_vaddr = SPY_SYN_FLAG;
 
     }

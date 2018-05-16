@@ -64,9 +64,8 @@ int l3_kd_trojan(bench_env_t *env) {
             READ_COUNTER_ARMV7(cur); 
         }
         
-#ifndef CONFIG_BENCH_DATA_SEQUENTIAL 
         secret = random() % (nsets + 1); 
-#endif
+        
         /*using the LLC to probe
          probing range: 0 sets to N sets total N sets*/
         l3_unmonitorall(l3);
@@ -81,10 +80,6 @@ int l3_kd_trojan(bench_env_t *env) {
         /*update the secret read by low*/ 
         *share_vaddr = secret;
 
-#ifdef CONFIG_BENCH_DATA_SEQUENTIAL 
-        if (++secret == KD_TROJAN_LINES + 1)
-            secret = 0; 
-#endif 
     }
 
     FENCE(); 
