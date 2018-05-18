@@ -367,41 +367,6 @@ void launch_bench_covert (m_env_t *env) {
     /*sharing the timer object*/
     spy.to = trojan.to = &env->to; 
 
-
-
-#if 0
-    /*setting the kernel sensitivity*/
-#ifdef CONFIG_COVERT_TROJAN_SENSITIVE 
-    seL4_KernelImage_Sensitive(trojan.kernel); 
-    seL4_KernelImage_HoldTime(trojan.kernel, CONFIG_COVERT_TROJAN_HOLD_TIME, 0);
-#ifdef CONFIG_ARCH_X86 
-    srandom(rdtscp());
-#else 
-    srandom(sel4bench_get_cycle_count());
-#endif 
-   
-#ifdef CONFIG_ARCH_X86
-    for (int i = 0; i < 512; i ++)
-        seL4_KernelImage_Random(trojan.kernel, i, random());
-#endif  /*CONFIG_ARCH_X86*/
-#endif  /*CONFIG COVERT TROJAN SENSITIVE*/
-
-#ifdef CONFIG_COVERT_SPY_SENSITIVE 
-
-    seL4_KernelImage_Sensitive(spy.kernel);                                    
-    seL4_KernelImage_HoldTime(spy.kernel, CONFIG_COVERT_SPY_HOLD_TIME, 0); 
-#ifdef CONFIG_ARCH_X86 
-    srandom(rdtscp());
-#else 
-    srandom(sel4bench_get_cycle_count());
-#endif
-#ifdef CONFIG_ARCH_X86
-     for (int i = 0; i < 512; i ++)
-        seL4_KernelImage_Random(spy.kernel, i, random());
-#endif   /*CONFIG_ARCH_X86*/
-#endif  /*CONFIG_COVERT_SPY_SENSITIVE*/
-#endif 
-
     /*ep for communicate*/
     ret = vka_alloc_endpoint(env->ipc_vka, &syn_ep);
     assert(ret == 0);

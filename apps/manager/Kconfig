@@ -94,35 +94,6 @@ menu    "Manager task for benchmarking tests"
         help 
             enable covert channel benchmarks 
 
-        config COVERT_TROJAN_SENSITIVE 
-        bool "trojan sensitive" 
-        default n 
-        depends on MANAGER_COVERT_BENCH
-        help 
-            trojan is the high domain in normal benchmark scenario 
-            
-        config COVERT_TROJAN_HOLD_TIME 
-        int  "trojan holding time " 
-        default 3400000 
-        depends on COVERT_TROJAN_SENSITIVE 
-        help 
-            the domain execution time for trojan, in cpu cycles 
-
-
-        config COVERT_SPY_SENSITIVE 
-        bool "spy sensitive" 
-        default n 
-        depends on MANAGER_COVERT_BENCH
-        help 
-            spy is the low domain in normal benchmark scenario. the low domian should not contain the sensitive flag. 
-
-        config COVERT_SPY_HOLD_TIME 
-        int  "spy holding time " 
-        default 3400000 
-        depends on COVERT_SPY_SENSITIVE 
-        help 
-            the domain execution time for spy, in cpu cycles 
-
    
         config MANAGER_DCACHE_ATTACK 
         bool "L1 dcache attack" 
