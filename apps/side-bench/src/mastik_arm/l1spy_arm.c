@@ -8,17 +8,11 @@ sabre L1 D cache, 32B cache line, 4 ways, physically indexed, physically tagged
 #include <stdlib.h>
 #include <stdint.h>
 #include <sel4/sel4.h>
-#include "../../../bench_common.h"
+#include "bench_common.h"
+#include "bench_types.h"
 #include "../mastik_common/low.h"
 #include "../mastik_common/l1.h"
 #include "../ipc_test.h"
-#include "../../../bench_types.h"
-
-#if defined(CONFIG_PLAT_SABRE) || defined(CONFIG_PLAT_TX1)
-#define L1D_TROJAN_SETS 256
-#elif defined(CONFIG_PLAT_HIKEY)
-#define L1D_TROJAN_SETS  128
-#endif 
 
 /*accessing N number of L1 D cache sets*/
 static void data_access(char *buf, uint32_t sets) {
@@ -65,7 +59,7 @@ int l1_trojan(bench_env_t *env) {
         }
         FENCE();
 
-        secret = random() % (L1D_TROJAN_SETS + 1); 
+        secret = random() % (L1_SETS + 1); 
 
         data_access(data, secret);
 
@@ -89,8 +83,8 @@ int l1_spy(bench_env_t *env) {
   bench_args_t *args = env->args;
   
   uint32_t UNUSED start, after;
-  uint32_t volatile UNUSED pmu_start[BENCH_PMU_COUNTERS]; 
-  uint32_t volatile UNUSED pmu_end[BENCH_PMU_COUNTERS]; 
+  uint32_t UNUSED pmu_start[BENCH_PMU_COUNTERS]; 
+  uint32_t UNUSED pmu_end[BENCH_PMU_COUNTERS]; 
 
   uint64_t  monitored_mask[4] = {~0LLU, ~0LLU, ~0LLU, ~0LLU};
 

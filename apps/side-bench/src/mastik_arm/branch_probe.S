@@ -228,11 +228,6 @@ BLR_PAGE()
 arm_branch_lines:
 B_4BYTES_256()
 B_4BYTES_256()
-
-#ifdef CONFIG_PLAT_TX1
-
-#endif
-
 #ifdef CONFIG_ARCH_AARCH64
         ret
 #else

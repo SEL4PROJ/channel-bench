@@ -9,19 +9,6 @@
 #include "bench_common.h"
 #include "bench_types.h"
 
-#define TS_THRESHOLD 10000
-
-static void  newTimeSlice(){
-  asm("");
-  uint64_t  prev = rdtscp_64();
-  for (;;) {
-    uint64_t cur = rdtscp_64();
-    if (cur - prev > TS_THRESHOLD)
-      return;
-    prev = cur;
-  }
-}
-
 
 int l1i_trojan(bench_env_t *env) {
 

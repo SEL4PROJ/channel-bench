@@ -84,12 +84,6 @@
 /*number of possible plaintext values in each byte*/
 #define N_PT_B 256   
 
-/* The fence is designed to try and prevent the compiler optimizing across code boundaries
-      that we don't want it to. The reason for preventing optimization is so that things like
-         overhead calculations aren't unduly influenced */
-#define FENCE() asm volatile("" ::: "memory")
-
-
 /*for cache flushing benchmark*/
 #define BENCH_CACHE_FLUSH_RUNS    10
 
@@ -399,8 +393,10 @@ static inline seL4_CPtr wait_msg_from(seL4_CPtr endpoint)
 /*the sandy bridge frequency in microsecond 3.4MHZ*/
 #define CPU_FEQ_MICROSEC (3400000ull) 
 
-
 #define COMPILER_BARRIER do { asm volatile ("" ::: "memory"); } while(0);
+
+/*the warmup rounds for the timing channel benchmarks*/
+#define BENCH_TIMING_WARMUPS    10 
 
 #endif 
 

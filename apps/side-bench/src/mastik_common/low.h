@@ -1,13 +1,22 @@
 #ifndef __LOW_H__
 #define __LOW_H__
 
+#include <sel4bench/sel4bench.h>
 #include "../ipc_test.h"
+
 #ifndef PAGE_SIZE 
 #define PAGE_SIZE 4096
 #endif 
 
-/*the cache architecture configuration on benchmarking platforms*/
+/*the threshold for detecting a time tick*/
+#define TS_THRESHOLD 100000
 
+#define X_4(a) a a a a 
+#define X_64(a) X_4(X_4(X_4(a)))
+
+#define WARMUP_ROUNDS 0x1000 
+
+/*the cache architecture configuration on benchmarking platforms*/
 #ifdef CONFIG_ARCH_X86
 
 #define L1_ASSOCIATIVITY   8
@@ -204,6 +213,18 @@ static inline void walk(void *p, int count) {
 
 }
 
+static inline void  newTimeSlice(){
+  
+  uint32_t volatile  prev, cur; 
+  SEL4BENCH_READ_CCNT(prev);  
+  for (;;) {
+      SEL4BENCH_READ_CCNT(cur);  
+    if (cur - prev > TS_THRESHOLD)
+      return;
+    prev = cur;
+  }
+}
+
 #endif /* CONFIG_ARCH_ARM  */
 #ifdef CONFIG_ARCH_X86
 
@@ -242,12 +263,21 @@ static inline uint32_t rdtscp() {
   asm volatile ("rdtscp": "=a" (rv) :: "edx", "ecx");
   return rv;
 }
-
 static inline void mfence() {
   asm volatile("mfence");
 }
 
-
+/*return when a big jump of the time stamp counter is detected*/
+static inline void  newTimeSlice(){
+  asm("");
+  uint32_t volatile  prev = rdtscp();
+  for (;;) {
+    uint32_t volatile cur = rdtscp();
+    if (cur - prev > TS_THRESHOLD)
+      return;
+    prev = cur;
+  }
+}
 #ifdef CONFIG_ARCH_X86_64
 static inline void walk(void *p, int count) {
   if (p == NULL)
@@ -319,4 +349,5 @@ inline void cpuid(struct cpuidRegs *regs) {
   asm volatile ("cpuid": "+a" (regs->eax), "+b" (regs->ebx), "+c" (regs->ecx), "+d" (regs->edx));
 }
 #endif /* CONFIG_ARCH_X86 */
+
 #endif /*_LOW_H_*/

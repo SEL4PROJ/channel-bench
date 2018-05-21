@@ -9,10 +9,6 @@
 
 #define WARMUP_ROUNDS 0x1000 
 
-#define TS_THRESHOLD 100000
-
-#define X_4(a) a a a a 
-#define X_64(a) X_4(X_4(X_4(a)))
 #define JMP_ALIGN   16
 #define BTB_ENTRIES  (4096*2)
 
@@ -20,16 +16,6 @@
 extern void btb_probe(void);
 
 
-static void  newTimeSlice(){
-  asm("");
-  uint32_t prev = rdtscp();
-  for (;;) {
-    uint32_t cur = rdtscp();
-    if (cur - prev > TS_THRESHOLD)
-      return;
-    prev = cur;
-  }
-}
 
 static void btb_jmp(uint32_t s) {
 

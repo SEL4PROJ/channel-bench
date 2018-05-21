@@ -8,27 +8,7 @@
 #include "bench_types.h"
 
 
-#define WARMUP_ROUNDS 0x1000 
-
-#define TS_THRESHOLD 100000
-
-#define X_4(a) a a a a 
-#define X_64(a) X_4(X_4(X_4(a)))
-
 extern uint32_t bp_probe(uint32_t secret);
-
-
-static void  newTimeSlice(){
-  asm("");
-  uint32_t prev = rdtscp();
-  for (;;) {
-    uint32_t cur = rdtscp();
-    if (cur - prev > TS_THRESHOLD)
-      return;
-    prev = cur;
-  }
-}
-
 
 
 int bp_trojan(bench_env_t *env) {

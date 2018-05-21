@@ -1,5 +1,5 @@
 /*this file contains the covert channel attack using the 
-  branch target buffer*
+  branch target buffer*/
 
 /*there are two way branch target cache, 2 way 256 entries, total 512 entries*/
 
@@ -19,7 +19,6 @@
 #include "../mastik_common/l1i.h"
 #include "../ipc_test.h"
 #include "bench_types.h"
-
 
 
 #define INSTRUCTION_LENGTH  4
@@ -110,8 +109,7 @@ int btb_trojan(bench_env_t *env) {
     uint16_t *results = malloc(sizeof (uint16_t) * L1I_SETS); 
     assert(results);
 
-    uint32_t volatile *share_vaddr = args->shared_vaddr; 
-    uint32_t volatile *syn_vaddr = share_vaddr + 1;
+    uint32_t volatile *share_vaddr = (uint32_t *)args->shared_vaddr; 
     *share_vaddr = 0; 
 
     info = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 1);
@@ -126,11 +124,7 @@ int btb_trojan(bench_env_t *env) {
     for (int i = 0; i < CONFIG_BENCH_DATA_POINTS; i++) {
 
         FENCE(); 
-
-        while (*syn_vaddr != TROJAN_SYN_FLAG) {
-            ;
-        }
-        FENCE();
+        newTimeSlice();
 
         secret = random() % (BTAC_TROJAN_SETS + 1); 
 
@@ -202,8 +196,6 @@ int btb_spy(bench_env_t *env) {
     struct bench_l1 *r_addr = (struct bench_l1 *)args->record_vaddr; 
     /*the shared address*/
     uint32_t volatile *secret = args->shared_vaddr; 
-    uint32_t volatile *syn = secret + 1;
-    *syn = TROJAN_SYN_FLAG;
 
     /*syn with trojan*/
     info = seL4_Recv(args->ep, &badge);
@@ -212,11 +204,7 @@ int btb_spy(bench_env_t *env) {
     for (int i = 0; i < CONFIG_BENCH_DATA_POINTS; i++) {
 
         FENCE(); 
-
-        while (*syn != SPY_SYN_FLAG) 
-        {
-            ;
-        }
+        newTimeSlice();
 
         FENCE(); 
         /*reset the counter to zero*/

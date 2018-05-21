@@ -122,7 +122,7 @@ int run_single_l1(m_env_t *env) {
     r_d =  (struct bench_l1 *)env->record_vaddr;
     printf("probing time start\n");
     
-    for (int i = 0; i < CONFIG_BENCH_DATA_POINTS; i++) {
+    for (int i = BENCH_TIMING_WARMUPS; i < CONFIG_BENCH_DATA_POINTS; i++) {
         printf("%d %u\n", r_d->sec[i], r_d->result[i]);
 
     }

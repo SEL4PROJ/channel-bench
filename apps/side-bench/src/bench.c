@@ -48,23 +48,6 @@ static int (*flush_bench_fun[BENCH_CACHE_FLUSH_FUNS])(bench_env_t *) =
 char _cpio_archive[1];
 
 
-/*wait for init msg from manager*/ 
-static int wait_init_msg_from(seL4_CPtr endpoint) {
-
-    seL4_Word badge; 
-    seL4_MessageInfo_t info; 
-    
-    info = seL4_Recv(endpoint, &badge); 
-
-    assert(seL4_MessageInfo_get_label(info) == seL4_Fault_NullFault); 
-    assert(seL4_MessageInfo_get_length(info) == 1); 
-
-    if (seL4_GetMR(0) == BENCH_INIT_MSG) 
-        return BENCH_SUCCESS; 
-    else 
-        return BENCH_FAILURE; 
-}
-
 
 /*send benchmark result to the root task*/
 static inline void send_result_to(seL4_CPtr endpoint, seL4_Word w) {

@@ -22,19 +22,6 @@
 
 #define SEARCHLEN 1000
 
-#define TS_THRESHOLD 10000
-
-static void  newTimeSlice() {
-  asm("");
-  uint32_t prev = rdtscp();
-  for (;;) {
-    uint32_t cur = rdtscp();
-    if (cur - prev > TS_THRESHOLD)
-      return;
-    prev = cur;
-  }
-}
-
 
 static int  newTimeSlice_tl(uint64_t end) {
   asm("");

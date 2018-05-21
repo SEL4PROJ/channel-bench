@@ -10,20 +10,6 @@
 #include "bench_types.h"
 #include "bench_helper.h"
 
-#define TS_THRESHOLD 10000
-
-
-static void  newTimeSlice(){
-  asm("");
-  uint32_t prev = rdtscp();
-  for (;;) {
-    uint32_t cur = rdtscp();
-    if (cur - prev > TS_THRESHOLD)
-      return;
-    prev = cur;
-  }
-}
-
 
 static void access_buffer(char *buffer, uint32_t sets) {
 

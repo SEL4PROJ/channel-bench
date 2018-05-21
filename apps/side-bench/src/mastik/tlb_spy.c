@@ -8,26 +8,9 @@
 #include "bench_types.h"
 
 
-#define WARMUP_ROUNDS 0x1000 
 
 #define SPY_TLB_PAGES 32
 #define TROJAN_TLB_PAGES 64
-
-
-#define TS_THRESHOLD 100000
-
-
-
-static void  newTimeSlice(){
-  asm("");
-  uint32_t prev = rdtscp();
-  for (;;) {
-    uint32_t cur = rdtscp();
-    if (cur - prev > TS_THRESHOLD)
-      return;
-    prev = cur;
-  }
-}
 
 
 static int32_t *buf;
