@@ -8,6 +8,9 @@
 #define PAGE_SIZE 4096
 #endif 
 
+#define ALIGN_PAGE_SIZE(_addr) (((uintptr_t)(_addr) + 0xfff) & ~0xfff) 
+
+
 /*the threshold for detecting a time tick*/
 #define TS_THRESHOLD 100000
 
@@ -176,8 +179,12 @@
 #define INSTRUCTION_LENGTH  4
 
 static inline int access(void *v) {
-    int rv; 
+    int rv = 0xff; 
+#ifdef CONFIG_BENCH_L1D_WRITE
+    asm volatile("sdr %1, [%0]": "+r" (v): "r" (rv):);
+#else
     asm volatile("ldr %0, [%1]": "=r" (rv): "r" (v):);
+#endif 
     return rv;
 }
 static inline void clflush(void *v) {
@@ -234,6 +241,8 @@ static inline void  newTimeSlice(){
 }
 
 #endif /* CONFIG_ARCH_ARM  */
+
+
 #ifdef CONFIG_ARCH_X86
 
 static inline int access(void *v) {
@@ -357,5 +366,19 @@ inline void cpuid(struct cpuidRegs *regs) {
   asm volatile ("cpuid": "+a" (regs->eax), "+b" (regs->ebx), "+c" (regs->ecx), "+d" (regs->edx));
 }
 #endif /* CONFIG_ARCH_X86 */
+
+/*accessing N number of L1 D cache sets*/
+static inline void l1d_data_access(char *buf, uint32_t sets) {
+
+    /*sets == 0 return*/
+
+    for (int s = 0; s < sets; s++) {
+        for (int i = 0; i < L1_ASSOCIATIVITY; i++) {
+
+            access(buf + s * L1_CACHELINE + i * L1_STRIDE);
+        }
+    }
+}
+
 
 #endif /*_LOW_H_*/

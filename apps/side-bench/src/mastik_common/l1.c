@@ -6,7 +6,6 @@
 #include <autoconf.h>
 #include "low.h"
 #include "l1.h"
-#include "../ipc_test.h"
 
 
 #define PTR(set, way, ptr) (void *)(((uintptr_t)l1->memory) + ((set) * L1_CACHELINE) + ((way) * L1_STRIDE) + ((ptr)*sizeof(void *)))
@@ -17,7 +16,7 @@ static int probelist(void *pp, int segments, int seglen, uint16_t *results) {
   uint32_t s, res; 
   while (segments--) {
 #ifdef CONFIG_ARCH_ARM
-      READ_COUNTER_ARMV7(s);
+      SEL4BENCH_READ_CCNT(s); 
 #endif 
 #ifdef CONFIG_ARCH_X86
       s = rdtscp();
@@ -33,7 +32,7 @@ static int probelist(void *pp, int segments, int seglen, uint16_t *results) {
           p = LNEXT(p);
       }
 #ifdef CONFIG_ARCH_ARM 
-      READ_COUNTER_ARMV7(res); 
+      SEL4BENCH_READ_CCNT(res); 
       res -= s; 
 #endif 
 #ifdef CONFIG_ARCH_X86

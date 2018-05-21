@@ -11,29 +11,20 @@
 #include "bench_helper.h"
 
 
-static void access_buffer(char *buffer, uint32_t sets) {
-
-    uint32_t offset; 
-
-    for (int i = 0; i < sets; i++) {
-        for (int j = 0; j < L1_ASSOCIATIVITY; j++) { 
-            offset = i * L1_CACHELINE + j * L1_STRIDE; 
-            access(buffer + offset);
-        }
-    }
-}
 
 int l1_trojan(bench_env_t *env) {
 
     seL4_MessageInfo_t info;
 
-
-    /*buffer size 32K L1 cache size
-      512 cache lines*/
-    char *data = malloc(L1_PROBE_BUFFER);
     int secret = 0; 
 
     bench_args_t *args = env->args; 
+    
+    /*buffer size 32K L1 cache size
+      512 cache lines*/
+    char *data = malloc(L1_PROBE_BUFFER);
+    assert(data); 
+    data = (char*)ALIGN_PAGE_SIZE(data);
 
     uint32_t *share_vaddr = args->shared_vaddr; 
     *share_vaddr = SYSTEM_TICK_SYN_FLAG; 
@@ -53,7 +44,7 @@ int l1_trojan(bench_env_t *env) {
         newTimeSlice();
         secret = random() % (L1_SETS + 1);
 
-        access_buffer(data, secret);
+        l1d_data_access(data, secret);
 
         /*update the secret read by low*/ 
         *share_vaddr = secret; 

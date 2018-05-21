@@ -15,17 +15,6 @@ sabre L1 D cache, 32B cache line, 4 ways, physically indexed, physically tagged
 #include "l1.h"
 #include "ipc_test.h"
 
-/*accessing N number of L1 D cache sets*/
-static void data_access(char *buf, uint32_t sets) {
-
-    for (int s = 0; s < sets; s++) {
-        for (int i = 0; i < L1_ASSOCIATIVITY; i++) {
-
-            access(buf + s * L1_CACHELINE + i * L1_STRIDE);
-        }
-    }
-}
-
 int l1_trojan(bench_env_t *env) {
 
     uint32_t  secret;
@@ -34,12 +23,13 @@ int l1_trojan(bench_env_t *env) {
 
     /*buffer size 32K L1 cache size
       1024 cache lines*/
-    char *data = malloc(4096 * 8);
-    assert(data != NULL);
+    char *data = malloc(L1_PROBE_BUFFER);
+    assert(data);
+
+    data = (char*)ALIGN_PAGE_SIZE(data);
 
     /*receive the shared address to record the secret*/
     uint32_t volatile *share_vaddr = (uint32_t *)args->shared_vaddr;
-    uint32_t volatile *syn_vaddr = share_vaddr + 1;
     *share_vaddr = 0; 
 
     info = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 1);
@@ -53,24 +43,15 @@ int l1_trojan(bench_env_t *env) {
     for (int i = 0; i < CONFIG_BENCH_DATA_POINTS; i++) {
 
         FENCE(); 
-
-        while (*syn_vaddr != TROJAN_SYN_FLAG) {
-            ;
-        }
-        FENCE();
+        newTimeSlice();
 
         secret = random() % (L1_SETS + 1); 
 
-        data_access(data, secret);
+        l1d_data_access(data, secret);
 
         *share_vaddr = secret; 
         
-        /*wait until spy set the flag*/
-        *syn_vaddr = SPY_SYN_FLAG;
-
     }
-
-    FENCE(); 
 
     while (1);
 
@@ -93,12 +74,10 @@ int l1_spy(bench_env_t *env) {
   uint16_t *results = malloc(l1_nsets(l1_1)*sizeof(uint16_t));
  
   /*the record address*/
-  struct bench_l1 *r_addr = args->record_vaddr; 
+  struct bench_l1 *r_addr = (struct bench_l1 *)args->record_vaddr; 
 
   /*the shared address*/
   uint32_t volatile *secret = (uint32_t *)args->shared_vaddr; 
-  uint32_t volatile *syn = secret + 1;
-  *syn = TROJAN_SYN_FLAG;
 
   /*syn with trojan*/
   info = seL4_Recv(args->ep, &badge);
@@ -108,29 +87,17 @@ int l1_spy(bench_env_t *env) {
   for (int i = 0; i < CONFIG_BENCH_DATA_POINTS; i++) {
       
       FENCE(); 
-    
-      while (*syn != SPY_SYN_FLAG) 
-      {
-          ;
-      }
-     
-      FENCE(); 
-
-      /*reset the counter to zero*/
-      //sel4bench_reset_cycle_count();
+      newTimeSlice();
 
 #ifdef CONFIG_MANAGER_PMU_COUNTER 
       sel4bench_get_counters(BENCH_PMU_BITS, pmu_start);  
 #endif 
-      //READ_COUNTER_ARMV7(start);
-      /*start */
+      
       l1_probe(l1_1, results);
 
-     // READ_COUNTER_ARMV7(after);
 #ifdef CONFIG_MANAGER_PMU_COUNTER 
       sel4bench_get_counters(BENCH_PMU_BITS, pmu_end);  
 #endif
-      //r_addr->result[i] = after - start; 
 
 #ifdef CONFIG_MANAGER_PMU_COUNTER 
       /*loading the pmu counter value */
@@ -147,9 +114,6 @@ int l1_spy(bench_env_t *env) {
       for (int j = 0; j < l1_nsets(l1_1); j++) 
           r_addr->result[i] += results[j];
 
-      /*spy set the flag*/
-      *syn = TROJAN_SYN_FLAG; 
-     
   }
  
   /*send result to manager, spy is done*/
