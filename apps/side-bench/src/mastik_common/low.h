@@ -95,6 +95,9 @@
 
 // The number of cache sets in each page
 #define L3_SETS_PER_PAGE   64
+
+#define BTAC_ENTRIES        256 
+
 #endif /* CONFIG_PLAT_TX1 */
 
 #ifdef CONFIG_PLAT_HIKEY
@@ -123,6 +126,8 @@
 
 // The number of cache sets in each page
 #define L3_SETS_PER_PAGE   64
+
+#define BTAC_ENTRIES        256 
 
 #endif /* CONFIG_PLAT_HIKEY */
 
@@ -161,11 +166,14 @@
 #define L3_PROBE_GROUPS    16 
 #endif 
 
+#define BTAC_ENTRIES  512 
 
 #endif /* CONFIG_PLAT_SABRE  */
 
 
 #ifdef CONFIG_ARCH_ARM 
+
+#define INSTRUCTION_LENGTH  4
 
 static inline int access(void *v) {
     int rv; 
