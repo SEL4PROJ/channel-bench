@@ -7,12 +7,13 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <sel4/sel4.h>
-#include "../../../bench_common.h"
-#include "../mastik_common/low.h"
-#include "../mastik_common/l1i.h"
-#include "../ipc_test.h"
-#include "l3_arm.h"
+#include "bench_common.h"
 #include "bench_types.h"
+#include "bench_helper.h"
+#include "low.h"
+#include "l1i.h"
+#include "ipc_test.h"
+#include "l3_arm.h"
 
 
 

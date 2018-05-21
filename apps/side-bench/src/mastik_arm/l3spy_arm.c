@@ -10,10 +10,11 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <sel4/sel4.h>
-#include "../../../bench_common.h"
-#include "../mastik_common/low.h"
-#include "l3_arm.h"
+#include "bench_common.h"
 #include "bench_types.h"
+#include "bench_helper.h"
+#include "low.h"
+#include "l3_arm.h"
 
 
 #define SAMPLE_PREFIX 50
@@ -54,7 +55,6 @@ static void update_morecore_area(void *vaddr, size_t size) {
 int l3_trojan_single(bench_env_t *env) {
 
     uint32_t secret;
-    seL4_Word badge;
     seL4_MessageInfo_t info;
     bench_args_t *args = env->args; 
 

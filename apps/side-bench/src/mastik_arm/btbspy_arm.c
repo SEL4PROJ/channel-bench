@@ -14,12 +14,12 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <sel4/sel4.h>
-#include "../../../bench_common.h"
-#include "../mastik_common/low.h"
-#include "../mastik_common/l1i.h"
-#include "../ipc_test.h"
+#include "bench_common.h"
+#include "bench_helper.h"
 #include "bench_types.h"
-
+#include "low.h"
+#include "l1i.h"
+#include "ipc_test.h"
 
 #define INSTRUCTION_LENGTH  4
 
@@ -96,8 +96,7 @@ void branch_probe_lines(uint32_t n) {
 
 int btb_trojan(bench_env_t *env) {
 
-    uint32_t secret, shadow, index;
-    seL4_Word badge;
+    uint32_t secret;
     seL4_MessageInfo_t info;
     bench_args_t *args = env->args; 
 
@@ -152,9 +151,6 @@ int btb_trojan(bench_env_t *env) {
         //branch_probe(secret);
        /*update the secret read by low*/ 
         *share_vaddr = secret; 
-        
-        /*wait until spy set the flag*/
-        *syn_vaddr = SPY_SYN_FLAG;
 
     }
 
@@ -195,7 +191,7 @@ int btb_spy(bench_env_t *env) {
 
     struct bench_l1 *r_addr = (struct bench_l1 *)args->record_vaddr; 
     /*the shared address*/
-    uint32_t volatile *secret = args->shared_vaddr; 
+    uint32_t volatile *secret = (uint32_t *)args->shared_vaddr; 
 
     /*syn with trojan*/
     info = seL4_Recv(args->ep, &badge);
@@ -239,8 +235,6 @@ int btb_spy(bench_env_t *env) {
         /*result is the total probing cost
           secret is updated by trojan in the previous system tick*/
         r_addr->sec[i] = *secret; 
-        /*spy set the flag*/
-        *syn = TROJAN_SYN_FLAG; 
     }
 
 

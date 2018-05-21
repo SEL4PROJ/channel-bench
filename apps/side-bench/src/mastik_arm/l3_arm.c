@@ -9,11 +9,11 @@
 #endif
 
 //#define DEBUG
-#include "../mastik_common/low.h"
-#include "../mastik_common/vlist.h"
+#include "low.h"
+#include "vlist.h"
 #include "l3_arm.h"
-#include "../mastik_common/timestats.h"
-#include "../ipc_test.h"
+#include "timestats.h"
+#include "ipc_test.h"
 
 #define CHECKTIMES 256
 

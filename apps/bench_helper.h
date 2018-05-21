@@ -21,6 +21,11 @@
 #define BENCH_OVERHEAD_RUNS 10
 #define BENCH_OVERHEAD_RETRIES 4
 
+/* The fence is designed to try and prevent the compiler optimizing across code boundaries
+   that we don't want it to. The reason for preventing optimization is so that things like
+   overhead calculations aren't unduly influenced */
+#define FENCE() asm volatile("" ::: "memory")
+
 
 static ccnt_t local_overhead[BENCH_OVERHEAD_RUNS]; 
 
@@ -73,10 +78,5 @@ static inline bool measure_overhead(ccnt_t *overhead) {
     *overhead = find_min_overhead(local_overhead);
     return false;
 }
-
-/* The fence is designed to try and prevent the compiler optimizing across code boundaries
-   that we don't want it to. The reason for preventing optimization is so that things like
-   overhead calculations aren't unduly influenced */
-#define FENCE() asm volatile("" ::: "memory")
 
 #define ALLOW_UNSTABLE_OVERHEAD 

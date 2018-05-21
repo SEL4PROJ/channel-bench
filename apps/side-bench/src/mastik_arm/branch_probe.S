@@ -155,21 +155,6 @@ call8:
         BLR_64() 
 #endif
 
-#if 0
-/*altogether 1024 lines
- 8 pages: 6 pages jump, 2 pages return*/
-.align 12 
-.global arm_branch_sets
-arm_branch_sets:
-BPL_PAGE()
-BPL_PAGE()
-BPL_PAGE()
-BPL_PAGE()
-BPL_PAGE()
-BPL_PAGE()
-BLR_PAGE()
-BLR_PAGE()
-#endif 
 
 /*altogether 512 lines
  8 pages: 4 pages jump, 4 pages return*/
@@ -193,8 +178,6 @@ BLR_PAGE()
 
 
 
-/*using 4 bytes, 256 sets to probe the btb 
- 512 branch instruction*/ 
 #define B_4BYTES() \
       b .+4; 
 
@@ -222,8 +205,8 @@ BLR_PAGE()
         B_4BYTES_64() \
         B_4BYTES_64() 
 
-
-    /*512 lines*/
+/*using 4 bytes, 256 sets to probe the btb 
+ 512 branch instruction*/ 
 .global arm_branch_lines
 arm_branch_lines:
 B_4BYTES_256()

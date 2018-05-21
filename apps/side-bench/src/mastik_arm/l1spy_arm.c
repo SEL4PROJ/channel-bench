@@ -10,9 +10,10 @@ sabre L1 D cache, 32B cache line, 4 ways, physically indexed, physically tagged
 #include <sel4/sel4.h>
 #include "bench_common.h"
 #include "bench_types.h"
-#include "../mastik_common/low.h"
-#include "../mastik_common/l1.h"
-#include "../ipc_test.h"
+#include "bench_helper.h"
+#include "low.h"
+#include "l1.h"
+#include "ipc_test.h"
 
 /*accessing N number of L1 D cache sets*/
 static void data_access(char *buf, uint32_t sets) {
@@ -28,7 +29,6 @@ static void data_access(char *buf, uint32_t sets) {
 int l1_trojan(bench_env_t *env) {
 
     uint32_t  secret;
-    seL4_Word badge;
     seL4_MessageInfo_t info;
     bench_args_t *args = env->args;
 
@@ -96,7 +96,7 @@ int l1_spy(bench_env_t *env) {
   struct bench_l1 *r_addr = args->record_vaddr; 
 
   /*the shared address*/
-  uint32_t volatile *secret = args->shared_vaddr; 
+  uint32_t volatile *secret = (uint32_t *)args->shared_vaddr; 
   uint32_t volatile *syn = secret + 1;
   *syn = TROJAN_SYN_FLAG;
 

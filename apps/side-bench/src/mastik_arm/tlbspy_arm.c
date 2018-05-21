@@ -9,10 +9,11 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <sel4/sel4.h>
-#include "../../../bench_common.h"
-#include "../mastik_common/low.h"
-#include "../ipc_test.h"
-#include "../../../bench_types.h"
+#include "bench_common.h"
+#include "bench_types.h"
+#include "bench_helper.h"
+#include "low.h"
+#include "ipc_test.h"
 
 
 #ifdef CONFIG_PLAT_SABRE
@@ -80,7 +81,6 @@ static inline void random_seq (uint32_t *seq, uint32_t s) {
 int tlb_trojan(bench_env_t *env) {
 
     uint32_t secret;
-    seL4_Word badge;
     seL4_MessageInfo_t info;
     char *buf = malloc ((ATTACK_PAGES  * 4096) + 4096);
     uint32_t *seq = (uint32_t*)malloc (ATTACK_PAGES  * sizeof (uint32_t));
