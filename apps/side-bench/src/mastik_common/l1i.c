@@ -112,7 +112,7 @@ void l1i_probe(l1iinfo_t l1, uint16_t *results) {
     }
 }
 
-#endif 
+#endif /*CONFIG_ARCH_X86*/ 
 
 #ifdef CONFIG_ARCH_ARM 
 /*taking the time measurements at the caller side*/
@@ -128,7 +128,7 @@ void l1i_probe(l1iinfo_t l1, uint16_t *results) {
 #endif
     }
 }
-#endif 
+#endif /*CONFIG_ARCH_ARM*/ 
 
 #ifdef CONFIG_ARCH_X86
 uint32_t l1i_probe_nop(void) {

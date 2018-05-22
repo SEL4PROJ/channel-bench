@@ -1,50 +1,7 @@
 /*the branch attack that probes N number of branch instructions*/
 #include <autoconf.h>
 
-#if 0
-/*code for flushing the return stack on arm*/
-bl call0; 
-call0 : 
- push {lr};
- bl call1; 
-
-call1: 
- 
-call 7: 
-    push {lr}; 
-    bl call8;
-    pop {lr}; 
-    ldr pc, sp!
-    bx lr 
-call8: 
-
- bx lr; 
-    b address 
-#endif 
-
 .text
-
-/*32 byte aglined, 8 instructions*/
-/*r0 contains the address of this line  r1 contains the loop number
- lr contains the return address of the calling function*/
-
-/*one iteration contains two branch target buffer store 
- and one global history table update
- do not handle if the r1 equal to 0*/
-#if 0
-/*rewrite the code with direct jumps 
- because did not observe any contention through probing latency*/
-#define BPL() \
-    mov r0, pc;\
-    add r0, #32;\
-    sub r1, #1;\
-    cmp r1, #0;\
-    beq .+8;\
-    bx  r0;\
-    bx  lr;\
-.align 5 ;
-#endif 
-
 
 #ifdef CONFIG_PLAT_SABRE
 
@@ -59,8 +16,7 @@ call8:
       bx lr;\
 .align 5;
 
-
-#endif 
+#endif  /*CONFIG_PLAT_SABRE*/
 
 #ifdef CONFIG_PLAT_HIKEY
 /*L1 has 256 sets, 2 ways, 64 b/line, one way = 16384*/
@@ -74,7 +30,7 @@ call8:
       bx lr;\
 .align 6;
 
-#endif
+#endif   /*CONFIG_PLAT_HIKEY*/
 
 #ifdef CONFIG_PLAT_TX1
 /*L1 has 256 sets, 3 ways, 64 b/line, one way = 16384*/
@@ -136,7 +92,7 @@ call8:
 #define BLR_PAGE() \
         BLR_64() \
         BLR_64() 
-#endif 
+#endif /*CONFIG_PLAT_SABRE*/
 
 
 #ifdef CONFIG_PLAT_HIKEY
@@ -145,7 +101,7 @@ call8:
 
 #define BLR_PAGE() \
         BLR_64() 
-#endif
+#endif  /*CONFIG_PLAT_HIKEY*/
 
 #ifdef CONFIG_PLAT_TX1
 #define BPL_PAGE() \
@@ -153,11 +109,11 @@ call8:
 
 #define BLR_PAGE() \
         BLR_64() 
-#endif
+#endif /*CONFIG_PLAT_TX1*/
 
+/*sabre and hikey 32K L1I 
+ tx1 48K L1I*/
 
-/*altogether 512 lines
- 8 pages: 4 pages jump, 4 pages return*/
 .align 12 
 .global arm_branch_sets
 arm_branch_sets:
@@ -170,7 +126,7 @@ BPL_PAGE()
 BPL_PAGE()
 BPL_PAGE()
 BPL_PAGE()
-#endif
+#endif  /*CONFIG_PLAT_TX1*/
 BLR_PAGE()
 BLR_PAGE()
 BLR_PAGE()

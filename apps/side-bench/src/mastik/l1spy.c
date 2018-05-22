@@ -60,10 +60,10 @@ int l1_spy(bench_env_t *env) {
     seL4_MessageInfo_t info;
 
 #ifdef CONFIG_BENCH_COVERT_L1D 
-    uint64_t monitored_mask[1] = {~0LLU};
+    uint64_t monitored_mask[MONITOR_MASK] = {~0LLU};
 #else 
     /*for the L2 cache attack, with larger cache set*/
-    uint64_t monitored_mask[8] = {~0LLU, ~0LLU,~0LLU, ~0LLU,
+    uint64_t monitored_mask[MONITOR_MASK] = {~0LLU, ~0LLU,~0LLU, ~0LLU,
         ~0LLU, ~0LLU,~0LLU, ~0LLU,};
 #endif 
 

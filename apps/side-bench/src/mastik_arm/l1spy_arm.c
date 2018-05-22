@@ -67,7 +67,7 @@ int l1_spy(bench_env_t *env) {
   uint32_t UNUSED pmu_start[BENCH_PMU_COUNTERS]; 
   uint32_t UNUSED pmu_end[BENCH_PMU_COUNTERS]; 
 
-  uint64_t  monitored_mask[4] = {~0LLU, ~0LLU, ~0LLU, ~0LLU};
+  uint64_t  monitored_mask[MONITOR_MASK] = {~0LLU, ~0LLU, ~0LLU, ~0LLU};
 
   l1info_t l1_1 = l1_prepare(monitored_mask);
 

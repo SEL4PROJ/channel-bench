@@ -18,8 +18,6 @@
 #include "bench_helper.h"
 #include "bench_types.h"
 #include "low.h"
-#include "l1i.h"
-#include "ipc_test.h"
 
 /*using branch instructions to do the probe, 4 bytes aligned
   defined in branch_probe.S 
