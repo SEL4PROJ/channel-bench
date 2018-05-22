@@ -102,7 +102,8 @@ menu   "Timing Channel Benchmarks"
                bool "L2 cache"
 
                config BENCH_COVERT_LLC 
-               bool "LLC user-level p+p attack"
+               depends on ARCH_ARM
+               bool "LLC"
 
                config BENCH_COVERT_LLC_KERNEL_SCHEDULE 
                bool "determinisitc kernel switching with LLC buffer"

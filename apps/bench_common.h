@@ -267,8 +267,6 @@ enum ipc_funs{
 #endif 
 
 
-
-
 /*LLC covert channel, single core*/
 #ifdef CONFIG_BENCH_COVERT_LLC 
 #define BENCH_COVERT_TROJAN    BENCH_COVERT_LLC_SINGLE_TROJAN 
