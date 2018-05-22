@@ -100,6 +100,8 @@
 #define L3_SETS_PER_PAGE   64
 
 #define BTAC_ENTRIES        256 
+#define TLB_ENTRIES         1024
+#define TLB_PROBE_PAGES     512
 
 #endif /* CONFIG_PLAT_TX1 */
 
@@ -131,7 +133,9 @@
 // The number of cache sets in each page
 #define L3_SETS_PER_PAGE   64
 
-#define BTAC_ENTRIES        256 
+#define BTAC_ENTRIES       256 
+#define TLB_ENTRIES        512
+#define TLB_PROBE_PAGES    256
 
 #endif /* CONFIG_PLAT_HIKEY */
 
@@ -171,7 +175,11 @@
 #define L3_PROBE_GROUPS    16 
 #endif 
 
-#define BTAC_ENTRIES  512 
+#define BTAC_ENTRIES      512 
+
+/*the tlb attack probs on half of the TLB entries */
+#define TLB_ENTRIES       128 
+#define TLB_PROBE_PAGES    64
 
 #endif /* CONFIG_PLAT_SABRE  */
 
@@ -234,7 +242,7 @@ static inline void walk(void *p, int count) {
 
 }
 
-static inline void  newTimeSlice(){
+static inline void  newTimeSlice(void){
   
   uint32_t volatile  prev, cur; 
   SEL4BENCH_READ_CCNT(prev);  
@@ -291,7 +299,7 @@ static inline void mfence() {
 }
 
 /*return when a big jump of the time stamp counter is detected*/
-static inline void  newTimeSlice(){
+static inline void  newTimeSlice(void){
   asm("");
   uint32_t volatile  prev = rdtscp();
   for (;;) {
