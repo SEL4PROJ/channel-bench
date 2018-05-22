@@ -60,9 +60,12 @@ int l1i_trojan(bench_env_t *env) {
 
         l1i_set_monitored_set(l1i_1, monitored_mask);
         l1i_probe(l1i_1, results); 
-
         /*update the secret read by low*/ 
         *share_vaddr = secret; 
+#ifdef CONFIG_BENCH_COVERT_L1I_REWRITE
+        l1i_rewrite(l1i_1);
+#endif 
+
     }
 
     while (1);
@@ -130,6 +133,9 @@ int l1i_spy(bench_env_t *env) {
         r_addr->sec[i] = *secret; 
     }
 
+#ifdef CONFIG_BENCH_COVERT_L1I_REWRITE
+    l1i_rewrite(l1i_1);
+#endif 
 
     /*send result to manager, spy is done*/
     info = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 1);

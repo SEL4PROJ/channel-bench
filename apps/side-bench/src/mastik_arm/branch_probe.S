@@ -1,7 +1,10 @@
 /*the branch attack that probes N number of branch instructions*/
 #include <autoconf.h>
 
-.text
+/*putting the probing code in data section therefore 
+ giving the L1I_REWRITE an option to rewrite the buffer
+ otherwise there will be an permission VM fault*/
+.data
 
 #ifdef CONFIG_PLAT_SABRE
 

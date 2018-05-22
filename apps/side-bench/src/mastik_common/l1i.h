@@ -6,7 +6,7 @@ l1iinfo_t l1i_prepare(uint64_t *monitored_sets);
 void l1i_set_monitored_set(l1iinfo_t l1, uint64_t *monitored_sets);
 void l1i_randomise(l1iinfo_t l1);
 void l1i_probe(l1iinfo_t l1, uint16_t *results);
-void l1i_probe_1(l1iinfo_t l1, uint16_t *results);
+void l1i_rewrite(l1iinfo_t l1);
 uint32_t l1i_probe_nop(void); 
 //---------------------------------------------
 // Implementation details

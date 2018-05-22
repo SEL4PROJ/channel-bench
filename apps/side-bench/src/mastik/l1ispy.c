@@ -50,28 +50,12 @@ for (int i = 0; i < CONFIG_BENCH_DATA_POINTS; i++) {
       /*do the probe*/
       l1i_probe(l1i_1, results);
 
-
-#ifdef CONFIG_BENCH_COVERT_L1I_REWRITE
-    /*rewrite the L1I probing buffer*/
-    asm volatile (
-                    "xorq  %%rax, %%rax\n"  /*read then writeback the 32K probing buffer*/
-                    "1: \n"
-                    "movq  (%%rax, %0, 1), %%rbx\n"
-                    "movq  %%rbx, (%%rax, %0, 1)\n"
-                    "clflush (%%rax, %0, 1)\n"
-                    "addq  $8, %%rax\n"
-                    "cmpq  $32768, %%rax\n"
-                    "jl   1b\n"
-                    "mfence\n"
-                    : "+r" (l1i_1->memory)
-                    : 
-                    : "rax", "rbx", "memory"
-                    );
-
-#endif 
-
       /*update the secret read by low*/ 
       *share_vaddr = secret; 
+
+#ifdef CONFIG_BENCH_COVERT_L1I_REWRITE
+      l1i_rewrite(l1i_1);
+#endif 
   }
   while (1);
  
@@ -135,23 +119,9 @@ int l1i_spy(bench_env_t *env) {
           r_addr->result[i] += results[j];
 
 #ifdef CONFIG_BENCH_COVERT_L1I_REWRITE
-    /*rewrite the L1I probing buffer*/
-    asm volatile (
-                    "xorq  %%rax, %%rax\n"  /*read then writeback the 32K probing buffer*/
-                    "1: \n"
-                    "movq  (%%rax, %0, 1), %%rbx\n"
-                    "movq  %%rbx, (%%rax, %0, 1)\n"
-                    "clflush (%%rax, %0, 1)\n"
-                    "addq  $8, %%rax\n"
-                    "cmpq  $32768, %%rax\n"
-                    "jl   1b\n"
-                    "mfence\n"
-                    : "+r" (l1i_1->memory)
-                    : 
-                    : "rax", "rbx", "memory"
-                    );
-
+      l1i_rewrite(l1i_1);
 #endif 
+
   }
 
   /*send result to manager, spy is done*/

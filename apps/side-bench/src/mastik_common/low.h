@@ -117,6 +117,7 @@
 
 #define L1I_ASSOCIATIVITY  2
 #define L1I_SETS           256
+#define L1I_LINES          512
 #define L1I_CACHELINE      64
 #define L1I_STRIDE         (L1I_CACHELINE * L1I_SETS)
 
@@ -147,6 +148,7 @@
 
 #define L1I_ASSOCIATIVITY  4
 #define L1I_SETS           256
+#define L1I_LINES          1024
 #define L1I_CACHELINE      32
 #define L1I_STRIDE         (L1I_CACHELINE * L1I_SETS)
 
@@ -181,7 +183,7 @@
 static inline int access(void *v) {
     int rv = 0xff; 
 #ifdef CONFIG_BENCH_L1D_WRITE
-    asm volatile("sdr %1, [%0]": "+r" (v): "r" (rv):);
+    asm volatile("str %1, [%0]": "+r" (v): "r" (rv):);
 #else
     asm volatile("ldr %0, [%1]": "=r" (rv): "r" (v):);
 #endif 
@@ -192,6 +194,10 @@ static inline void clflush(void *v) {
 }
 
 
+static inline void dmb(void) {
+    /*memory barrier*/
+    asm volatile("dmb" : : :);
+}
 
 static volatile int a;
 
@@ -281,7 +287,7 @@ static inline uint32_t rdtscp() {
   return rv;
 }
 static inline void mfence() {
-  asm volatile("mfence");
+  asm volatile("mfence": : :);
 }
 
 /*return when a big jump of the time stamp counter is detected*/

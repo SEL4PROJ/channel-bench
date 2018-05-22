@@ -45,6 +45,32 @@ l1iinfo_t l1i_prepare(uint64_t *monitored_sets) {
   l1i_set_monitored_set(l1, monitored_sets);
   return l1;
 }
+
+void l1i_rewrite(l1iinfo_t l1i) {
+
+    void *line_ptr; 
+    unsigned long volatile content; 
+    assert(l1i->memory); 
+
+   /*rewrite the l1i probing buffer content, aligned by the
+    the cache line size*/ 
+
+    for (int i = 0; i < L1I_LINES; i++) {
+
+        line_ptr = l1i->memory + i * L1I_CACHELINE; 
+#ifdef CONFIG_ARCH_X86_64
+        asm volatile("movq (%1), %0\n" 
+                "movq %0, (%1) " : "=r" (content), "+r" (line_ptr): :);
+
+#else 
+        asm volatile("mov (%1), %0\n" 
+                      "mov %0, (%1) " : "=r" (content), "+r" (line_ptr): :);
+#endif 
+    }
+    mfence();
+
+}
+
 #endif 
 
 
@@ -61,6 +87,25 @@ l1iinfo_t l1i_prepare(uint64_t *monitored_sets) {
   return l1;
 }
 
+void l1i_rewrite(l1iinfo_t l1i) {
+
+    void *line_ptr; 
+    unsigned long volatile content; 
+    assert(l1i->memory); 
+
+   /*rewrite the l1i probing buffer content, aligned by the
+    the cache line size*/ 
+
+    for (int i = 0; i < L1I_LINES; i++) {
+
+        line_ptr = l1i->memory + i * L1I_CACHELINE;
+
+        asm volatile("ldr %0, [%1]\n" 
+                "str %0, [%1] " : "=r" (content), "+r" (line_ptr): :);
+    }
+    dmb();
+
+}
 #endif
 
 void l1i_set_monitored_set(l1iinfo_t l1, uint64_t *monitored_sets) {
