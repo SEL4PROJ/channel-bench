@@ -2,7 +2,7 @@
 #define __LOW_H__
 
 #include <sel4bench/sel4bench.h>
-#include "../ipc_test.h"
+#include "bench_helper.h"
 
 #ifndef PAGE_SIZE 
 #define PAGE_SIZE 4096
@@ -216,14 +216,15 @@ static inline int memaccess(void *v) {
 
 static inline int memaccesstime(void *v) {
     uint32_t start, end ; 
-    READ_COUNTER_ARMV7(start);
+
+    SEL4BENCH_READ_CCNT(start);  
  
     int rv; 
     asm volatile("");
     rv = *(int *)v;
     asm volatile("");
     a+= rv;
-    READ_COUNTER_ARMV7(end);
+    SEL4BENCH_READ_CCNT(end);  
  
     return end - start; 
 } 
@@ -289,11 +290,6 @@ static inline void clflush(void *v) {
     asm volatile("clflush %[v]" : [v] "+m"(*(volatile char *)v));
 }
 
-static inline uint32_t rdtscp() {
-  uint32_t rv;
-  asm volatile ("rdtscp": "=a" (rv) :: "edx", "ecx");
-  return rv;
-}
 static inline void mfence() {
   asm volatile("mfence": : :);
 }

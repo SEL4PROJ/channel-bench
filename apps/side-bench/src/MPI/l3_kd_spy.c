@@ -3,6 +3,7 @@
 #include <sel4/sel4.h>
 #include "bench_common.h"
 #include "bench_types.h"
+#include "bench_helper.h"
 
 #include "mpi.h"
 
@@ -15,11 +16,6 @@ ccnt_t prevs[CONFIG_BENCH_DATA_POINTS];
 
 struct bench_kernel_schedule *r_addr = NULL;
 
-static inline uint32_t rdtscp() {
-  uint32_t rv;
-  asm volatile ("rdtscp": "=a" (rv) :: "edx", "ecx");
-  return rv;
-}
 
 
 static void measure(bench_env_t *env) 

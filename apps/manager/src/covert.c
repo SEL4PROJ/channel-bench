@@ -25,7 +25,6 @@
 #include <simple/simple.h>
 
 #include "manager.h"
-#include "ipc.h"
 #include "bench_types.h"
 
 #ifdef  CONFIG_MANAGER_COVERT_BENCH
@@ -325,14 +324,6 @@ void init_multi(m_env_t *env) {
         printf("running multi benchmark failed\n");
 
 }
-#ifdef CONFIG_ARCH_X86
-static inline uint32_t rdtscp() {
-  uint32_t rv;
-  asm volatile ("rdtscp": "=a" (rv) :: "edx", "ecx");
-  return rv;
-}
-#endif 
-
 
 /*entry point of covert channel benchmark*/
 void launch_bench_covert (m_env_t *env) {

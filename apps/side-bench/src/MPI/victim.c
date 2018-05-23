@@ -2,13 +2,7 @@
 #include <stdint.h>
 
 #include "mpi.h"
-
-static inline uint32_t rdtscp() {
-  uint32_t rv;
-  asm volatile ("rdtscp": "=a" (rv) :: "edx", "ecx");
-  return rv;
-}
-
+#include "bench_helper.h"
 
 void mpi_victim(void ) {
   MPI p = mpi_alloc(0);

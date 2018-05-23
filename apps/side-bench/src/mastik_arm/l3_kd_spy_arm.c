@@ -12,9 +12,7 @@
 #include "bench_helper.h"
 #include "low.h"
 #include "l1i.h"
-#include "ipc_test.h"
 #include "l3_arm.h"
-
 
 
 uint32_t prev_sec[CONFIG_BENCH_DATA_POINTS];
@@ -27,7 +25,6 @@ uint32_t prevs[CONFIG_BENCH_DATA_POINTS];
 int l3_kd_trojan(bench_env_t *env) {
 
     uint32_t secret;
-    uint32_t cur, prev;
     seL4_MessageInfo_t info;
     bench_args_t *args = env->args; 
 
@@ -56,14 +53,7 @@ int l3_kd_trojan(bench_env_t *env) {
     for (int i = 0; i < CONFIG_BENCH_DATA_POINTS; i++) {
 
         FENCE(); 
-        READ_COUNTER_ARMV7(cur);
-        prev = cur;
-       
-        while (cur - prev < KERNEL_SCHEDULE_TICK_LENGTH) {
-            prev = cur; 
-
-            READ_COUNTER_ARMV7(cur); 
-        }
+        newTimeSlice();
         
         secret = random() % (nsets + 1); 
         
@@ -110,7 +100,7 @@ int l3_kd_spy(bench_env_t *env) {
     uint32_t start, cur; 
     uint32_t prev_s = *secret; 
     
-    READ_COUNTER_ARMV7(start);
+    SEL4BENCH_READ_CCNT(start);
     uint32_t prev = start;
 
       
@@ -118,8 +108,8 @@ int l3_kd_spy(bench_env_t *env) {
          FENCE(); 
 
 
-        READ_COUNTER_ARMV7(cur);
-        if (cur - prev >= KERNEL_SCHEDULE_TICK_LENGTH) {
+        SEL4BENCH_READ_CCNT(cur);
+        if (cur - prev >= TS_THRESHOLD) {
             /*a new tick*/
             prevs[i] = prev;
             starts[i] = start;

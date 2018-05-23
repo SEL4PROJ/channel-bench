@@ -77,8 +77,6 @@ typedef struct {
     /* Raw results from benchmarking. rt only */
    volatile ccnt_t call_rt_time[IPC_RUNS];
    volatile ccnt_t call_reply_wait_overhead;
-   volatile ccnt_t call_time[IPC_RUNS]; 
-   volatile ccnt_t reply_wait_time[IPC_RUNS];
 } ipc_rt_result_t; 
  
 #ifdef CONFIG_ARCH_X86
@@ -89,43 +87,11 @@ typedef uint64_t ccnt_t;
 typedef uint32_t ccnt_t;
 #endif
 
-struct bench_results {
+struct ipc_overhead_t {
     /* Raw results from benchmarking. These get checked for sanity */
     ccnt_t call_overhead[IPC_RUNS];
     ccnt_t reply_wait_overhead[IPC_RUNS];
-    ccnt_t call_10_overhead[IPC_RUNS];
-    ccnt_t reply_wait_10_overhead[IPC_RUNS];
-    ccnt_t send_overhead[IPC_RUNS];
-    ccnt_t wait_overhead[IPC_RUNS];
-    ccnt_t call_time_inter[IPC_RUNS];
-    ccnt_t reply_wait_time_inter[IPC_RUNS];
-    ccnt_t call_time_intra[IPC_RUNS];
-    ccnt_t reply_wait_time_intra[IPC_RUNS];
-    ccnt_t call_time_inter_low[IPC_RUNS];
-    ccnt_t reply_wait_time_inter_high[IPC_RUNS];
-    ccnt_t call_time_inter_high[IPC_RUNS];
-    ccnt_t reply_wait_time_inter_low[IPC_RUNS];
-    ccnt_t send_time_inter[IPC_RUNS];
-    ccnt_t wait_time_inter[IPC_RUNS];
-    ccnt_t call_10_time_inter[IPC_RUNS];
-    ccnt_t reply_wait_10_time_inter[IPC_RUNS];
-    /* A worst case overhead */
     ccnt_t call_reply_wait_overhead;
-    ccnt_t call_reply_wait_10_overhead;
-    ccnt_t send_wait_overhead;
-    /* Calculated results to print out */
-    ccnt_t call_cycles_inter;
-    ccnt_t reply_wait_cycles_inter;
-    ccnt_t call_cycles_intra;
-    ccnt_t reply_wait_cycles_intra;
-    ccnt_t call_cycles_inter_low;
-    ccnt_t reply_wait_cycles_inter_high;
-    ccnt_t call_cycles_inter_high;
-    ccnt_t reply_wait_cycles_inter_low;
-    ccnt_t send_cycles_inter;
-    ccnt_t wait_cycles_inter;
-    ccnt_t call_10_cycles_inter;
-    ccnt_t reply_wait_10_cycles_inter;
 };
 
 typedef seL4_Word (*ipc_bench_func)(seL4_CPtr ep, seL4_CPtr result_ep); 

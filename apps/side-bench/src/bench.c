@@ -18,6 +18,7 @@
 #include "../../bench_common.h"
 #include "../../bench_types.h"
 #include "bench.h"
+#include "bench_helper.h"
 #include "bench_support.h"
 
 /*the benchmark env created based on 
@@ -91,11 +92,10 @@ void run_bench_ipc(bench_env_t *bench_env) {
     ep = bench_env->args->ep;
     result_ep = bench_env->args->r_ep;  
     
-    record_vaddr = bench_env->args->record_vaddr;  
+    record_vaddr = (void *)bench_env->args->record_vaddr;  
 
     ipc_bench(result_ep, ep, test_num, record_vaddr);
 
-    /*waiting on a endpoit which will never return*/
     wait_init_msg_from(ep);
     
 

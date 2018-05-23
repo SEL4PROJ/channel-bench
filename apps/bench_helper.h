@@ -80,3 +80,28 @@ static inline bool measure_overhead(ccnt_t *overhead) {
 }
 
 #define ALLOW_UNSTABLE_OVERHEAD 
+
+#ifdef CONFIG_ARCH_X86
+
+static inline uint32_t rdtscp() {
+  uint32_t rv;
+  asm volatile ("rdtscp": "=a" (rv) :: "edx", "ecx");
+  return rv;
+}
+#endif /*CONFIG_ARCH_X86*/
+
+static inline int wait_init_msg_from(seL4_CPtr endpoint) {
+
+    seL4_Word badge; 
+    seL4_MessageInfo_t info; 
+
+    info = seL4_Recv(endpoint, &badge); 
+
+    assert(seL4_MessageInfo_get_label(info) == seL4_Fault_NullFault); 
+    assert(seL4_MessageInfo_get_length(info) == 1); 
+
+    if (seL4_GetMR(0) == BENCH_INIT_MSG) 
+        return BENCH_SUCCESS; 
+    else 
+        return BENCH_FAILURE; 
+}

@@ -132,21 +132,8 @@
 
 /*ipc bench serial number*/
 enum ipc_funs{
-    IPC_CALL, 
-    IPC_CALL2, 
-    IPC_CALL_10, 
-    IPC_CALL2_10, 
-    IPC_REPLY_WAIT, 
-    IPC_REPLY_WAIT2, 
-    IPC_REPLY_WAIT_10, 
-    IPC_REPLY_WAIT2_10, 
-    IPC_WAIT, 
-    IPC_SEND, 
     IPC_RT_CALL, 
     IPC_RT_REPLY_WAIT,
-    IPC_LATENCY_CALL, 
-    IPC_LATENCY_REPLY_WAIT,
-    IPC_OVERHEAD, 
     IPC_ALL
 };
 
@@ -335,10 +322,6 @@ enum ipc_funs{
 
 
 #define NUM_L1D_SHARED_PAGE  1
-
-/*one system tick is 1ms, 3400000 cycles, 3.4GHZ sandybridge machine*/
-/*ARM V7 tick length 1ms 800 MHZ*/
-#define KERNEL_SCHEDULE_TICK_LENGTH   100000
 
 #ifdef CONFIG_ARCH_X86
 static inline uint64_t rdtscp_64(void) {

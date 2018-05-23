@@ -4,9 +4,9 @@
 #include <stdint.h>
 #include <sys/mman.h>
 #include <assert.h>
-#include "../mastik_common/low.h"
+#include "low.h"
 #include "l1i.h"
-#include "../ipc_test.h"
+
 #ifdef CONFIG_ARCH_X86
 #define JMP_OFFSET (PAGE_SIZE - 5)
 #define JMP_OPCODE 0xE9

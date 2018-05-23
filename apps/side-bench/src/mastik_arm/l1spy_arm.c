@@ -13,7 +13,6 @@ sabre L1 D cache, 32B cache line, 4 ways, physically indexed, physically tagged
 #include "bench_helper.h"
 #include "low.h"
 #include "l1.h"
-#include "ipc_test.h"
 
 int l1_trojan(bench_env_t *env) {
 

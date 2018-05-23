@@ -13,7 +13,6 @@
 #include "vlist.h"
 #include "l3_arm.h"
 #include "timestats.h"
-#include "ipc_test.h"
 
 #define CHECKTIMES 256
 
@@ -111,15 +110,14 @@ int probetime(void *pp) {
     return 0;
   void *p = (void *)pp;
   uint32_t start, end;
-
-  READ_COUNTER_ARMV7(start);
+  SEL4BENCH_READ_CCNT(start);  
+ 
   do {
     (*(int *)OFFSET(p, 2*sizeof(void *)))++;
     p = LNEXT(p);
   } while (p != (void *) pp);
-
-  READ_COUNTER_ARMV7(end);
-
+  SEL4BENCH_READ_CCNT(end);  
+ 
   return end - start; 
 }
 
@@ -138,12 +136,12 @@ int probecount(void *pp) {
   uint32_t start, end;
   /*probe and count how many cache misses*/ 
   do {
-      
-      READ_COUNTER_ARMV7(start);
+      SEL4BENCH_READ_CCNT(start);  
+ 
       (*(int *)OFFSET(p, 2*sizeof(void *)))++;
       p = LNEXT(p);
+      SEL4BENCH_READ_CCNT(end);  
       
-      READ_COUNTER_ARMV7(end);
       end -= start;
     if (end > L3_THRESHOLD)
       rv++;
@@ -532,10 +530,10 @@ int probeloop(l3pp_t l3, uint16_t *results, int count, int slot) {
   for (int i = 0; i < count; i++) {
     l3_probecount(l3, results);
     results += l3->nmonitored;
-    
-    READ_COUNTER_ARMV7(time_s);
+    SEL4BENCH_READ_CCNT(time_s);  
+  
     do {
-        READ_COUNTER_ARMV7(time_e);
+        SEL4BENCH_READ_CCNT(time_e);  
     } while ((time_e - time_s) < slot);
   }
 #ifdef CONFIG_DEBUG_BUILD 

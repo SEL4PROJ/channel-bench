@@ -16,12 +16,8 @@ int bp_trojan(bench_env_t *env) {
   uint32_t secret;
   seL4_MessageInfo_t info;
 
-  uint32_t  prev; 
   bench_args_t *args = env->args; 
   
-  READ_COUNTER_ARMV7(prev);
-
-  srandom(prev);
   volatile uint32_t *share_vaddr = (uint32_t *)args->shared_vaddr; 
   
   info = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 1);
