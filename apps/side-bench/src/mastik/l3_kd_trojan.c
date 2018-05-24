@@ -110,7 +110,7 @@ int l3_kd_trojan(bench_env_t *env) {
         secret = random() % total_sec;  
         /*wait for a new time slice*/ 
         cur = prev = rdtscp_64(); 
-        while (cur - prev < KERNEL_SCHEDULE_TICK_LENGTH) {
+        while (cur - prev < TS_THRESHOLD) {
             prev = cur;
             /*waiting for the timer tick to break the schedule*/
             cur = rdtscp_64();
@@ -137,7 +137,7 @@ int l3_kd_trojan(bench_env_t *env) {
         secret = random() % total_sec;  
         /*wait for a new time slice*/ 
         cur = prev = rdtscp_64(); 
-        while (cur - prev < KERNEL_SCHEDULE_TICK_LENGTH) {
+        while (cur - prev < TS_THRESHOLD) {
             prev = cur;
             /*waiting for the timer tick to break the schedule*/
             cur = rdtscp_64();

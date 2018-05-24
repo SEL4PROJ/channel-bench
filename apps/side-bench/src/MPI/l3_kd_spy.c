@@ -45,7 +45,7 @@ static void measure(bench_env_t *env)
   for (int i = 0; i < CONFIG_BENCH_DATA_POINTS;) {
     uint64_t cur = rdtscp_64(); 
     /*at the begining of the current tick*/
-    if (cur - prev > KERNEL_SCHEDULE_TICK_LENGTH) {
+    if (cur - prev > TS_THRESHOLD) {
       prevs[i] = prev;
       starts[i] = start;
       curs[i] = cur;
@@ -70,9 +70,6 @@ static void measure(bench_env_t *env)
       r_addr->cur_sec[i] = cur_sec[i];
 
   }
-  //for (int i = 1; i < NUM_KERNEL_SCHEDULE_BENCH; i++) 
-    //printf("Trojan: %llu %llu %llu -> %llu %llu %llu\n", prevs[i], starts[i], curs[i], prevs[i] - starts[i], curs[i] - prevs[i], curs[i] - starts[i]);
-
   info = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 1);
   seL4_SetMR(0, 0);
   seL4_Send(args->r_ep, info);

@@ -72,10 +72,7 @@
 #endif /* CONFIG_ARCH_X86 */
 
 #ifdef CONFIG_PLAT_TX1
-/*number of cache lines per page*/
-#define PAGE_CACHELINES    64
 
-/*32 K buffer*/
 #define L1_ASSOCIATIVITY   2
 #define L1_SETS            256
 #define L1_LINES           512
@@ -106,10 +103,7 @@
 #endif /* CONFIG_PLAT_TX1 */
 
 #ifdef CONFIG_PLAT_HIKEY
-/*number of cache lines per page*/
-#define PAGE_CACHELINES    64
 
-/*32 K buffer*/
 #define L1_ASSOCIATIVITY   4
 #define L1_SETS            128
 #define L1_LINES           512
@@ -140,8 +134,6 @@
 #endif /* CONFIG_PLAT_HIKEY */
 
 #ifdef CONFIG_PLAT_SABRE 
-/*number of cache lines per page*/
-#define PAGE_CACHELINES    128
 
 #define L1_ASSOCIATIVITY   4
 #define L1_SETS            256

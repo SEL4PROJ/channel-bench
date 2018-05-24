@@ -7,7 +7,6 @@
 #include "bench_common.h"
 #include "bench_types.h"
 
-#define WARMUP_ROUNDS 0x1000 
 
 #define JMP_ALIGN   16
 #define BTB_ENTRIES  (4096*2)
