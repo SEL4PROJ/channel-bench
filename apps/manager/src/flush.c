@@ -208,9 +208,10 @@ void launch_bench_flush (m_env_t *env) {
     printf("creating recording frames for benchmarking thread.\n"); 
     map_r_buf(env, n_p, &flush_thread);
 
+    printf("launching threads\n");
     launch_thread(&flush_thread); 
     launch_thread(&idle_thread); 
-
+    printf("waiting for result\n");
     info = seL4_Recv(reply_ep.cptr, NULL);
     assert(seL4_MessageInfo_get_label(info) == seL4_Fault_NullFault); 
     
