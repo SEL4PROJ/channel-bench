@@ -32,6 +32,7 @@
 #define L1I_ASSOCIATIVITY  8
 #define L1I_SETS           64
 #define L1I_CACHELINE      64
+#define L1I_LINES          512
 
 /*L2 cache feature*/
 #define L2_ASSOCIATIVITY   8
