@@ -27,7 +27,6 @@ int l1_trojan(bench_env_t *env) {
     data = (char*)ALIGN_PAGE_SIZE(data);
 
     uint32_t *share_vaddr = args->shared_vaddr; 
-    *share_vaddr = SYSTEM_TICK_SYN_FLAG; 
 
     /*manager: trojan is ready*/
     info = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 1);
@@ -67,13 +66,8 @@ int l1_spy(bench_env_t *env) {
         ~0LLU, ~0LLU,~0LLU, ~0LLU,};
 #endif 
 
-#ifdef CONFIG_x86_64
-    uint64_t UNUSED pmu_start[BENCH_PMU_COUNTERS]; 
-    uint64_t UNUSED pmu_end[BENCH_PMU_COUNTERS]; 
-#else
-    uint32_t UNUSED pmu_start[BENCH_PMU_COUNTERS]; 
-    uint32_t UNUSED pmu_end[BENCH_PMU_COUNTERS]; 
-#endif
+    ccnt_t UNUSED pmu_start[BENCH_PMU_COUNTERS]; 
+    ccnt_t UNUSED pmu_end[BENCH_PMU_COUNTERS]; 
 
     bench_args_t *args = env->args; 
 
@@ -89,9 +83,6 @@ int l1_spy(bench_env_t *env) {
     /*syn with trojan*/
     info = seL4_Recv(args->ep, &badge);
     assert(seL4_MessageInfo_get_label(info) == seL4_Fault_NullFault);
-
-    /*waiting for a start*/
-    while (*secret == SYSTEM_TICK_SYN_FLAG) ;
 
 
     for (int i = 0; i < CONFIG_BENCH_DATA_POINTS; i++) {
