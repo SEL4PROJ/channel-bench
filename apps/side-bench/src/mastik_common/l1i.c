@@ -12,8 +12,6 @@
 #define JMP_OPCODE 0xE9
 #define RET_OPCODE 0xC3
 #define SET(page, set) (((uint8_t *)l1->memory) + PAGE_SIZE * (page) + L1I_CACHELINE * (set))
-extern void nop_spy(void);
-uint32_t l1i_probe_nop_time;
 #endif 
 
 #ifdef CONFIG_ARCH_ARM 
@@ -175,16 +173,3 @@ void l1i_probe(l1iinfo_t l1, uint16_t *results) {
 }
 #endif /*CONFIG_ARCH_ARM*/ 
 
-#ifdef CONFIG_ARCH_X86
-uint32_t l1i_probe_nop(void) {
-//    uint32_t start = rdtscp();
-    // Using assembly because I am not sure I can trust the compiler
-    //asm volatile ("callq %0": : "r" (SET(0, l1->monitored[i])):);
-
-    /*for the total number of monitored cache sets 
-     do a probe, monitored contains the cache set number*/
-    asm volatile ("call nop_spy;"::: "eax", "ebx", "ecx", "edx");
-    return l1i_probe_nop_time;
-   //return rdtscp() - start;
-}
-#endif 

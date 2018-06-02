@@ -16,14 +16,13 @@ int l1i_trojan(bench_env_t *env) {
   uint64_t l1i_prepare_sets = ~0LLU; 
 
   l1iinfo_t l1i_1 = l1i_prepare(&l1i_prepare_sets);
-  uint32_t total_sec = L1I_SETS, secret;
+  uint32_t secret;
   uint64_t monitored_sets;  
   
   seL4_MessageInfo_t info;
   bench_args_t *args = env->args; 
 
   uint32_t volatile *share_vaddr = (uint32_t *)args->shared_vaddr; 
-  *share_vaddr = SYSTEM_TICK_SYN_FLAG; 
   
   info = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 1);
   seL4_SetMR(0, 0); 
@@ -35,12 +34,13 @@ int l1i_trojan(bench_env_t *env) {
   
 
 for (int i = 0; i < CONFIG_BENCH_DATA_POINTS; i++) {
-      secret = random() % (total_sec + 1); 
       
       /*waiting for a system tick*/
       newTimeSlice();
      
+      secret = random() % (L1I_SETS + 1); 
       monitored_sets = 0ull;
+      /*the range is 0 -- L1I_SETS*/
       for (int n = 0; n < secret; n++) 
           monitored_sets |= 1ull << n;
 
@@ -68,16 +68,20 @@ int l1i_spy(bench_env_t *env) {
   uint64_t prepare_sets = ~0LLU; 
   bench_args_t *args = env->args; 
 
-  uint64_t volatile UNUSED pmu_start; 
-  uint64_t volatile UNUSED pmu_end; 
+  ccnt_t volatile UNUSED pmu_start; 
+  ccnt_t volatile UNUSED pmu_end; 
 
   /*spy using different virtual address to establish the probing buffer*/
 
+#ifdef CONFIG_BENCH_COVERT_L1I_PROB_VADDR 
+  l1i_prepare(&prepare_sets);
+
+  /*creating the pbuf again therefore using the different vaddr*/
   l1i_prepare(&prepare_sets); 
-  l1i_prepare(&prepare_sets); 
+
+#endif 
 
   l1iinfo_t l1i_1 = l1i_prepare(&prepare_sets);
-
 
   uint16_t *results = malloc(l1i_nsets(l1i_1)*sizeof(uint16_t));
 
@@ -89,9 +93,6 @@ int l1i_spy(bench_env_t *env) {
   /*syn with trojan*/
   info = seL4_Recv(args->ep, &badge);
   assert(seL4_MessageInfo_get_label(info) == seL4_Fault_NullFault);
-
-  /*waiting for a start*/
-  while (*secret == SYSTEM_TICK_SYN_FLAG) ;
 
 
   for (int i = 0; i < CONFIG_BENCH_DATA_POINTS; i++) {

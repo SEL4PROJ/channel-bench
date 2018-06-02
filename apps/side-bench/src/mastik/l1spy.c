@@ -26,7 +26,7 @@ int l1_trojan(bench_env_t *env) {
     assert(data); 
     data = (char*)ALIGN_PAGE_SIZE(data);
 
-    uint32_t *share_vaddr = args->shared_vaddr; 
+    uint32_t *share_vaddr = (uint32_t*)args->shared_vaddr; 
 
     /*manager: trojan is ready*/
     info = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 1);
@@ -58,13 +58,11 @@ int l1_spy(bench_env_t *env) {
     seL4_Word badge;
     seL4_MessageInfo_t info;
 
-#ifdef CONFIG_BENCH_COVERT_L1D 
-    uint64_t monitored_mask[MONITOR_MASK] = {~0LLU};
-#else 
-    /*for the L2 cache attack, with larger cache set*/
-    uint64_t monitored_mask[MONITOR_MASK] = {~0LLU, ~0LLU,~0LLU, ~0LLU,
-        ~0LLU, ~0LLU,~0LLU, ~0LLU,};
-#endif 
+    uint64_t monitored_mask[MONITOR_MASK];
+    
+    for (int m = 0; m < MONITOR_MASK; m++)
+        monitored_mask[m] = ~0LLU; 
+
 
     ccnt_t UNUSED pmu_start[BENCH_PMU_COUNTERS]; 
     ccnt_t UNUSED pmu_end[BENCH_PMU_COUNTERS]; 

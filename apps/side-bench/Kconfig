@@ -147,6 +147,15 @@ menu   "Timing Channel Benchmarks"
       help  
              read then writeback the L1I probing buffer after every L1I probe
 
+      config BENCH_COVERT_L1I_PROB_VADDR
+      bool   "the trojan and spy uses different vaddr for probing"
+      default n
+      depends on BENCH_COVERT_L1I
+      help  
+             The trojan and spy uses different virtual address range for building 
+             the probing buffer.
+
+
       config MASTIK_ATTACK
       bool "multicore cache-based timing attack"
       default n 
