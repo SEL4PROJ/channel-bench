@@ -36,12 +36,9 @@ int btb_trojan(bench_env_t *env) {
   uint32_t total_sec = 2048 + 1, secret;
   seL4_MessageInfo_t info;
   bench_args_t *args = env->args;
-  srandom(rdtscp());
-
 
   /*receive the shared address to record the secret*/
-  volatile uint32_t *share_vaddr = args->shared_vaddr; 
-  *share_vaddr = SYSTEM_TICK_SYN_FLAG; 
+  volatile uint32_t *share_vaddr = (uint32_t *)args->shared_vaddr; 
 
   info = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 1);
   seL4_SetMR(0, 0); 
@@ -51,11 +48,12 @@ int btb_trojan(bench_env_t *env) {
   seL4_Send(args->ep, info);
 
   for (int i = 0; i < CONFIG_BENCH_DATA_POINTS; i++) {
-      secret = (random() % total_sec ) + 3072; 
 
       /*waiting for a system tick*/
       newTimeSlice();
 
+      /*trojan: 3072 - 5120*/
+      secret = (random() % total_sec ) + 3072; 
       /*do the probe*/
       btb_jmp(secret);
 
@@ -77,14 +75,11 @@ int btb_spy(bench_env_t *env) {
   /*the record address*/
   struct bench_l1 *r_addr = (struct bench_l1 *)args->record_vaddr; 
   /*the shared address*/
-  volatile uint32_t *secret = args->shared_vaddr; 
+  volatile uint32_t *secret = (uint32_t*)args->shared_vaddr; 
 
   /*syn with trojan*/
   info = seL4_Recv(args->ep, &badge);
   assert(seL4_MessageInfo_get_label(info) == seL4_Fault_NullFault);
-
-  /*waiting for a start*/
-  while (*secret == SYSTEM_TICK_SYN_FLAG) ;
 
 
   for (int i = 0; i < CONFIG_BENCH_DATA_POINTS; i++) {

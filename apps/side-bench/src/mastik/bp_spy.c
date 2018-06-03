@@ -17,7 +17,6 @@ int bp_trojan(bench_env_t *env) {
   seL4_MessageInfo_t info;
   bench_args_t *args = env->args; 
 
-  srandom(rdtscp());
 
   /*receive the shared address to record the secret*/
   volatile uint32_t *share_vaddr = args->shared_vaddr; 

@@ -105,9 +105,18 @@ void run_bench_ipc(bench_env_t *bench_env) {
 int run_bench_covert(bench_env_t *bench_env) {
    
     seL4_Word test_num = bench_env->args->test_num;
+    unsigned int seed; 
 
+#ifdef CONFIG_ARCH_ARM 
+    SEL4BENCH_READ_CCNT(seed);  
+#else 
+    seed = rdtscp();
+#endif 
     /*run bench*/
     assert(covert_bench_fun[test_num] != NULL); 
+
+    srandom(seed);
+
     return covert_bench_fun[test_num](bench_env); 
 }
 

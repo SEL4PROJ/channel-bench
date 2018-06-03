@@ -59,7 +59,6 @@ int tlb_trojan(bench_env_t *env) {
   seL4_MessageInfo_t info;
   bench_args_t *args = env->args; 
 
-  srandom(rdtscp());
   allocbuf(0);
 
   volatile uint32_t *share_vaddr = (uint32_t *)args->shared_vaddr;
@@ -95,7 +94,6 @@ int tlb_spy(bench_env_t *env) {
   uint64_t volatile UNUSED pmu_end; 
 
 
-  srandom(rdtscp());
   allocbuf(1);
   
   struct bench_l1 *r_addr = (struct bench_l1 *)args->record_vaddr;
