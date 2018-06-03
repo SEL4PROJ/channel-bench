@@ -8,7 +8,6 @@
 #include "bench_types.h"
 
 
-
 #define SPY_TLB_PAGES 32
 #define TROJAN_TLB_PAGES 64
 
@@ -29,11 +28,13 @@ static void allocbuf(int spy) {
     r[i] = r[j];
     r[j] = t;
   }
+  /*size of int = 4, a page contains 1024 int */
   for (int i = 0; i < pages - 1; i++) {
     int from = 1024 * r[i] + offset(i, spy);
     buf[from] = 1024 * r[i+1] + offset(i+1, spy);
   }
   buf[1024 * r[pages-1] + offset(pages-1, spy)] = -1;
+
 }
 
 static volatile int a;
@@ -61,38 +62,23 @@ int tlb_trojan(bench_env_t *env) {
   srandom(rdtscp());
   allocbuf(0);
 
-  volatile uint32_t *share_vaddr = args->shared_vaddr;
-  *share_vaddr = SYSTEM_TICK_SYN_FLAG; 
+  volatile uint32_t *share_vaddr = (uint32_t *)args->shared_vaddr;
   
   info = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 1);
   seL4_SetMR(0, 0); 
   seL4_Send(args->r_ep, info);
 
-  /*warm up the platform*/
-  for (int i = 0; i < WARMUP_ROUNDS; i++) {
-      secret = random() % (TROJAN_TLB_PAGES+1);
-      
-      tlb_probe(secret);
-  }
-  /*ready to do the test*/
+ /*ready to do the test*/
   seL4_Send(args->ep, info);
-  
-  /*giving some number of system ticks to syn trojan and spy */
-
-  for (int i = 0; i < 100; i++) {
-      secret = random() % (TROJAN_TLB_PAGES+1);
-      newTimeSlice();
-      tlb_probe(secret);
-      
-  }
 
   for (int i = 0; i < CONFIG_BENCH_DATA_POINTS; i++) {
-      secret = (random() / 2) % (TROJAN_TLB_PAGES+1);
-      
+
+      newTimeSlice();
+      secret = random() % (TROJAN_TLB_PAGES+1);
+
+      tlb_probe(secret);
       /*update the secret read by low*/ 
       *share_vaddr = secret; 
-      tlb_probe(secret);
-      newTimeSlice();
 
   }
   while (1);
@@ -114,14 +100,11 @@ int tlb_spy(bench_env_t *env) {
   
   struct bench_l1 *r_addr = (struct bench_l1 *)args->record_vaddr;
   /*the shared address*/
-  volatile uint32_t *secret = args->shared_vaddr;
+  volatile uint32_t *secret = (uint32_t*)args->shared_vaddr;
 
   /*syn with trojan*/
   info = seL4_Recv(args->ep, &badge);
   assert(seL4_MessageInfo_get_label(info) == seL4_Fault_NullFault);
-
-  /*waiting for a start*/
-  while (*secret == SYSTEM_TICK_SYN_FLAG) ;
 
 
   for (int i = 0; i < CONFIG_BENCH_DATA_POINTS; i++) {
@@ -131,7 +114,6 @@ int tlb_spy(bench_env_t *env) {
       pmu_start = sel4bench_get_counter(0);  
 #endif 
 
-      //yval
       /*result is the total probing cost
         secret is updated by trojan in the previous system tick*/
       r_addr->result[i] = tlb_probe(SPY_TLB_PAGES);
