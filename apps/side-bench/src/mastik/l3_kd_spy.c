@@ -1,0 +1,74 @@
+#include <stdio.h>
+#include <stdint.h>
+#include <sel4/sel4.h>
+#include "bench_common.h"
+#include "bench_types.h"
+#include "bench_helper.h"
+#include "low.h"
+
+uint32_t prev_sec[CONFIG_BENCH_DATA_POINTS];
+uint32_t cur_sec[CONFIG_BENCH_DATA_POINTS];
+ccnt_t starts[CONFIG_BENCH_DATA_POINTS];
+ccnt_t curs[CONFIG_BENCH_DATA_POINTS];
+ccnt_t prevs[CONFIG_BENCH_DATA_POINTS];
+
+
+int l3_kd_spy(bench_env_t *env) {
+ 
+    seL4_Word badge;
+    seL4_MessageInfo_t info;
+    bench_args_t *args = env->args; 
+    struct bench_kernel_schedule *r_addr = 
+        (struct bench_kernel_schedule*)args->record_vaddr;
+   
+    /*the shared address*/
+    uint32_t volatile *secret = (uint32_t *)args->shared_vaddr;
+
+
+    info = seL4_Recv(args->ep, &badge);
+    assert(seL4_MessageInfo_get_label(info) == seL4_Fault_NullFault);
+
+    uint32_t prev_s = *secret; 
+    
+
+    ccnt_t start = rdtscp_64();
+
+    uint64_t prev = start;
+    
+    for (int i = 0; i < CONFIG_BENCH_DATA_POINTS;) {
+        ccnt_t cur = rdtscp_64(); 
+        /*at the begining of the current tick*/
+        if (cur - prev >= TS_THRESHOLD) {
+            prevs[i] = prev;
+            starts[i] = start;
+            curs[i] = cur;
+            /*prev secret affect online time (prevs - starts)*/
+            prev_sec[i] = prev_s;
+            /*at the beginning of this tick, update the secret*/
+            /*cur secrete affect offline time (curs - prevs)*/
+            prev_s = cur_sec[i] = *secret;
+            start = cur;
+            i++;
+        }
+        prev = cur;
+    }
+
+    for (int i = 0; i < CONFIG_BENCH_DATA_POINTS; i++) {
+
+        r_addr->prevs[i] = prevs[i]; 
+        r_addr->starts[i] = starts[i]; 
+        r_addr->curs[i] = curs[i]; 
+        r_addr->prev_sec[i] = prev_sec[i];
+        r_addr->cur_sec[i] = cur_sec[i];
+
+    }
+    info = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 1);
+    seL4_SetMR(0, 0);
+    seL4_Send(args->r_ep, info);
+
+    for (;;) 
+    {
+    }
+
+  
+}

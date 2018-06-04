@@ -163,34 +163,30 @@ static int matchcount(const char *record, const char *match, int allowedmisses) 
 
 
 static cachemap_t map() {
-  for (int i = 0; i < 1024*1024; i++)
-    for (int j = 0; j < 1024; j++)
-      a *=i+j;
-  printf("%d\n", a);
-  char *buf = (char *)mmap(NULL, SIZE + 4096 * 2, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANON, -1, 0);
-  if (buf == MAP_FAILED) {
-    perror("mmap");
-    exit(1);
-  }
-  /*making the buffer page aligned*/
-  int buf_switch = (int)buf; 
-  buf_switch &= ~(0xfff); 
-  buf_switch += 0x1000; 
-  buf = (char *) buf_switch; 
-  printf("buffer %p\n", buf);
+    for (int i = 0; i < 1024*1024; i++)
+        for (int j = 0; j < 1024; j++)
+            a *=i+j;
+
+    char *buf = (char *)mmap(NULL, SIZE + 4096 * 2, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANON, -1, 0);
+    if (buf == MAP_FAILED) {
+        return NULL; 
+    }
+    /*making the buffer page aligned*/
+    int buf_switch = (int)buf; 
+    buf_switch &= ~(0xfff); 
+    buf_switch += 0x1000; 
+    buf = (char *) buf_switch; 
 
 
-  cachemap_t cm;
-  vlist_t candidates;
-  candidates = vl_new();
-  for (int i = 0; i < SIZE; i += 4096) 
-    vl_push(candidates, buf + i);
+    cachemap_t cm;
+    vlist_t candidates;
+    candidates = vl_new();
+    for (int i = 0; i < SIZE; i += 4096) 
+        vl_push(candidates, buf + i);
 
-  cm = cm_linelist(candidates);
-  printf("Cachemap done: %d sets, %d unloved\n", cm->nsets, vl_len(candidates));
-  //if (cm->nsets != 128 || vl_len(candidates) != 0) 
-    //exit (1);
-  return cm;
+    cm = cm_linelist(candidates);
+
+    return cm;
 
 }
 

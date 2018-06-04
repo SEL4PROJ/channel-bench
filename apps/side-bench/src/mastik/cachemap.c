@@ -97,39 +97,40 @@ cachemap_t cm_linelist(vlist_t lines) {
   vlist_t es = vl_new();
   int fail = 0;
   while (vl_len(lines)) {
-    assert(vl_len(es) == 0);
-    if (fail > 5) 
-      break;
-    void *c = expand(es, lines);
-    if (c == NULL) {
+      assert(vl_len(es) == 0);
+      if (fail > 5) {
+          break;
+      }
+      void *c = expand(es, lines);
+      if (c == NULL) {
+          while (vl_len(es))
+              vl_push(lines, vl_del(es, 0));
+          fail++;
+          continue;
+      }
+      contract(es, lines, c);
+      contract(es, lines, c);
+      contract(es, lines, c);
+      if (vl_len(es) > L3_ASSOCIATIVITY || vl_len(es) < L3_ASSOCIATIVITY - 3) {
+          while (vl_len(es))
+              vl_push(lines, vl_del(es, 0));
+          fail++;
+          continue;
+      } 
+      fail = 0;
+      vlist_t set = vl_new();
+      vl_push(set, c);
+      collect(es, lines, set);
       while (vl_len(es))
-	vl_push(lines, vl_del(es, 0));
-      fail++;
-      continue;
-    }
-    contract(es, lines, c);
-    contract(es, lines, c);
-    contract(es, lines, c);
-    if (vl_len(es) > L3_ASSOCIATIVITY || vl_len(es) < L3_ASSOCIATIVITY - 3) {
-      while (vl_len(es))
-	vl_push(lines, vl_del(es, 0));
-      fail++;
-      continue;
-    } 
-    fail = 0;
-    vlist_t set = vl_new();
-    vl_push(set, c);
-    collect(es, lines, set);
-    while (vl_len(es))
-      vl_push(set, vl_del(es, 0));
-    //printf("Set %d - %d\n", vl_len(sets), vl_len(set));
-    vl_push(sets, set);
+          vl_push(set, vl_del(es, 0));
+ //     printf("Set %d - %d\n", vl_len(sets), vl_len(set));
+      vl_push(sets, set);
   }
 
   cm->nsets = vl_len(sets);
   cm->sets = (vlist_t *)calloc(cm->nsets, sizeof(vlist_t));
   for (int i = 0; i < vl_len(sets); i++)
-    cm->sets[i] = vl_get(sets, i);
+      cm->sets[i] = vl_get(sets, i);
   vl_free(sets);
   vl_free(es);
   return cm;

@@ -11,11 +11,10 @@
 #include "cachemap.h"
 #include "pp.h"
 #include "low.h"
+#include "search.h"
 #include "bench_common.h"
 #include "bench_types.h"
 #include "bench_helper.h"
-
-#define SIZE (16*1024*1024)
 
 #define RECORDLEN 100000
 #define SLOT 5000
@@ -36,39 +35,6 @@ static int  newTimeSlice_tl(uint64_t end) {
   }
 }
 
-
-
-
-static volatile int a=0;
-static cachemap_t map() {
-  for (int i = 0; i < 1024*1024; i++)
-    for (int j = 0; j < 1024; j++)
-      a *=i+j;
-  printf("%d\n", a);
-  char *buf = (char *)mmap(NULL, SIZE + 4096 * 2, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANON, -1, 0);
-  if (buf == MAP_FAILED) {
-    perror("mmap");
-    exit(1);
-  }
-  /*making the buffer page aligned*/
-  uintptr_t buf_switch = (uintptr_t) buf; 
-  buf_switch &= ~(0xfffULL); 
-  buf_switch += 0x1000; 
-  buf = (char *) buf_switch; 
-  printf("buffer %p\n", buf);
-
-
-  cachemap_t cm;
-  vlist_t candidates;
-  candidates = vl_new();
-  for (int i = 0; i < SIZE; i += 4096){
-    vl_push(candidates, buf + i);
-  }
-  cm = cm_linelist(candidates);
-  printf("Cachemap done: %d sets, %d unloved\n", cm->nsets, vl_len(candidates));
-  return cm;
-
-}
 
 
 
