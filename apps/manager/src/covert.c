@@ -177,9 +177,13 @@ int run_covert_llc_kernel(m_env_t *env) {
     printf("spy is ready\n");
 
     tag = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 1);
-    
+   
+#ifdef CONFIG_ARCH_X86
     attack_start = rdtscp_64();
-    
+#else 
+    SEL4BENCH_READ_CCNT(attack_start);  
+ 
+#endif 
     seL4_SetMR(0, attack_start);
     seL4_Send(t_ep.cptr, tag);
 
@@ -202,16 +206,16 @@ int run_covert_llc_kernel(m_env_t *env) {
 
         seq = probe_result->probe_seq[i]; 
 
-        printf("seq %d misses:", seq); 
+        printf("%d", seq); 
 
 
         for (int j = 0; j < timing_api_num; j++) {
-            printf(" %d", probe_result->probe_results[i][j]);
+//            printf(" %d", probe_result->probe_results[i][j]);
  
             lines += probe_result->probe_results[i][j]; 
         }
 
-        printf(" total misses: %d", lines);
+        printf(" %d", lines);
 
         printf("\n"); 
 
