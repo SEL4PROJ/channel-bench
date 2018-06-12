@@ -16,12 +16,16 @@
 
 static inline void tlb_access(char *buf, uint32_t s) {
 
-    /*access s tlb entries by visiting one line in each page*/
+    /*access s tlb entries by visiting one line in each page
+     randomly select a line to visit in a page*/
     /*the attack range is 0 - s pages*/
 
     for (int i = 0; i < s; i++) { 
         
-        char *addr = buf + i * PAGE_SIZE; 
+        char *addr = buf + i * PAGE_SIZE + random() % PAGE_SIZE; 
+ 
+        /*align to a cache line size*/
+        addr = (void *)((uintptr_t)addr & ~(L1_CACHELINE - 1)); 
         access(addr);
     }
 
@@ -43,6 +47,7 @@ int tlb_trojan(bench_env_t *env) {
     info = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 1);
     seL4_SetMR(0, 0); 
     seL4_Send(args->r_ep, info);
+    
 
     /*ready to do the test*/
     seL4_Send(args->ep, info);
