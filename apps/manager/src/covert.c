@@ -132,7 +132,12 @@ int run_single_l1(m_env_t *env) {
     if (seL4_MessageInfo_get_label(info) != seL4_Fault_NullFault)
         return BENCH_FAILURE;
     printf("benchmark result ready\n");
-    
+
+#ifdef CONFIG_FLUSH_CORE_STATES 
+    /*trun off the flag for cache flush, making the printing faster*/
+    seL4_Yield();
+#endif
+
     r_d =  (struct bench_l1 *)env->record_vaddr;
     printf("probing time start\n");
     
