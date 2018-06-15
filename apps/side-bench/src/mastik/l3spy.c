@@ -138,7 +138,7 @@ static inline uint32_t probing_sets(vlist_t set_list) {
 }
 
 
-#define SYN_TICK_MULTI_TROJAN          200000 
+#define SYN_TICK_MULTI_TROJAN          500000 
 #define SYN_TICK_MULTI_SPY_OFFSET      50000
 
 static inline void waiting_probe(ccnt_t start, int tick, bool spy) {
@@ -213,7 +213,11 @@ int l3_spy(bench_env_t *env) {
     info = seL4_Recv(reply_ep, &badge);
     assert(seL4_MessageInfo_get_label(info) == seL4_Fault_NullFault);
     tick_start = (ccnt_t)seL4_GetMR(0);
-
+    
+    /*waiting for the trojan for sync msg*/
+    info = seL4_Recv(args->ep, &badge);
+    assert(seL4_MessageInfo_get_label(info) == seL4_Fault_NullFault);
+    tick_start = rdtscp_64();
 
     for (int i = 0; i < CONFIG_BENCH_DATA_POINTS; i++) {
 
@@ -266,7 +270,12 @@ int l3_trojan(bench_env_t *env) {
     assert(seL4_MessageInfo_get_label(info) == seL4_Fault_NullFault);
     tick_start = (ccnt_t)seL4_GetMR(0);
 
-    
+    /*syn with the spy*/
+    info = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 1);
+    seL4_SetMR(0, 0); 
+    seL4_Send(args->ep, info);
+    tick_start = rdtscp_64();
+
     for(int i = 0; i < CONFIG_BENCH_DATA_POINTS; i++) {
 
         waiting_probe(tick_start, i , false); 
