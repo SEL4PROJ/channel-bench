@@ -64,7 +64,7 @@ void init_timing_threads(m_env_t *env) {
 
     printf("creating shared frames between spy and trojan\n"); 
     /*creating shared frame between trojan and spy*/
-    map_shared_buf(&spy, &trojan, NUM_L1D_SHARED_PAGE, &share_phy);
+    map_shared_buf(&trojan, &spy, NUM_L1D_SHARED_PAGE, &share_phy);
 
     printf("creating recording frames for spy\n"); 
     map_r_buf(env, n_p, &spy);
