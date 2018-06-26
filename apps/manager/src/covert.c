@@ -347,7 +347,7 @@ int run_timing_threads(m_env_t *env) {
     return run_single_timer(env); 
 #endif
 
-#ifdef CONFIG_MANAGER_COVERT_MULTI 
+#ifdef CONFIG_MASTIK_ATTACK_SIDE 
     return run_multi(env); 
 #endif 
 

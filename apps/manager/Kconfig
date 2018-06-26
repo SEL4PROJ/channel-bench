@@ -102,13 +102,6 @@ menu    "Manager task for benchmarking tests"
         help 
             see timing channel benchmarks
 
-       config MANAGER_COVERT_MULTI
-       bool "covert channel benchmark on multicore"
-       default n 
-       depends on MANAGER_COVERT_BENCH
-       help 
-            attack used as data61+ demo, then extened as the multicore benchmark
-
 
        config MANAGER_HUGE_PAGES
        bool "setting up huge pages for the benchmarking thread"

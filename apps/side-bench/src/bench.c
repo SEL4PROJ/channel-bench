@@ -23,7 +23,7 @@
 
 /*the benchmark env created based on 
   the arguments passed by the root thread*/
-bench_env_t bench_env; 
+bench_env_t setup_env; 
 
 static int (*covert_bench_fun[BENCH_COVERT_FUNS])(bench_env_t *) = {NULL, 
     l1_trojan, l1_spy,  
@@ -132,14 +132,13 @@ int run_bench_cache_flush(bench_env_t *bench_env) {
 
 
 #ifdef CONFIG_MASTIK_ATTACK
-void run_bench_mastik(bench_args_t *bench_evn) {
+void run_bench_mastik(bench_env_t *bench_env) {
 
-    seL4_Word test_num; 
     seL4_CPtr ep, reply_ep; 
-    
-    test_num = bench_env->args->test_num;; 
+    seL4_Word test_num = bench_env->args->test_num;
+   
     ep = bench_env->args->ep;
-    reply_ep = env->args->r_ep;  
+    reply_ep = bench_env->args->r_ep;  
 
 
    /*the covert channel multicore*/
@@ -164,14 +163,14 @@ void run_bench_mastik(bench_args_t *bench_evn) {
 #endif
 
 #ifdef CONFIG_MANAGER_FUNC_TESTS
-int run_bench_func_tests(benchmark_args_t *bench_env) {
+int run_bench_func_tests(bench_env_t *bench_env) {
     
     seL4_Word test_num; 
     seL4_CPtr ep, reply_ep; 
     
     test_num = bench_env->args->test_num;; 
     ep = bench_env->args->ep;
-    reply_ep = env->args->r_ep;  
+    reply_ep = bench_env->args->r_ep;  
 
     
     /*run bench*/
@@ -192,24 +191,24 @@ int main (int argc, char **argv) {
 #endif 
     assert(argc == CONFIG_BENCH_ARGS);
 
-    bench_init_env(argc, argv, &bench_env); 
+    bench_init_env(argc, argv, &setup_env); 
 
 #ifdef CONFIG_BENCH_IPC
-    run_bench_ipc(&bench_env); 
+    run_bench_ipc(&setup_env); 
 #endif 
 #ifdef CONFIG_BENCH_COVERT
-    run_bench_covert(&bench_env); 
+    run_bench_covert(&setup_env); 
 #endif
 
 #ifdef CONFIG_BENCH_CACHE_FLUSH
-    run_bench_cache_flush(&bench_env);
+    run_bench_cache_flush(&setup_env);
 #endif
 
 #ifdef CONFIG_MASTIK_ATTACK
-    run_bench_mastik(&bench_env);
+    run_bench_mastik(&setup_env);
 #endif 
 #ifdef CONFIG_MANAGER_FUNC_TESTS 
-    run_bench_func_tests(&bench_env);
+    run_bench_func_tests(&setup_env);
 #endif 
 
     /*finished testing, halt*/

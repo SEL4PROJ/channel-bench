@@ -15,7 +15,7 @@
 
 
 int mastik_spy(seL4_CPtr ep, char **av) {
-//  extern unsigned int sleep(unsigned int seconds);
+    
     seL4_Word badge;
     seL4_MessageInfo_t info;
 

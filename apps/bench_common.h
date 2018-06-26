@@ -291,7 +291,7 @@ enum ipc_funs{
 #define BENCH_COVERT_SPY       BENCH_MASTIK_TEST
 #define BENCH_COVERT_TROJAN    BENCH_MASTIK_VICTIM 
 #endif
-    /*the demo*/
+/*the demo, side channel attack on LLC, multicore*/
 #ifdef CONFIG_MASTIK_ATTACK_SIDE 
 #define BENCH_COVERT_SPY       BENCH_MASTIK_SPY
 #define BENCH_COVERT_TROJAN    BENCH_MPI_VICTIM
