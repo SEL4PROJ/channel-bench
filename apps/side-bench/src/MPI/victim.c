@@ -20,7 +20,7 @@ void mpi_victim(void ) {
     mpi_powm( res, b, d, p);
 //    printf("%s\n", mpi_tostr(res));
     uint32_t start = rdtscp();
-    while (rdtscp() - start < 300000)
+    while (rdtscp() - start < 3000000)
       ;
   }
 }
