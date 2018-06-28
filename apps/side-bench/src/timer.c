@@ -18,7 +18,6 @@
 #include "bench_types.h"
 #include "bench_support.h"
 
-#ifdef CONFIG_BENCH_COVERT_TIMER
 
 
 #define INTERRUPT_PERIOD_NS (1000 * NS_IN_US)
@@ -61,7 +60,12 @@ int timer_high(bench_env_t *env) {
     //for (int i = 0; i < CONFIG_BENCH_DATA_POINTS; i++) {
     while(1) {
         badge = 0; 
+
+#ifdef CONFIG_ARCH_ARM 
+        SEL4BENCH_READ_CCNT(start);  
+#else 
         start = rdtscp_64();
+#endif 
         /* wait for irq */
         //seL4_Wait(timer_signal, &badge);
         /*polling for the int until the int is received*/
@@ -70,7 +74,11 @@ int timer_high(bench_env_t *env) {
         } while (!badge);
 
         /* record result */
+#ifdef CONFIG_ARCH_ARM
+        SEL4BENCH_READ_CCNT(end);  
+#else 
         end = rdtscp_64();
+#endif 
     //    results[i] = end - start;
         sel4platsupport_handle_timer_irq(&env->timer, badge);
     }
@@ -109,13 +117,21 @@ int timer_low(bench_env_t *env) {
     /*syn with HIGH*/
     info = seL4_Recv(args->ep, &badge);
     assert(seL4_MessageInfo_get_label(info) == seL4_Fault_NullFault);
-  
-    start = rdtscp_64(); 
 
+#ifdef CONFIG_ARCH_ARM
+    SEL4BENCH_READ_CCNT(start);  
+#else 
+
+    start = rdtscp_64(); 
+#endif 
     prev = start;
     for (int i = 0; i < CONFIG_BENCH_DATA_POINTS;) {
-        
+
+#ifdef CONFIG_ARCH_ARM
+        SEL4BENCH_READ_CCNT(cur);  
+#else        
         cur = rdtscp_64();
+#endif 
 
         /*at the begining of the current tick*/
         if (cur - prev > TIMER_DETECT_INTERVAL_NS) {
@@ -136,4 +152,3 @@ int timer_low(bench_env_t *env) {
 
     return 0; 
 }
-#endif 
