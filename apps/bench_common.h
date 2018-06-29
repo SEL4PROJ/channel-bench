@@ -388,6 +388,9 @@ static inline seL4_CPtr wait_msg_from(seL4_CPtr endpoint)
 /*the warmup rounds for the timing channel benchmarks*/
 #define BENCH_TIMING_WARMUPS    10 
 
+/*the priority set to the IRQ sources*/
+#define TROJAN_TIMER_IRQ_PRIORITY    128
+
 #endif 
 
 
