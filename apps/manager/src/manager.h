@@ -254,7 +254,11 @@ static void create_thread(bench_thread_t *t) {
 
 #ifdef CONFIG_INT_TASK_PRIORITY 
     printf("set Kernel priority\n"); 
+#ifdef CONFIG_ARCH_X86
     error = seL4_X86_KernelImage_SetPriority(t->kernel, t->kernel_prio); 
+#else
+    error = seL4_ARM_KernelImage_SetPriority(t->kernel, t->kernel_prio); 
+#endif 
     assert(error == 0);
 #endif 
 

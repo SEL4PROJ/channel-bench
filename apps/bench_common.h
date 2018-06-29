@@ -389,7 +389,22 @@ static inline seL4_CPtr wait_msg_from(seL4_CPtr endpoint)
 #define BENCH_TIMING_WARMUPS    10 
 
 /*the priority set to the IRQ sources*/
-#define TROJAN_TIMER_IRQ_PRIORITY    128
+#define TROJAN_TIMER_IRQ_PRIORITY    0x80
+
+#ifdef CONFIG_ARCH_X86 
+
+#define TROJAN_KERNEL_IRQ_PRIORITY   0 
+#define SPY_KERNEL_IRQ_PRIORITY      3 
+
+#else 
+/*trojan allows any interrupt (only timer IRQ configured) 
+ being reported*/
+#define TROJAN_KERNEL_IRQ_PRIORITY   0xf0 
+/*setting the filter priority 1 less than the actual IRQ priority
+ a smaller number represents a higher priority level
+ setting 0 prohibits any interrupt*/
+#define SPY_KERNEL_IRQ_PRIORITY      0x7f
+#endif 
 
 #endif 
 

@@ -51,7 +51,6 @@ int timer_high(bench_env_t *env) {
     seL4_Send(args->ep, info);
 
 
-#if 1   
     error = ltimer_reset(&env->timer.ltimer);
     assert(error == 0); 
     
@@ -79,10 +78,9 @@ int timer_high(bench_env_t *env) {
 #else 
         end = rdtscp_64();
 #endif 
-    //    results[i] = end - start;
+        results[i] = end - start;
         sel4platsupport_handle_timer_irq(&env->timer, badge);
     }
-#endif 
 #if 0
     printf("timer intervas are: \n"); 
 
