@@ -78,7 +78,7 @@ int timer_high(bench_env_t *env) {
 #else 
         end = rdtscp_64();
 #endif 
-        results[i] = end - start;
+//        results[i] = end - start;
         sel4platsupport_handle_timer_irq(&env->timer, badge);
     }
 #if 0
