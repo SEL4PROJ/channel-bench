@@ -88,7 +88,7 @@ void init_timing_threads(m_env_t *env) {
 
 #ifdef CONFIG_MULTI_KERNEL_IMAGES
     /*associate the timer irq with the kernel image*/
-    error = sel4utils_set_timer_caps_to_kernel(trojan.to, trojan.kernel); 
+    error = sel4utils_set_timer_caps_to_kernel(trojan.to, trojan.kernel, true); 
     assert(error == 0); 
 #endif 
 
