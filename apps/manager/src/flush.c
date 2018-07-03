@@ -81,7 +81,7 @@ static void print_bench_cache_flush(void *user_log_vaddr,
 
     printf("cost in user-level : \n");
     for (count = 0; count < BENCH_CACHE_FLUSH_RUNS; count++) {
-        printf(" "CCNT_FORMAT" ", ulogs->costs[count] - ulogs->overhead); 
+        printf(" "CCNT_FORMAT" ", ulogs->costs[count]); 
     }
     printf("\n");
 
