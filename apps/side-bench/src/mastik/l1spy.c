@@ -125,7 +125,7 @@ int l1_cache_flush(bench_env_t *env) {
     seL4_MessageInfo_t info;
     ccnt_t overhead, start, end;
 
-    uint64_t monitored_mask[1] = {~0LLU};
+    uint64_t monitored_mask[MONITOR_MASK] = {~0LLU};
 
     bench_args_t *args = env->args; 
 

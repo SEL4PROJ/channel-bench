@@ -44,7 +44,6 @@ static void print_bench_cache_flush(void *user_log_vaddr,
     uint32_t count; 
     struct bench_cache_flush *ulogs = user_log_vaddr; 
 
-    printf("cost in kernel : \n");
  
 #ifdef CONFIG_BENCHMARK_USE_KERNEL_LOG_BUFFER
     seL4_Word duration; 
@@ -59,7 +58,7 @@ static void print_bench_cache_flush(void *user_log_vaddr,
    /*skip the warmup rounds*/
     for (count = 0; count < BENCH_CACHE_FLUSH_RUNS; count++) {
         duration = kernel_logging_entry_get_data(klogs + BENCH_WARMUPS + count); 
-        printf(" %u", duration); 
+        printf(" "CCNT_FORMAT" ", duration); 
     }
     printf("\n");
 
@@ -67,33 +66,24 @@ static void print_bench_cache_flush(void *user_log_vaddr,
 
 #ifdef CONFIG_KERNEL_SWITCH_COST_BENCH 
 
-    printf("measurment overhead: \n");
-   /*skip the warmup rounds*/
+    printf("kernel switching cost: \n"); 
     for (count = 0; count < BENCH_CACHE_FLUSH_RUNS; count++) {
+
+        /*skip the warmup rounds*/
         seL4_BenchmarkGetKSCostPair(count + BENCH_WARMUPS); 
- 
-        printf(" %lu", seL4_GetMR(3)); 
+        /*the cost = measure - overhead*/
+        printf(" "CCNT_FORMAT" ", seL4_GetMR(2) - seL4_GetMR(3)); 
+
     }
     printf("\n");
-    printf("switching cost: \n"); 
 
-   /*skip the warmup rounds*/
-    for (count = 0; count < BENCH_CACHE_FLUSH_RUNS; count++) {
-        seL4_BenchmarkGetKSCostPair(count + BENCH_WARMUPS); 
-
-        printf(" %lu", seL4_GetMR(2)); 
-    }
-
-    printf("\n");
 #endif 
 
     printf("cost in user-level : \n");
     for (count = 0; count < BENCH_CACHE_FLUSH_RUNS; count++) {
-        printf(" "CCNT_FORMAT" ", ulogs->costs[count]); 
+        printf(" "CCNT_FORMAT" ", ulogs->costs[count] - ulogs->overhead); 
     }
     printf("\n");
-
-    printf("overhead for user-level measurement: "CCNT_FORMAT" \n", ulogs->overhead);
 
 }
 
@@ -191,9 +181,14 @@ void launch_bench_flush (m_env_t *env) {
 
     idle_thread.prio = flush_thread.prio = 100;
 
+#ifdef CONFIG_ARCH_X86
     idle_thread.kernel_prio = 0; 
     flush_thread.kernel_prio = 0;
-
+#else 
+    /*the 0xf0 is the default INT priority*/
+    idle_thread.kernel_prio = 0xf0; 
+    flush_thread.kernel_prio = 0xf0;
+#endif 
     /*the kernel INT masking is not involved, as the cost is linear with 
      the INT enabled in a domain.*/
 

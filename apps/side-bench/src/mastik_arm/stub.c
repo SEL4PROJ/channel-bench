@@ -18,11 +18,7 @@ int l3_spy(bench_env_t *v) {
     return 0;
 }
 
-int l1_cache_flush(bench_env_t *env) {
 
-    return 0;
-
-}
 
 int llc_cache_flush(bench_env_t *env) {
 
