@@ -155,6 +155,20 @@ void l1i_probe(l1iinfo_t l1, uint16_t *results) {
     }
 }
 
+
+void l1i_prime(l1iinfo_t l1) {
+
+    for (int i = 0; i < l1->nsets; i++) {
+
+        // Using assembly because I am not sure I can trust the compiler
+        //asm volatile ("callq %0": : "r" (SET(0, l1->monitored[i])):);
+
+        /*for the total number of monitored cache sets 
+          do a probe, monitored contains the cache set number*/
+        (*((fptr)SET(0, l1->monitored[i])))();
+    }
+}
+
 #endif /*CONFIG_ARCH_X86*/ 
 
 #ifdef CONFIG_ARCH_ARM 
@@ -171,5 +185,19 @@ void l1i_probe(l1iinfo_t l1, uint16_t *results) {
 #endif
     }
 }
+
+void l1i_prime(l1iinfo_t l1) {
+
+    for (int i = 0; i < l1->nsets; i++) {
+        fptr head = (fptr)SET(0, l1->monitored[i]);
+        /*jump to the start of this set*/
+#ifdef CONFIG_ARCH_AARCH64
+        asm volatile ("blr %0" : : "r" (head) :"x30");
+#else
+        asm volatile ("blx %0" : : "r" (head) :"lr");
+#endif
+    }
+}
+
 #endif /*CONFIG_ARCH_ARM*/ 
 

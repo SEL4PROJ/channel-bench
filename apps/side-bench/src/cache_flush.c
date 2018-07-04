@@ -9,6 +9,7 @@
 #include <sel4/sel4.h>
 #include "vlist.h"
 #include "low.h"
+#include "l1i.h"
 #include "l1.h"
 #include "bench_common.h"
 #include "bench_types.h"
@@ -87,15 +88,23 @@ int l1_cache_flush(bench_env_t *env) {
     seL4_MessageInfo_t info;
     ccnt_t overhead, start, end;
 
-    uint64_t monitored_mask[MONITOR_MASK]; 
+    int mask_size = MONITOR_MASK; 
+#ifdef CONFIG_BENCH_CACHE_FLUSH_L1_CACHES_INSTRUCTION
+    mask_size = I_MONITOR_MASK;
+#endif 
 
-    for (int m = 0; m < MONITOR_MASK; m++)
+    uint64_t monitored_mask[mask_size]; 
+
+    for (int m = 0; m < mask_size; m++)
         monitored_mask[m] = ~0LLU; 
 
     bench_args_t *args = env->args; 
 
+#ifdef CONFIG_BENCH_CACHE_FLUSH_L1_CACHES_INSTRUCTION
+    l1iinfo_t l1i_1 = l1i_prepare(monitored_mask);
+#else 
     l1info_t l1_1 = l1_prepare(monitored_mask);
-
+#endif 
     /*the record address*/
     struct bench_cache_flush *r_addr = (struct bench_cache_flush *)args->record_vaddr;
 
@@ -111,7 +120,12 @@ int l1_cache_flush(bench_env_t *env) {
     /*warming up*/
     for (int i = 0; i < BENCH_WARMUPS; i++) {
         start = sel4bench_get_cycle_count(); 
+
+#ifdef CONFIG_BENCH_CACHE_FLUSH_L1_CACHES_INSTRUCTION
+        l1i_prime(l1i_1);
+#else 
         l1_prime(l1_1); 
+#endif 
         end = sel4bench_get_cycle_count(); 
 
         seL4_Yield();
@@ -120,7 +134,12 @@ int l1_cache_flush(bench_env_t *env) {
     for (int i = 0; i < BENCH_CACHE_FLUSH_RUNS; i++) {
 
         start = sel4bench_get_cycle_count(); 
+
+#ifdef CONFIG_BENCH_CACHE_FLUSH_L1_CACHES_INSTRUCTION
+        l1i_prime(l1i_1);
+#else 
         l1_prime(l1_1); 
+#endif 
         end = sel4bench_get_cycle_count(); 
 
         /*ping kernel for taking the measurements in kernel
