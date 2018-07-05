@@ -14,10 +14,8 @@ int funcs_sender(bench_env_t *env) {
   seL4_MessageInfo_t info;
   uint32_t UNUSED ipc_runs = 100; 
   bench_args_t *args = env->args; 
+ 
 
-  info = seL4_Recv(args->r_ep, &badge);
-  assert(seL4_MessageInfo_get_label(info) == seL4_Fault_NullFault);
-  
   /*doing IPC ping-pong test to receiver*/ 
 #if (CONFIG_MAX_NUM_NODES > 1)
       while (1)
@@ -25,6 +23,7 @@ int funcs_sender(bench_env_t *env) {
       while (ipc_runs--) 
 #endif 
       {
+
           info = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 1);
           seL4_SetMR(0, 0); 
           seL4_Call(args->ep, info); 
@@ -74,7 +73,6 @@ int funcs_receiver(bench_env_t *env) {
             info = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 1);
             seL4_SetMR(0, 0); 
             seL4_ReplyRecv(args->ep, info, &badge); 
-
         }
     /*test is done*/
     info = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 1);

@@ -100,6 +100,19 @@ static int test_destroy(m_env_t *env, bench_thread_t *sender, bench_thread_t *re
     sel4utils_process_t *receiver_p = &receiver->process; 
    
     printf("testing kernel destory\n");
+
+    printf("destory kernel image used by sender");
+    ret = destroy_ki(env, env->kimages); 
+    if (ret) 
+        return ret; 
+    printf("...done\n");
+    printf("destory kernel image used by receiver"); 
+    ret = destroy_ki(env, env->kimages + 1);
+    if (ret) 
+        return ret; 
+    printf("...done\n");
+
+
     printf("destory kernel memory used by sender");  
     ret = destroy_ki_via_kmem(env, env->kimages); 
     if (ret) 
@@ -111,16 +124,13 @@ static int test_destroy(m_env_t *env, bench_thread_t *sender, bench_thread_t *re
     if (ret) 
         return ret; 
     printf("...done\n");
-    printf("destory kernel image used by sender");
-    ret = destroy_ki(env, env->kimages); 
-    if (ret) 
-        return ret; 
-    printf("...done\n");
-    printf("destory kernel image used by receiver"); 
-    ret = destroy_ki(env, env->kimages + 1);
-    if (ret) 
-        return ret; 
-    printf("...done\n");
+    ret = seL4_TCB_SetKernel(sender_p->thread.tcb.cptr, sender->kernel);
+    printf("sender set kernel return %d\n", ret);
+    
+    ret = seL4_TCB_SetKernel(receiver_p->thread.tcb.cptr, receiver->kernel);
+    printf("receiver set kernel return %d\n", ret);
+
+
 #if (CONFIG_MAX_NUM_NODES > 1)
     /*wait for 1ms letting the kernel does the schedule*/ 
     sw_sleep(1); 
@@ -129,7 +139,7 @@ static int test_destroy(m_env_t *env, bench_thread_t *sender, bench_thread_t *re
 
     /*also including two threads on different core, cross-core IPC*/
     
-    while(1) {
+    while(i < 100) {
         if (alive(env) == BENCH_SUCCESS) 
             printf("alive %d\n", i); 
         else 
@@ -137,12 +147,6 @@ static int test_destroy(m_env_t *env, bench_thread_t *sender, bench_thread_t *re
         i++;
     }
 #endif
-
-    ret = seL4_TCB_SetKernel(sender_p->thread.tcb.cptr, sender->kernel);
-    printf("sender set kernel return %d\n", ret);
-    
-    ret = seL4_TCB_SetKernel(receiver_p->thread.tcb.cptr, receiver->kernel);
-    printf("receiver set kernel return %d\n", ret);
 
     return BENCH_SUCCESS;
 }
@@ -162,7 +166,7 @@ void launch_bench_func_test(m_env_t *env){
     sender.name = "sender"; 
     receiver.name = "receiver";
 
-#ifdef CONFIG_LIB_SEL4_CACHECOLOURING
+#ifdef CONFIG_MANAGER_MITIGATION 
     sender.vka = env->vka_colour; 
     receiver.vka = env->vka_colour + 1;
 #else
@@ -185,6 +189,8 @@ void launch_bench_func_test(m_env_t *env){
     sender.reply_ep = s_ep; 
     
     sender.root_vka = receiver.root_vka = &env->vka;
+    sender.simple = receiver.simple = &env->simple;
+
     /*sharing the timer object*/
     sender.to = receiver.to = &env->to; 
 
@@ -195,7 +201,7 @@ void launch_bench_func_test(m_env_t *env){
     receiver.test_num = BENCH_FUNC_RECEIVER;
     sender.test_num = BENCH_FUNC_SENDER; 
 
-#ifdef CONFIG_MULTI_KERNEL_IMAGES 
+#ifdef CONFIG_MANAGER_MITIGATION 
     /*assign two kernel image to two threads*/
     sender.kernel = env->kimages[0].ki.cptr;
     receiver.kernel = env->kimages[1].ki.cptr; 
@@ -209,7 +215,9 @@ void launch_bench_func_test(m_env_t *env){
     sender.affinity = 1;
     receiver.affinity = 2; 
 #endif 
-    
+    receiver.kernel_prio = 0;
+    sender.kernel_prio = 0;
+ 
     printf("creating sender\n"); 
     create_thread(&sender); 
     printf("creating receiver\n"); 
@@ -221,7 +229,11 @@ void launch_bench_func_test(m_env_t *env){
     map_shared_buf(&receiver, &sender, BENCH_FUNC_TEST_PAGES, &share_phy);
 
     /*run threads*/ 
+    printf("running sender\n"); 
+ 
     launch_thread(&sender); 
+    printf("running receiver\n"); 
+
     launch_thread(&receiver); 
 
 #if (CONFIG_MAX_NUM_NODES > 1)
