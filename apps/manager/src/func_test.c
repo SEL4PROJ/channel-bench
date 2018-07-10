@@ -227,15 +227,16 @@ void launch_bench_func_test(m_env_t *env){
     map_r_buf(env, BENCH_FUNC_TEST_PAGES, &receiver);
     /*buffer shared between receiver and sender, owned by receiver*/
     map_shared_buf(&receiver, &sender, BENCH_FUNC_TEST_PAGES, &share_phy);
+    
+    printf("running receiver\n"); 
+
+    launch_thread(&receiver); 
+
 
     /*run threads*/ 
     printf("running sender\n"); 
  
     launch_thread(&sender); 
-    printf("running receiver\n"); 
-
-    launch_thread(&receiver); 
-
 #if (CONFIG_MAX_NUM_NODES > 1)
     /*wait for 1ms letting the kernel does the schedule*/ 
     

@@ -59,6 +59,7 @@ int funcs_receiver(bench_env_t *env) {
 
     /*receive the shared address to record the secret*/
     ccnt_t volatile *record_vaddr = (ccnt_t *)args->record_vaddr;
+    ccnt_t tick = 0;
 
     seL4_Recv(args->ep, NULL);  
 #if (CONFIG_MAX_NUM_NODES > 1)
@@ -67,9 +68,10 @@ int funcs_receiver(bench_env_t *env) {
         while (ipc_runs--) 
 #endif 
         {
+
             /*updating the shared memory
               indicating both threads are alive*/
-            SEL4BENCH_READ_CCNT(*record_vaddr); 
+            *record_vaddr = tick++;  
             info = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 1);
             seL4_SetMR(0, 0); 
             seL4_ReplyRecv(args->ep, info, &badge); 

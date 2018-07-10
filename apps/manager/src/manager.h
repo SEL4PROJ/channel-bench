@@ -315,8 +315,8 @@ static void launch_thread(bench_thread_t *t) {
 /*software polling for number of CPU ticks*/
 static void sw_sleep(unsigned int microsec) {
 
-    unsigned long long s_tick = (unsigned long long)microsec * CPU_FEQ_MICROSEC;  
-    volatile unsigned long long cur, tar; 
+    ccnt_t s_tick = (ccnt_t)microsec * CPU_FEQ_MICROSEC;  
+    volatile ccnt_t cur, tar; 
 
     /*a self implmeneted sleep function*/
 #ifdef CONFIG_ARCH_X86
@@ -329,7 +329,7 @@ static void sw_sleep(unsigned int microsec) {
 #ifdef CONFIG_ARCH_X86
         cur = rdtscp_64();
 #else 
-        cur = sel4bench_get_cycle_count(); 
+        SEL4BENCH_READ_CCNT(cur);
 #endif 
     }
 }
@@ -342,6 +342,7 @@ static int alive(m_env_t *env) {
      if the content changes, the thread that uses the share buffer 
      is alive*/
     for(int i = 0; i < 10000; i++) {
+
         sw_sleep(1);
         if (local != *s_vaddr)
             return BENCH_SUCCESS; 

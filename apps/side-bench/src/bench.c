@@ -164,12 +164,8 @@ void run_bench_mastik(bench_env_t *bench_env) {
 int run_bench_func_tests(bench_env_t *bench_env) {
     
     seL4_Word test_num; 
-    seL4_CPtr ep, reply_ep; 
     
     test_num = bench_env->args->test_num;; 
-    ep = bench_env->args->ep;
-    reply_ep = bench_env->args->r_ep;  
-
     
     /*run bench*/
     if (test_num == BENCH_FUNC_RECEIVER)

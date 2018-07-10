@@ -381,7 +381,12 @@ static inline seL4_CPtr wait_msg_from(seL4_CPtr endpoint)
 #define MASTIK_FEQ  (3400000000ull)
 
 /*the sandy bridge frequency in microsecond 3.4MHZ*/
+
+#ifdef CONFIG_ARCH_X86
 #define CPU_FEQ_MICROSEC (3400000ull) 
+#else 
+#define CPU_FEQ_MICROSEC (800000ull)
+#endif
 
 #define COMPILER_BARRIER do { asm volatile ("" ::: "memory"); } while(0);
 
