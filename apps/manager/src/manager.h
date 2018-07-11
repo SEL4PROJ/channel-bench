@@ -313,9 +313,9 @@ static void launch_thread(bench_thread_t *t) {
 
 
 /*software polling for number of CPU ticks*/
-static void sw_sleep(unsigned int microsec) {
+static void sw_sleep(unsigned int millsec) {
 
-    ccnt_t s_tick = (ccnt_t)microsec * CPU_FEQ_MICROSEC;  
+    ccnt_t s_tick = (ccnt_t)millsec * CPU_FEQ_MICROSEC;  
     volatile ccnt_t cur, tar; 
 
     /*a self implmeneted sleep function*/
@@ -324,8 +324,8 @@ static void sw_sleep(unsigned int microsec) {
 #else 
     cur = sel4bench_get_cycle_count(); 
 #endif 
-    tar = cur + s_tick; 
-    while (cur < tar) {
+    tar = cur;  
+    while (cur - tar < s_tick) {
 #ifdef CONFIG_ARCH_X86
         cur = rdtscp_64();
 #else 
