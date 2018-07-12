@@ -133,6 +133,13 @@
 #define TLB_ENTRIES        512
 #define TLB_PROBE_PAGES    256
 
+#ifdef CONFIG_MANAGER_MITIGATION 
+#define L3_PROBE_GROUPS    8
+#else 
+#define L3_PROBE_GROUPS    16 
+#endif 
+
+
 #endif /* CONFIG_PLAT_HIKEY */
 
 #ifdef CONFIG_PLAT_SABRE 
