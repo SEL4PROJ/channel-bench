@@ -165,10 +165,14 @@ BLR_PAGE()
         B_4BYTES_64() 
 
 /*using 4 bytes, 256 sets to probe the btb 
- 512 branch instruction*/ 
+ sabre: 512 branch instruction
+ hikey and tx1: 256 branch instruction
+ */ 
 .global arm_branch_lines
 arm_branch_lines:
+#ifdef CONFIG_PLAT_SABRE
 B_4BYTES_256()
+#endif 
 B_4BYTES_256()
 #ifdef CONFIG_ARCH_AARCH64
         ret
