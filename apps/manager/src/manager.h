@@ -246,21 +246,10 @@ static void create_thread(bench_thread_t *t) {
     NAME_THREAD(process->thread.tcb.cptr, t->name);
 
 #ifdef CONFIG_MULTI_KERNEL_IMAGES 
-   
 
     printf("set kernel image\n");
     error = seL4_TCB_SetKernel(process->thread.tcb.cptr, t->kernel);
     assert(error == 0);
-
-#ifdef CONFIG_INT_TASK_PRIORITY 
-    printf("set Kernel priority\n"); 
-#ifdef CONFIG_ARCH_X86
-    error = seL4_X86_KernelImage_SetPriority(t->kernel, t->kernel_prio); 
-#else
-    error = seL4_ARM_KernelImage_SetPriority(t->kernel, t->kernel_prio); 
-#endif 
-    assert(error == 0);
-#endif 
 
 #endif
 
