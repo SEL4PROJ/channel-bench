@@ -88,6 +88,8 @@ static void *sethead(l3pp_t l3, int set) {
     int offset = (set % l3->groupsize) * L3_CACHELINE;
 
     /*link all the lines in a set, forward, and backward, circular link list*/
+    /*It does not matter how many pages linked in the group,
+     the probe would only select N sets(cache associativity) from a page*/
     for (int i = 0; i < count; i++) {
         LNEXT(OFFSET(vl_get(list, i), offset)) = OFFSET(vl_get(list, (i + 1) % count), offset);
         LNEXT(OFFSET(vl_get(list, i), offset+sizeof(void*))) = OFFSET(vl_get(list, (i + count - 1) % count), offset+sizeof(void *));
