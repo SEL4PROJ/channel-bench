@@ -248,7 +248,7 @@ int run_single_llc_kernel_schedule(m_env_t *env) {
     seL4_MessageInfo_t info;
     struct bench_kernel_schedule *r_d;
 
-    printf("starting covert channel benchmark, LLC, kernel deterministic scheduling\n");
+    printf("starting covert channel benchmark, LLC, kernel deterministic schedueling\n");
 
     info = seL4_Recv(t_ep.cptr, NULL);
     if (seL4_MessageInfo_get_label(info) != seL4_Fault_NullFault)
