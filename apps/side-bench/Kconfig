@@ -51,6 +51,14 @@ menu   "Timing Channel Benchmarks"
              for accessing the testing buffer.             T
    
         config BENCH_CACHE_FLUSH_ALL_CACHES 
+        bool "LLC cache flush (LLC buffer)"
+        depends on BENCH_CACHE_FLUSH 
+        default n
+        help 
+            Testing the direct and indirect cost of flushing all the caches.
+             The buffer is a LLC sized buffer. 
+
+        config BENCH_CACHE_FLUSH_ATTACK
         bool "LLC cache flush (LLC attack)"
         depends on BENCH_CACHE_FLUSH 
         default n
@@ -60,6 +68,7 @@ menu   "Timing Channel Benchmarks"
              Direct cost represent the cost of doing all the cache flush in kernel.
              Indirect cost means the performance increase at user-level 
              for accessing the testing buffer. 
+         
               
         config BENCH_DCACHE_ATTACK 
         bool "simulate the L1 dcache attack (Tromer_OS_10)"

@@ -132,4 +132,73 @@ int l3_kd_spy(bench_env_t *env) {
     return 0;
 }
 
+/*the cache flushing benchmark on LLC: 
+ testing the cost of flushing the LLC cache*/
+int llc_attack_flush(bench_env_t *env) {
+    seL4_MessageInfo_t info;
+    ccnt_t overhead, start, end;
+
+    bench_args_t *args = env->args; 
+    
+    /*the record address*/
+    struct bench_cache_flush *r_addr = (struct bench_cache_flush *)args->record_vaddr;
+    /*creat the probing buffer*/
+    l3pp_t l3 = l3_prepare();
+    assert(l3); 
+
+    int nsets = l3_getSets(l3);
+    l3_unmonitorall(l3);
+
+    /*monitor all sets*/
+    for (int s = 0; s < nsets; s++) {
+        l3_monitor(l3, s);
+    }
+    
+    uint16_t *results = malloc(sizeof (uint16_t) * nsets); 
+    assert(results);
+
+    /*measuring the overhead: reading the timestamp counter*/
+    measure_overhead(&overhead);
+    r_addr->overhead = overhead; 
+
+    /*syn with the idle thread */
+    info = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 1);
+    seL4_SetMR(0, 0); 
+    seL4_Send(args->ep, info);
+
+    /*warming up*/
+    for (int i = 0; i < BENCH_WARMUPS; i++) {
+ 
+        start = sel4bench_get_cycle_count(); 
+
+        l3_probe(l3, results);
+
+        end = sel4bench_get_cycle_count(); 
+ 
+        seL4_Yield();
+    }
+ 
+    /*running benchmark*/
+    for (int i = 0; i < BENCH_CACHE_FLUSH_RUNS; i++) {
+       
+        start = sel4bench_get_cycle_count(); 
+        l3_probe(l3, results);
+
+        end = sel4bench_get_cycle_count(); 
+ 
+        /*ping kernel for taking the measurements in kernel
+          a context switch is invovled, switching to the idle user-level thread*/
+        seL4_Yield(); 
+        r_addr->costs[i] = end - start - overhead; 
+    }
+ 
+    /*send result to manager, benchmarking is done*/
+    info = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 1);
+    seL4_SetMR(0, 0);
+    seL4_Send(args->r_ep, info);
+
+    while (1);
+
+    return 0;
+}
 

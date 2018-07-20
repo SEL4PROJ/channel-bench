@@ -41,7 +41,7 @@ static int (*covert_bench_fun[BENCH_COVERT_FUNS])(bench_env_t *) = {NULL,
 };
 
 static int (*flush_bench_fun[BENCH_CACHE_FLUSH_FUNS])(bench_env_t *) = 
-{l1_cache_flush, l1_cache_flush,llc_cache_flush, bench_idle};  
+{l1_cache_flush, l1_cache_flush,llc_cache_flush, llc_attack_flush, bench_idle};  
 
 /* dummy global for libsel4muslcsys */
 char _cpio_archive[1];

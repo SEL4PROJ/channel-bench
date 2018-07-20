@@ -60,7 +60,7 @@ int timer_low(bench_env_t *env);
 int l1_cache_flush(bench_env_t *env);
 int bench_idle(bench_env_t *env); 
 int llc_cache_flush(bench_env_t *env);
- 
+int llc_attack_flush(bench_env_t *env);
 
 /*the function correctness test */
 int funcs_receiver(bench_env_t *env); 

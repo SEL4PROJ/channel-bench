@@ -6,12 +6,6 @@
 #include "bench_helper.h"
 #include "low.h"
 
-uint32_t prev_sec[CONFIG_BENCH_DATA_POINTS];
-uint32_t cur_sec[CONFIG_BENCH_DATA_POINTS];
-ccnt_t starts[CONFIG_BENCH_DATA_POINTS];
-ccnt_t curs[CONFIG_BENCH_DATA_POINTS];
-ccnt_t prevs[CONFIG_BENCH_DATA_POINTS];
-
 
 int l3_kd_spy(bench_env_t *env) {
  
@@ -39,29 +33,21 @@ int l3_kd_spy(bench_env_t *env) {
         ccnt_t cur = rdtscp_64(); 
         /*at the begining of the current tick*/
         if (cur - prev >= TS_THRESHOLD) {
-            prevs[i] = prev;
-            starts[i] = start;
-            curs[i] = cur;
+            r_addr->prevs[i] = prev;
+            r_addr->starts[i] = start;
+            r_addr->curs[i] = cur;
             /*prev secret affect online time (prevs - starts)*/
-            prev_sec[i] = prev_s;
+            r_addr->prev_sec[i] = prev_s;
             /*at the beginning of this tick, update the secret*/
             /*cur secrete affect offline time (curs - prevs)*/
-            prev_s = cur_sec[i] = *secret;
+            prev_s = r_addr->cur_sec[i] = *secret;
             start = cur;
             i++;
         }
         prev = cur;
     }
 
-    for (int i = 0; i < CONFIG_BENCH_DATA_POINTS; i++) {
 
-        r_addr->prevs[i] = prevs[i]; 
-        r_addr->starts[i] = starts[i]; 
-        r_addr->curs[i] = curs[i]; 
-        r_addr->prev_sec[i] = prev_sec[i];
-        r_addr->cur_sec[i] = cur_sec[i];
-
-    }
     info = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 1);
     seL4_SetMR(0, 0);
     seL4_Send(args->r_ep, info);
