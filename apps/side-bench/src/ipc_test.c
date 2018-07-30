@@ -7,6 +7,8 @@
 #include "bench_types.h"
 #include "bench_helper.h"
 
+#ifdef CONFIG_BENCH_IPC 
+
 #define NOPS ""
 #include "ipc.h"
 
@@ -224,4 +226,4 @@ seL4_Word ipc_bench(seL4_CPtr result_ep, seL4_CPtr test_ep, int test_n,
  
     return BENCH_SUCCESS;
 }
-
+#endif 
