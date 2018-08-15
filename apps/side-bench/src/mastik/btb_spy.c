@@ -33,7 +33,7 @@ static void btb_jmp(uint32_t s) {
 
 int btb_trojan(bench_env_t *env) {
 
-  uint32_t total_sec = 2048 + 1, secret;
+  uint32_t total_sec = 128 + 1, secret;
   seL4_MessageInfo_t info;
   bench_args_t *args = env->args;
 
@@ -52,8 +52,8 @@ int btb_trojan(bench_env_t *env) {
       /*waiting for a system tick*/
       newTimeSlice();
 
-      /*trojan: 3072 - 5120*/
-      secret = (random() % total_sec ) + 3072; 
+      /*trojan: 3584 - 3712*/
+      secret = (random() % total_sec ) + 3584; 
       /*do the probe*/
       btb_jmp(secret);
 
