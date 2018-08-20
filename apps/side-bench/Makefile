@@ -51,6 +51,14 @@ CFILES +=  $(patsubst $(SOURCE_DIR)/%,%,$(wildcard $(SOURCE_DIR)/src/mastik_comm
 
 CFLAGS += -DDBG_MEMORY=0 -I $(SOURCE_DIR)/src/ -I $(SOURCE_DIR)/src/mastik_common/ -I $(SOURCE_DIR)/../ -I $(SIDEBENCH_INCLUDE)
 
+ifdef CONFIG_ARCH_ARM 
+CFLAGS += -I $(SOURCE_DIR)/src/mastik_arm/
+endif 
+
+ifdef CONFIG_ARCH_X86
+CFLAGS += -I $(SOURCE_DIR)/src/mastik/
+endif 
+
 
 # Libraries
 LIBS = c sel4 cpio elf sel4muslcsys sel4vka sel4allocman \

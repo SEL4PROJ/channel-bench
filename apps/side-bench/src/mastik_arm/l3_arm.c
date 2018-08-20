@@ -44,8 +44,9 @@
 
 
 static void fillL3Info(l3pp_t l3) {
-  l3->l3info.associativity = L3_ASSOCIATIVITY;
-  l3->l3info.bufsize = L3_SIZE * 2; 
+    l3->l3info.associativity = L3_ASSOCIATIVITY;
+    l3->l3info.bufsize = L3_SIZE; 
+
 }
 
 #if 0
@@ -75,6 +76,27 @@ static void *allocate(size_t size, int align) {
     return (void *)((((uintptr_t)p) + align - 1) & ~(align - 1));                         
 } 
 
+static void *sethead_single(l3pp_t l3, int set) { 
+    /*the group list for that set*/
+    vlist_t list = l3->groups[set / l3->groupsize];
+
+    /*number of lines in a set*/
+    int count = l3->l3info.associativity;
+    if (count == 0 || vl_len(list) < count)
+        count = vl_len(list);
+
+    /*offset within a group (page)*/
+    int offset = (set % l3->groupsize) * L3_CACHELINE;
+
+    /*link all the lines in a set, forward,  circular link list*/
+    /*It does not matter how many pages linked in the group,
+      the probe would only select N sets(cache associativity) from a page*/
+    for (int i = 0; i < count; i++) {
+        LNEXT(OFFSET(vl_get(list, i), offset)) = OFFSET(vl_get(list, (i + 1) % count), offset);
+    }
+
+    return OFFSET(vl_get(list, 0), offset);
+}
 
 static void *sethead(l3pp_t l3, int set) { 
     /*the group list for that set*/
@@ -112,16 +134,38 @@ int probetime(void *pp) {
     return 0;
   void *p = (void *)pp;
   uint32_t start, end;
+  
   SEL4BENCH_READ_CCNT(start);  
- 
+  
   do {
-    (*(int *)OFFSET(p, 2*sizeof(void *)))++;
-    p = LNEXT(p);
+      (*(int *)OFFSET(p, 2*sizeof(void *)))++;
+      p = LNEXT(p);
+
   } while (p != (void *) pp);
   SEL4BENCH_READ_CCNT(end);  
- 
+
   return end - start; 
 }
+
+void probetime_lines(void *pp, uint16_t *res) {
+  if (pp == NULL)
+    return;
+  void *p = (void *)pp;
+  uint32_t start, end;
+  
+  do {
+
+      SEL4BENCH_READ_CCNT(start);  
+      (*(int *)OFFSET(p, 2*sizeof(void *)))++;
+      p = LNEXT(p);
+
+      SEL4BENCH_READ_CCNT(end);  
+      *res = end - start; 
+      res++;
+
+  } while (p != (void *) pp);
+}
+
 
 int bprobetime(void *pp) {
   if (pp == NULL)
@@ -136,6 +180,7 @@ int probecount(void *pp) {
   int rv = 0;
   void *p = (void *)pp;
   uint32_t start, end;
+
   /*probe and count how many cache misses*/ 
   do {
       SEL4BENCH_READ_CCNT(start);  
@@ -147,7 +192,9 @@ int probecount(void *pp) {
       end -= start;
     if (end > L3_THRESHOLD)
       rv++;
+
   } while (p != (void *) pp);
+
   return rv;
 }
 
@@ -159,54 +206,67 @@ int bprobecount(void *pp) {
 
 
 static int timedwalk(void *list, register void *candidate) {
+
 #if defined(DEBUG) && DEBUG-0 > 2
-  static int debug = 100;
-  static int debugl = 1000;
+    static int debug = 100;
+    static int debugl = 1000;
 #else
 #define debug 0
 #endif //DEBUG
-  if (list == NULL)
-    return 0;
-  if (LNEXT(list) == NULL)
-    return 0;
-  //void *start = list;
-  ts_t ts = ts_alloc();
-  void *c2 = (void *)((uintptr_t)candidate ^ 0x200);
-  LNEXT(c2) = candidate;
-  //clflush(c2);
-  memaccess(candidate);
-  for (int i = 0; i < CHECKTIMES; i++) {
-    walk(list, 200);
-    void *p = LNEXT(c2);
-    uint32_t time = memaccesstime(p);
-    ts_add(ts, time);
-  }
-  //int rv = ts_median(ts);
-  int rv = ts_percentile(ts, 90);
+
+    if (list == NULL)
+        return 0;
+    if (LNEXT(list) == NULL)
+        return 0;
+
+    //void *start = list;
+    ts_t ts = ts_alloc();
+
+    void *c2 = (void *)((uintptr_t)candidate ^ 0x200);
+
+    LNEXT(c2) = candidate;
+    
+    memaccess(candidate);
+
+    for (int i = 0; i < CHECKTIMES; i++) {
+        walk(list, 200);
+        void *p = LNEXT(c2);
+        uint32_t time = memaccesstime(p);
+        ts_add(ts, time);
+    }
+
+    //int rv = ts_median(ts);
+    int rv = ts_percentile(ts, 90);
 #if defined(DEBUG) && DEBUG-0 > 2
-  if (!--debugl) {
-    debugl=1000;
-    debug++;
-  }
-  if (debug) {
-    printf("--------------------\n");
-    for (int i = 0; i < TIME_MAX; i++) 
-      if (ts_get(ts, i) != 0)
-	printf("++ %4d: %4d\n", i, ts_get(ts, i));
-    debug--;
-  }
+    if (!--debugl) {
+        debugl=1000;
+        debug++;
+    }
+    if (debug) {
+        printf("--------------------\n");
+        for (int i = 0; i < TIME_MAX; i++) 
+            if (ts_get(ts, i) != 0)
+                printf("++ %4d: %4d\n", i, ts_get(ts, i));
+        debug--;
+    }
 #endif //DEBUG
-  ts_free(ts);
-  return rv;
+    ts_free(ts);
+    return rv;
 }
 
 static int checkevict(vlist_t es, void *candidate) {
-  if (vl_len(es) == 0)
-    return 0;
-  for (int i = 0; i < vl_len(es); i++) 
-    LNEXT(vl_get(es, i)) = vl_get(es, (i + 1) % vl_len(es));
-  int timecur = timedwalk(vl_get(es, 0), candidate);
-  return timecur > L3_THRESHOLD;
+    if (vl_len(es) == 0)
+        return 0;
+
+    /*prepare the probing buffer for es*/
+    for (int i = 0; i < vl_len(es); i++) 
+        LNEXT(vl_get(es, i)) = vl_get(es, (i + 1) % vl_len(es));
+
+    /*the time for accessing the candidate after probing the es */
+    int timecur = timedwalk(vl_get(es, 0), candidate);
+
+    /*if the candidate is evicted by probing the es*/
+    return timecur > L3_THRESHOLD;
 }
 
 #ifdef DEBUG
@@ -214,29 +274,38 @@ uintptr_t base;
 #endif
 
 static void *expand(vlist_t es, vlist_t candidates) {
-  while (vl_len(candidates) > 0) {
-    void *current = vl_poprand(candidates);
-    //printf("Expand: testing %d\n", ((uintptr_t)current-base)/4096);
-    if (checkevict(es, current))
-      return current;
-    vl_push(es, current);
-  }
-  return NULL;
+
+    while (vl_len(candidates) > 0) {
+
+        /*select a page from candidates
+         put that into the current list*/
+        void *current = vl_poprand(candidates);
+        //printf("Expand: testing %d\n", ((uintptr_t)current-base)/4096);
+
+        /*the es list is conflict with the current*/
+        if (checkevict(es, current))
+            return current;
+
+        /*push the current into the es*/
+        vl_push(es, current);
+    }
+    return NULL;
 }
 
 static void contract(vlist_t es, vlist_t candidates, void *current) {
-  for (int i = 0; i < vl_len(es);) {
-    void *cand = vl_get(es, i);
-    vl_del(es, i);
-    clflush(current);
-    //printf("Contract: testing %d (%d)\n", ((uintptr_t)current-base)/4096, i);
-    if (checkevict(es, current))
-      vl_push(candidates, cand);
-    else {
-      vl_insert(es, i, cand);
-      i++;
+    for (int i = 0; i < vl_len(es);) {
+        void *cand = vl_get(es, i);
+
+        vl_del(es, i);
+
+        //printf("Contract: testing %d (%d)\n", ((uintptr_t)current-base)/4096, i);
+        if (checkevict(es, current))
+            vl_push(candidates, cand);
+        else {
+            vl_insert(es, i, cand);
+            i++;
+        }
     }
-  }
 }
 
 static void collect(vlist_t es, vlist_t candidates, vlist_t set) {
@@ -250,89 +319,106 @@ static void collect(vlist_t es, vlist_t candidates, vlist_t set) {
 }
 
 static vlist_t map(l3pp_t l3, vlist_t lines) {
+
 #ifdef DEBUG
-  printf("%d lines\n", vl_len(lines));
-  base=(uintptr_t)l3->buffer;
+
+    /*number of pages*/
+    printf("%d pages\n", vl_len(lines));
+    base=(uintptr_t)l3->buffer;
 #endif // DEBUG
   vlist_t groups = vl_new();
+  
   vlist_t es = vl_new();
+
+  /*for every page*/
   int nlines = vl_len(lines);
   int fail = 0;
   while (vl_len(lines)) {
-    assert(vl_len(es) == 0);
+
+      assert(vl_len(es) == 0);
 #ifdef DEBUG
-    int d_l1 = vl_len(lines);
+      int d_l1 = vl_len(lines);
 #endif // DEBUG
-    if (fail > 8) 
-      break;
-    void *c = expand(es, lines);
+ 
+      if (fail > 8) 
+          break;
+     
+      void *c = expand(es, lines);
+
 #ifdef DEBUG
-    int d_l2 = vl_len(es);
+      int d_l2 = vl_len(es);
 #endif //DEBUG
-    if (c == NULL) {
-      while (vl_len(es))
-	vl_push(lines, vl_del(es, 0));
+
+      /*es contains the probing set*/
+      if (c == NULL) {
+          while (vl_len(es))
+              vl_push(lines, vl_del(es, 0));
 #ifdef DEBUG
-      printf("set %3d: lines: %4d expanded: %4d c=NULL\n", vl_len(groups), d_l1, d_l2);
+          printf("set %3d: lines: %4d expanded: %4d c=NULL\n", vl_len(groups), d_l1, d_l2);
 #endif // DEBUG
-      fail++;
-      continue;
-    }
-    contract(es, lines, c);
-    contract(es, lines, c);
-    contract(es, lines, c);
-    contract(es, lines, c);
-    contract(es, lines, c);
+          fail++;
+          continue;
+      }
+
+      contract(es, lines, c);
+      contract(es, lines, c);
+      contract(es, lines, c);
+      contract(es, lines, c);
+      contract(es, lines, c);
 #ifdef DEBUG
-    int d_l3 = vl_len(es);
+      int d_l3 = vl_len(es);
 #endif //DEBUG
-    if (vl_len(es) > l3->l3info.associativity || vl_len(es) < l3->l3info.associativity - 3) {
-      vl_push(lines, c);
+      if (vl_len(es) > l3->l3info.associativity || vl_len(es) < l3->l3info.associativity - 3) {
+          vl_push(lines, c);
+          while (vl_len(es))
+              vl_push(lines, vl_del(es, 0));
+#ifdef DEBUG
+          printf("set %3d: lines: %4d expanded: %4d contracted: %2d failed\n", vl_len(groups), d_l1, d_l2, d_l3);
+#endif // DEBUG
+          fail++;
+          continue;
+      } 
+      fail = 0;
+      vlist_t set = vl_new();
+      vl_push(set, c);
+      collect(es, lines, set);
+      while (vl_len(es) < l3->l3info.associativity && vl_len(set) > 0)
+          vl_push(es, vl_pop(set));
+      collect(es, lines, set);
+      collect(es, lines, set);
       while (vl_len(es))
-	vl_push(lines, vl_del(es, 0));
+          vl_push(set, vl_del(es, 0));
 #ifdef DEBUG
-      printf("set %3d: lines: %4d expanded: %4d contracted: %2d failed\n", vl_len(groups), d_l1, d_l2, d_l3);
+      printf("set %3d: lines: %4d expanded: %4d contracted: %2d collected: %d\n", vl_len(groups), d_l1, d_l2, d_l3, vl_len(set));
 #endif // DEBUG
-      fail++;
-      continue;
-    } 
-    fail = 0;
-    vlist_t set = vl_new();
-    vl_push(set, c);
-    collect(es, lines, set);
-    while (vl_len(es) < l3->l3info.associativity && vl_len(set) > 0)
-      vl_push(es, vl_pop(set));
-    collect(es, lines, set);
-    collect(es, lines, set);
-    while (vl_len(es))
-      vl_push(set, vl_del(es, 0));
-#ifdef DEBUG
-    printf("set %3d: lines: %4d expanded: %4d contracted: %2d collected: %d\n", vl_len(groups), d_l1, d_l2, d_l3, vl_len(set));
-#endif // DEBUG
-    vl_push(groups, set);
-    if (l3->l3info.progressNotification) 
-      (*l3->l3info.progressNotification)(nlines - vl_len(lines), nlines, l3->l3info.progressNotificationData);
+      vl_push(groups, set);
+      if (l3->l3info.progressNotification) 
+          (*l3->l3info.progressNotification)(nlines - vl_len(lines), nlines, l3->l3info.progressNotificationData);
   }
 
   vl_free(es);
   return groups;
 }
 static int probemap(l3pp_t l3) {
-  vlist_t pages = vl_new();
-  for (int i = 0; i < l3->l3info.bufsize; i+= l3->groupsize * L3_CACHELINE) 
-    vl_push(pages, l3->buffer + i);
-  vlist_t groups = map(l3, pages);
 
-  //Store map results
-  l3->ngroups = vl_len(groups);
-  l3->groups = (vlist_t *)calloc(l3->ngroups, sizeof(vlist_t));
-  for (int i = 0; i < vl_len(groups); i++)
-    l3->groups[i] = vl_get(groups, i);
+    vlist_t pages = vl_new();
+
+    /*pushing every page into the pages list*/
+    for (int i = 0; i < l3->l3info.bufsize; i+= l3->groupsize * L3_CACHELINE) 
+        vl_push(pages, l3->buffer + i);
+
+    vlist_t groups = map(l3, pages);
+
+    //Store map results
+    l3->ngroups = vl_len(groups);
+    l3->groups = (vlist_t *)calloc(l3->ngroups, sizeof(vlist_t));
+    for (int i = 0; i < vl_len(groups); i++)
+        l3->groups[i] = vl_get(groups, i);
 
 
-  vl_free(groups);
-  vl_free(pages);
-  return 1;
+    vl_free(groups);
+    vl_free(pages);
+    return 1;
 }
 
 
@@ -389,7 +475,10 @@ l3pp_t l3_prepare(void) {
 #ifdef CONFIG_DEBUG_BUILD 
     for (int i = 0; i < l3->ngroups; i++) {
         printf("%2d:", i);
+
+        /*for the number of pages in this set*/
         for (int j = 0; j < vl_len(l3->groups[i]); j++)
+            /*the page number in this probing buffer*/
             printf(" %03x", ((uintptr_t)vl_get(l3->groups[i], j) - (uintptr_t)l3->buffer)/4096);
         printf("\n");
     }
@@ -415,6 +504,14 @@ l3pp_t l3_prepare(void) {
 
 }
 
+
+void *l3_set_probe_head(l3pp_t l3, int line) {
+
+    if (line < 0 || line >= l3->ngroups * l3->groupsize) 
+        return NULL;
+
+    return sethead_single(l3, line);
+}
 
 
 int l3_monitor(l3pp_t l3, int line) {

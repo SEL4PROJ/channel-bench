@@ -74,13 +74,13 @@ void *vl_del(vlist_t vl, int ind) {
 }
 
 void *vl_poprand(vlist_t vl) {
-  assert(vl != NULL);
-  if (vl->len == 0)
-    return NULL;
-  int ind = random() % vl->len;
-  void *rv = vl->data[ind];
-  vl_del(vl, ind);
-  return rv;
+    assert(vl != NULL);
+    if (vl->len == 0)
+        return NULL;
+    int ind = random() % vl->len;
+    void *rv = vl->data[ind];
+    vl_del(vl, ind);
+    return rv;
 }
 
 void vl_insert(vlist_t vl, int ind, void *dat) {

@@ -64,8 +64,9 @@ void l3_probecount(l3pp_t l3, uint16_t *results);
 void l3_bprobecount(l3pp_t l3, uint16_t *results);
 void l3_probecount_simple(l3pp_t l3, uint16_t *results);
 int probeloop(l3pp_t l3, uint16_t *results, int count, int slot);
-
-
-
+int probecount(void *pp); 
+void *l3_set_probe_head(l3pp_t l3, int line); 
+int probetime(void *pp); 
+void probetime_lines(void *pp, uint16_t *res);
 #endif // __L3_H__
 

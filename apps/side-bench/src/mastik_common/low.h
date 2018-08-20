@@ -3,6 +3,16 @@
 
 #include <sel4bench/sel4bench.h>
 #include "bench_helper.h"
+#include "bench_types.h"
+#include "vlist.h"
+
+#ifdef CONFIG_ARCH_ARM 
+#include "l3_arm.h"
+#endif 
+
+#ifdef CONFIG_ARCH_X86 
+#include "cachemap.h"
+#endif 
 
 #ifndef PAGE_SIZE 
 #define PAGE_SIZE 4096
@@ -70,6 +80,9 @@
 #define L3_ASSOCIATIVITY   16
 #define L3_SETS            8192
 #define L3_SIZE            (8*1024*1024)
+
+#define L3_SETS_PER_PAGE   64
+
 
 #endif /* CONFIG_ARCH_X86 */
 
@@ -157,7 +170,7 @@
 #define L1I_CACHELINE      32
 #define L1I_STRIDE         (L1I_CACHELINE * L1I_SETS)
 
-#define L3_THRESHOLD       150
+#define L3_THRESHOLD       110
 #define L3_ASSOCIATIVITY   16
 #define L3_SIZE            (1*1024*1024)
 #define L3_CACHELINE       32
@@ -170,12 +183,11 @@
 /*the total probing group = groups * sets per page*/
 /*there are total 16 colours on L3 cache*/
 
-#ifdef CONFIG_MANAGER_MITIGATION 
+#if defined (CONFIG_MANAGER_MITIGATION) || defined(CONFIG_BENCH_COVERT_LLC_KERNEL) 
 #define L3_PROBE_GROUPS    8
 #else 
 #define L3_PROBE_GROUPS    16 
 #endif 
-
 #define BTAC_ENTRIES      512 
 
 /*the tlb attack probs on half of the TLB entries */
@@ -185,10 +197,36 @@
 #endif /* CONFIG_PLAT_SABRE  */
 
 
+typedef void *pp_t;
+
+static void inline do_timing_api(enum timing_api api_no, 
+        kernel_timing_caps_t *caps) {
+    
+    seL4_Word sender;                          
+    switch (api_no) {
+        case timing_signal: 
+            seL4_Signal(caps->async_ep);
+            break; 
+        case timing_tcb: 
+            seL4_TCB_SetPriority(caps->fake_tcb, caps->self_tcb, 0);
+            break; 
+        case timing_poll: 
+
+            seL4_Poll(caps->async_ep, &sender);
+            break;
+
+        case timing_api_num: 
+        default: 
+            break;
+    }
+}
+
+
 #ifdef CONFIG_ARCH_ARM 
 
 #define INSTRUCTION_LENGTH  4
 
+#define LLC_KERNEL_TEST_COUNT 16
 static inline int access(void *v) {
     int rv = 0xff; 
 #ifdef CONFIG_BENCH_L1D_WRITE
@@ -256,11 +294,103 @@ static inline void  newTimeSlice(void){
   }
 }
 
+static int __attribute__((noinline)) test(void *pp, 
+        int recv, enum timing_api api_no, 
+        kernel_timing_caps_t *caps) {
+  
+    int count = 0;
+   
+    probecount(pp);
+    probecount(pp);
+    probecount(pp);
+
+    for (int i = 0; i < LLC_KERNEL_TEST_COUNT; i++) {
+        
+        if (recv){
+            do_timing_api(api_no, caps);
+            do_timing_api(api_no, caps);
+            do_timing_api(api_no, caps);
+
+        }
+        
+        count <<= 1;
+        if (probecount(pp) != 0)
+            count++;
+    }
+    // If at most one is set - this is not a collision
+    int c = count & (count - 1);
+    c = c & (c - 1);
+    if ((c & (c - 1))== 0)
+        return 0;
+    
+    return 1;
+}
+
+
+static int scan(pp_t pp,  enum timing_api api_no, 
+                kernel_timing_caps_t *caps) {
+    if (test(pp, 0, api_no, caps))
+        return 0;
+    /*if do not have conflict with the test code, 
+      try to detect the conflict with seL4 Poll*/
+    return test(pp, 1, api_no, caps);
+}
+
+
+
+static inline vlist_t search(l3pp_t l3,  enum timing_api api_no, 
+            kernel_timing_caps_t *caps) {
+
+    vlist_t probed = vl_new();
+
+    int nsets = l3_getSets(l3);
+
+    for (int set = 0; set < nsets; set++) {
+        //printf("Searching in line 0x%02x\n", set);
+        // For every page...
+        /*preparing the probing set 
+          find one that do not have conflict with the test code
+          but have conflict with the seL4 Poll service*/
+
+        void *pp = l3_set_probe_head(l3, set);
+        assert(pp); 
+
+        int t = scan(pp, api_no, caps);
+        if (t) {
+            /*record target probing set*/
+            vl_push(probed, pp);
+
+#ifdef CONFIG_DEBUG_BUILD
+            printf("search at %x (%08p)\n", set, pp);
+#endif
+     
+        }
+
+
+  }
+  return probed;
+}
+
+
+static inline uint32_t probing_sets(vlist_t set_list) {
+
+    uint32_t result = 0; 
+
+    for (int j = 0; j < vl_len(set_list); j++){
+       //result += probecount((pp_t)vl_get(set_list, j));
+        result += probetime(vl_get(set_list, j));
+    }
+
+    return result; 
+}
+
+
 #endif /* CONFIG_ARCH_ARM  */
 
 
 #ifdef CONFIG_ARCH_X86
 
+#define LLC_KERNEL_TEST_COUNT 10
 static inline int access(void *v) {
   int rv = 0xff;
 #ifdef CONFIG_BENCH_L1D_WRITE
@@ -306,6 +436,94 @@ static inline void  newTimeSlice(void){
     prev = cur;
   }
 }
+
+extern int pp_probe(pp_t pp);
+extern pp_t pp_prepare(vlist_t list, int count, int offset);
+
+static int __attribute__((noinline)) test(pp_t pp, int recv, enum timing_api api_no, 
+        kernel_timing_caps_t *caps) {
+  
+    int count = 0;
+
+    pp_probe(pp);
+    pp_probe(pp);
+    pp_probe(pp);
+
+
+    for (int i = 0; i < LLC_KERNEL_TEST_COUNT; i++) {
+        
+        if (recv){
+            do_timing_api(api_no, caps);
+        }
+        
+        count <<= 1;
+        if (pp_probe(pp) != 0)
+            count++;
+    }
+    // If at most one is set - this is not a collision
+    int c = count & (count - 1);
+    c = c & (c - 1);
+    if ((c & (c - 1))== 0)
+        return 0;
+    
+    return 1;
+}
+
+static int scan(pp_t pp,  enum timing_api api_no, 
+                kernel_timing_caps_t *caps) {
+    if (test(pp, 0, api_no, caps))
+        return 0;
+    /*if do not have conflict with the test code, 
+      try to detect the conflict with seL4 Poll*/
+    return test(pp, 1, api_no, caps);
+}
+
+
+
+
+static inline vlist_t search(cachemap_t cm, enum timing_api api_no, 
+            kernel_timing_caps_t *caps) {
+
+
+    vlist_t probed = vl_new();
+    for (int line = 0; line < 4096; line += 64) {
+        //printf("Searching in line 0x%02x\n", line / 64);
+        // For every page...
+        /*preparing the probing set 
+          find one that do not have conflict with the test code
+          but have conflict with the seL4 Poll service*/
+        for (int p  = 0; p < cm->nsets; p++) {
+            pp_t pp = pp_prepare(cm->sets[p] , L3_ASSOCIATIVITY, line);
+            int t = scan(pp, api_no, caps);
+            if (t) {
+                /*record target probing set*/
+                vl_push(probed, pp);
+
+#ifdef CONFIG_DEBUG_BUILD
+                printf("Probed at %3d.%03x (%08p)\n", p, line, pp);
+#endif
+
+            }
+        }
+  }
+  return probed;
+}
+
+
+
+static inline uint32_t probing_sets(vlist_t set_list) {
+
+    uint32_t result = 0; 
+
+    for (int j = 0; j < vl_len(set_list); j++){
+       result += pp_probe((pp_t)vl_get(set_list, j));
+    }
+
+    return result; 
+
+}
+
+
 #ifdef CONFIG_ARCH_X86_64
 static inline void walk(void *p, int count) {
   if (p == NULL)
@@ -391,5 +609,19 @@ static inline void l1d_data_access(char *buf, uint32_t sets) {
     }
 }
 
+
+
+/*remove any data from p_b if p_a has the same*/
+static inline void remove_same_probesets(vlist_t p_a, vlist_t p_b) {
+
+    for (int a = 0; a < vl_len(p_a); a++) {
+
+        for (int b = 0; b < vl_len(p_b); b++) {
+
+            if (vl_get(p_a, a) == vl_get(p_b, b)) 
+                vl_del(p_b, b);
+        }
+    }
+}
 
 #endif /*_LOW_H_*/

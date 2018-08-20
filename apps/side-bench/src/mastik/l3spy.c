@@ -20,122 +20,6 @@
 
 /*the following variable is used for side channel
  triggering the syscall thus leaving the cache footprint*/
-seL4_CPtr async_ep;        
-seL4_CPtr fake_tcb;                            
-seL4_Word sender;                          
-seL4_CPtr self_tcb; 
-
-#define TEST_COUNT 10
-
-
-static void inline do_timing_api(enum timing_api api_no) {
-    
-    switch (api_no) {
-        case timing_signal: 
-            seL4_Signal(async_ep);
-            break; 
-        case timing_tcb: 
-            seL4_TCB_SetPriority(fake_tcb, self_tcb, 0);
-            break; 
-        case timing_poll: 
-            seL4_Poll(async_ep, &sender);
-            break;
-        case timing_api_num: 
-        default: 
-            break;
-    }
-}
-
-
-
-int __attribute__((noinline)) test(pp_t pp, int recv, enum timing_api api_no) {
-  
-    int count = 0;
-
-    pp_probe(pp);
-    pp_probe(pp);
-    pp_probe(pp);
-
-
-    for (int i = 0; i < TEST_COUNT; i++) {
-        
-        if (recv){
-            do_timing_api(api_no);
-        }
-        
-        count <<= 1;
-        if (pp_probe(pp) != 0)
-            count++;
-    }
-    // If at most one is set - this is not a collision
-    int c = count & (count - 1);
-    c = c & (c - 1);
-    if ((c & (c - 1))== 0)
-        return 0;
-    
-    return 1;
-}
-
-
-int scan(pp_t pp, int offset, enum timing_api api_no) {
-    if (test(pp, 0, api_no))
-        return 0;
-    /*if do not have conflict with the test code, 
-      try to detect the conflict with seL4 Poll*/
-    return test(pp, 1, api_no);
-}
-
-vlist_t search(cachemap_t cm, enum timing_api api_no) {
-
-    vlist_t probed = vl_new();
-    for (int line = 0; line < 4096; line += 64) {
-        //printf("Searching in line 0x%02x\n", line / 64);
-        // For every page...
-        /*preparing the probing set 
-          find one that do not have conflict with the test code
-          but have conflict with the seL4 Poll service*/
-        for (int p  = 0; p < cm->nsets; p++) {
-            pp_t pp = pp_prepare(cm->sets[p] , L3_ASSOCIATIVITY, line);
-            int t = scan(pp, line, api_no);
-            if (t) {
-                /*record target probing set*/
-                vl_push(probed, pp);
-
-#ifdef CONFIG_DEBUG_BUILD
-                printf("Probed at %3d.%03x (%08p)\n", p, line, pp);
-#endif
-
-            }
-        }
-  }
-  return probed;
-}
-
-/*remove any data from p_b if p_a has the same*/
-static void remove_same_probesets(vlist_t p_a, vlist_t p_b) {
-
-    for (int a = 0; a < vl_len(p_a); a++) {
-
-        for (int b = 0; b < vl_len(p_b); b++) {
-
-            if (vl_get(p_a, a) == vl_get(p_b, b)) 
-                vl_del(p_b, b);
-        }
-    }
-}
-
-
-static inline uint32_t probing_sets(vlist_t set_list) {
-
-    uint32_t result = 0; 
-
-    for (int j = 0; j < vl_len(set_list); j++){
-       result += pp_probe((pp_t)vl_get(set_list, j));
-    }
-
-    return result; 
-
-}
 
 
 #define SYN_TICK_MULTI_TROJAN          500000 
@@ -165,14 +49,14 @@ static inline void waiting_probe(ccnt_t start, int tick, bool spy) {
 }
 
 
-
 int l3_spy(bench_env_t *env) {
-  
+    kernel_timing_caps_t caps; 
+ 
     bench_args_t *args = env->args; 
-    async_ep = args->notification_ep; 
-    fake_tcb = args->fake_tcb; 
+    caps.async_ep = args->notification_ep; 
+    caps.fake_tcb = args->fake_tcb; 
 
-    self_tcb = simple_get_tcb(&env->simple); 
+    caps.self_tcb = simple_get_tcb(&env->simple); 
 
     seL4_CPtr reply_ep = args->r_ep; 
 
@@ -195,13 +79,17 @@ int l3_spy(bench_env_t *env) {
     //Individually find the probing set for each api
     for(int i = 0; i < timing_api_num; i++){
 
-        probed[i] = search(cm, i);
+        probed[i] = search(cm, i, &caps);
     }
 
 
     remove_same_probesets(probed[timing_signal], probed[timing_tcb]); 
     remove_same_probesets(probed[timing_tcb], probed[timing_poll]); 
     remove_same_probesets(probed[timing_signal], probed[timing_poll]);
+
+    probe_result->probe_sets[timing_signal] = vl_len(probed[timing_signal]); 
+    probe_result->probe_sets[timing_tcb] = vl_len(probed[timing_tcb]); 
+    probe_result->probe_sets[timing_poll] = vl_len(probed[timing_poll]); 
 
 
     //Signal root ready
@@ -223,7 +111,6 @@ int l3_spy(bench_env_t *env) {
 
         waiting_probe(tick_start, i , true); 
 
-        probe_result->probe_seq[i] = *secret;
         /*probing on each API list*/
         probe_result->probe_results[i][timing_signal] = 
             probing_sets(probed[timing_signal]);  
@@ -233,6 +120,8 @@ int l3_spy(bench_env_t *env) {
 
         probe_result->probe_results[i][timing_poll] = 
             probing_sets(probed[timing_poll]);  
+
+        probe_result->probe_seq[i] = *secret;
         
     }
 
@@ -248,12 +137,15 @@ int l3_spy(bench_env_t *env) {
 }
 
 int l3_trojan(bench_env_t *env) {
+
+    kernel_timing_caps_t caps; 
+
     bench_args_t *args = env->args; 
 
-    async_ep = args->notification_ep; 
-    fake_tcb = args->fake_tcb; 
+    caps.async_ep = args->notification_ep; 
+    caps.fake_tcb = args->fake_tcb; 
 
-    self_tcb = simple_get_tcb(&env->simple); 
+    caps.self_tcb = simple_get_tcb(&env->simple); 
 
 
     seL4_CPtr reply_ep = args->r_ep; 
@@ -282,7 +174,7 @@ int l3_trojan(bench_env_t *env) {
 
         current_api = random() % (timing_api_num + 1);  
 
-        do_timing_api(current_api); 
+        do_timing_api(current_api, &caps); 
         *share_vaddr = current_api; 
     }
 

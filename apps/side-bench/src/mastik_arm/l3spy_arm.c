@@ -128,3 +128,157 @@ int l3_spy_single(bench_env_t *env) {
     return 0;
 } 
 
+
+/*using the shared kernel image as a timing channel: receiver*/
+int l3_spy(bench_env_t *env) {
+
+    kernel_timing_caps_t caps;
+
+    bench_args_t *args = env->args; 
+    
+    caps.async_ep = args->notification_ep; 
+    caps.fake_tcb = args->fake_tcb; 
+    caps.self_tcb = simple_get_tcb(&env->simple); 
+
+    seL4_CPtr reply_ep = args->r_ep; 
+
+    /*the shared address*/
+    uint32_t volatile *secret = (uint32_t *)args->shared_vaddr; 
+
+    bench_llc_kernel_probe_result_t *probe_result = 
+        (bench_llc_kernel_probe_result_t*)args->record_vaddr; 
+
+    seL4_Word badge;
+    seL4_MessageInfo_t info;
+    ccnt_t tick_start;
+    
+    //Hold probing set for each API
+    vlist_t probed[timing_api_num];
+    
+    //Find the L3 eviction buffer
+    l3pp_t l3 = l3_prepare();
+    assert(l3); 
+
+#ifdef CONFIG_DEBUG_BUILD
+    int nsets = l3_getSets(l3);
+    printf("Spy: Got %d sets\n", nsets);
+#endif
+
+    /*search the probing buffer for the seL4 APIs*/
+    for (int i = 0; i < timing_api_num; i++)
+        probed[i] = search(l3, i, &caps);
+#if 1
+    remove_same_probesets(probed[timing_signal], probed[timing_tcb]); 
+    remove_same_probesets(probed[timing_tcb], probed[timing_poll]); 
+    remove_same_probesets(probed[timing_signal], probed[timing_poll]);
+#endif 
+
+#ifdef CONFIG_DEBUG_BUILD
+    printf("Spy: probe sets for signal %d\n", vl_len(probed[timing_signal]));
+    printf("Spy: probe sets for tcb  %d\n", vl_len(probed[timing_tcb]));
+    printf("Spy: probe sets for poll %d\n", vl_len(probed[timing_poll]));
+#endif
+
+    probe_result->probe_sets[timing_signal] = vl_len(probed[timing_signal]); 
+    probe_result->probe_sets[timing_tcb] = vl_len(probed[timing_tcb]); 
+    probe_result->probe_sets[timing_poll] = vl_len(probed[timing_poll]); 
+
+    //Signal root ready
+    info = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 1);
+    seL4_SetMR(0, 0); 
+    seL4_Send(reply_ep, info);
+    
+    /*root give global time*/
+    info = seL4_Recv(reply_ep, &badge);
+    assert(seL4_MessageInfo_get_label(info) == seL4_Fault_NullFault);
+    tick_start = (ccnt_t)seL4_GetMR(0);
+    
+    /*waiting for the trojan for sync msg*/
+    info = seL4_Recv(args->ep, &badge);
+    assert(seL4_MessageInfo_get_label(info) == seL4_Fault_NullFault);
+    
+    SEL4BENCH_READ_CCNT(tick_start);  
+
+    for (int i = 0; i < CONFIG_BENCH_DATA_POINTS; i++) {
+
+        newTimeSlice(); 
+
+        /*probing on each API list*/
+        probe_result->probe_results[i][timing_signal] = 
+            probing_sets(probed[timing_signal]);  
+
+        probe_result->probe_results[i][timing_tcb] = 
+            probing_sets(probed[timing_tcb]);  
+
+        probe_result->probe_results[i][timing_poll] = 
+            probing_sets(probed[timing_poll]);  
+
+        probe_result->probe_seq[i] = *secret;
+    }
+
+    //Signal root we finished
+    info = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 1);
+    seL4_SetMR(0, 0); 
+    seL4_Send(reply_ep, info);
+
+    while (1);
+
+    return 0;
+}
+
+
+/*using the shared kernel image as a timing channel: sender*/
+int l3_trojan(bench_env_t *env) {
+
+    kernel_timing_caps_t caps; 
+    
+    bench_args_t *args = env->args; 
+
+    caps.async_ep = args->notification_ep; 
+    caps.fake_tcb = args->fake_tcb; 
+
+    caps.self_tcb = simple_get_tcb(&env->simple); 
+
+
+    seL4_CPtr reply_ep = args->r_ep; 
+    ccnt_t tick_start; 
+    uint32_t volatile *share_vaddr = (uint32_t *)args->shared_vaddr; 
+  
+    seL4_Word badge;
+    seL4_MessageInfo_t info;
+
+    /*root give global time*/
+    info = seL4_Recv(reply_ep, &badge);
+    assert(seL4_MessageInfo_get_label(info) == seL4_Fault_NullFault);
+    tick_start = (ccnt_t)seL4_GetMR(0);
+
+    /*syn with the spy*/
+    info = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 1);
+    seL4_SetMR(0, 0); 
+    seL4_Send(args->ep, info);
+
+    SEL4BENCH_READ_CCNT(tick_start);  
+ 
+
+    for(int i = 0; i < CONFIG_BENCH_DATA_POINTS; i++) {
+
+        newTimeSlice(); 
+       
+        if (random() % 2) { 
+            /*do nothing*/
+            *share_vaddr = 0; 
+        }
+        else {
+            /*call 3 APIs, in order to create a large footprint*/
+            do_timing_api(timing_tcb, &caps); 
+            do_timing_api(timing_signal, &caps); 
+            do_timing_api(timing_poll, &caps); 
+
+            *share_vaddr = 1;
+        }
+    }
+
+    while (1); 
+    return 0;
+}
+

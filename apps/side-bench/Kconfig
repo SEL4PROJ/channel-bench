@@ -132,7 +132,6 @@ menu   "Timing Channel Benchmarks"
 
                config BENCH_COVERT_LLC_KERNEL 
                bool "a covert channel through a shared kernel"
-               depends on ARCH_X86
 
       endchoice
 

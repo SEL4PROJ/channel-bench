@@ -182,7 +182,7 @@ int run_covert_llc_kernel(m_env_t *env) {
     ccnt_t attack_start;
     seL4_MessageInfo_t info; 
     seL4_MessageInfo_t tag;
-    int lines = 0; 
+    uint32_t lines = 0; 
     enum timing_api seq; 
 
     info = seL4_Recv(s_ep.cptr, NULL);
@@ -211,11 +211,15 @@ int run_covert_llc_kernel(m_env_t *env) {
     if (seL4_MessageInfo_get_label(info) != seL4_Fault_NullFault)
         return BENCH_FAILURE;
 
-    printf("benchmark result ready\n");
-    
     probe_result = (bench_llc_kernel_probe_result_t *)env->record_vaddr;
-    printf("probing time start\n");
+    printf("benchmark result ready\n");
 
+    printf("Spy: probe sets for signal %d\n", probe_result->probe_sets[timing_signal]);
+    printf("Spy: probe sets for tcb  %d\n", probe_result->probe_sets[timing_tcb]);
+    printf("Spy: probe sets for poll %d\n", probe_result->probe_sets[timing_poll]);
+
+
+    printf("probing time start\n");
 
     for (int i = BENCH_TIMING_WARMUPS; i < CONFIG_BENCH_DATA_POINTS; i++) {
 
@@ -223,16 +227,13 @@ int run_covert_llc_kernel(m_env_t *env) {
 
         printf("%d", seq); 
 
-
         for (int j = 0; j < timing_api_num; j++) {
-//            printf(" %d", probe_result->probe_results[i][j]);
- 
+            //    printf(" %d", probe_result->probe_results[i][j]);
+
             lines += probe_result->probe_results[i][j]; 
         }
 
-        printf(" %d", lines);
-
-        printf("\n"); 
+        printf(" %d\n", lines);
 
         lines = 0; 
     }

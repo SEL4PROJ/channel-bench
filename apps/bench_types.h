@@ -64,10 +64,19 @@ enum timing_api {
 }; 
 
 
+typedef struct {
+    seL4_CPtr async_ep;        
+    seL4_CPtr fake_tcb;                            
+    seL4_CPtr self_tcb; 
+
+} kernel_timing_caps_t; 
+
 typedef struct  {
     
     uint32_t probe_results[CONFIG_BENCH_DATA_POINTS][timing_api_num];
+    uint32_t probe_sets[timing_api_num];
     enum timing_api probe_seq[CONFIG_BENCH_DATA_POINTS]; 
+
 
 } bench_llc_kernel_probe_result_t; 
 
