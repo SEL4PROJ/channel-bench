@@ -16,13 +16,6 @@ TARGETS := $(notdir $(SOURCE_DIR)).bin
 LDFLAGS += -u __vsyscall_ptr 
 
 #include directory
-ifdef CONFIG_ARCH_AARCH32
-SIDEBENCH_INCLUDE := $(SOURCE_DIR)/arch_include/aarch32/
-endif
-
-ifdef CONFIG_ARCH_X86_64
-SIDEBENCH_INCLUDE := $(SOURCE_DIR)/arch_include/x86_64/
-endif
 
 #asm files
 ASMFILES :=  $(patsubst $(SOURCE_DIR)/%,%,$(wildcard $(SOURCE_DIR)/src/*.S))
@@ -49,7 +42,7 @@ endif
 CFILES +=  $(patsubst $(SOURCE_DIR)/%,%,$(wildcard $(SOURCE_DIR)/src/mastik_common/*.c))
 
 
-CFLAGS += -DDBG_MEMORY=0 -I $(SOURCE_DIR)/src/ -I $(SOURCE_DIR)/src/mastik_common/ -I $(SOURCE_DIR)/../ -I $(SIDEBENCH_INCLUDE)
+CFLAGS += -DDBG_MEMORY=0 -I $(SOURCE_DIR)/src/ -I $(SOURCE_DIR)/src/mastik_common/ -I $(SOURCE_DIR)/../
 
 ifdef CONFIG_ARCH_ARM 
 CFLAGS += -I $(SOURCE_DIR)/src/mastik_arm/
@@ -58,6 +51,14 @@ endif
 ifdef CONFIG_ARCH_X86
 CFLAGS += -I $(SOURCE_DIR)/src/mastik/
 endif 
+
+ifdef CONFIG_ARCH_AARCH32
+CFLAGS += -I $(SOURCE_DIR)/arch_include/aarch32/
+endif
+
+ifdef CONFIG_ARCH_X86_64
+CFLAGS += -I $(SOURCE_DIR)/arch_include/x86_64/
+endif
 
 
 # Libraries
