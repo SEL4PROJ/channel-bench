@@ -46,6 +46,14 @@ menu    "Manager task for benchmarking tests"
         depends on APP_MANAGER 
         help  
                setting up the user-level objects with coloured memory. 
+
+  config MANAGER_UNCOLOUR_KERNEL
+        bool "having a uncoloured kernel" 
+        default n 
+        depends on APP_MANAGER 
+        help  
+               setting up the user-level thread with uncoloured kernel.
+      
         
        config MANAGER_IPC
         bool "ipc performance"

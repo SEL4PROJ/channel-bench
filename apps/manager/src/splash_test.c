@@ -75,13 +75,21 @@ void launch_bench_splash(m_env_t *env) {
 #ifdef CONFIG_MANAGER_CACHE_DIV_UNEVEN 
     /*cannot create a kerne image from domain 1 */
     idle_thread.kernel = env->kimages[0].ki.cptr; 
-#endif 
+#else 
+    idle_thread.kernel = env->kimages[1].ki.cptr; 
+#endif /*UNEVEN*/
+
 #else 
     /*by default the kernel is shared*/
     flush_thread.kernel = env->kernel;
     idle_thread.kernel = env->kernel; 
 #endif 
 
+#ifdef CONFIG_MANAGER_UNCOLOUR_KERNEL 
+    flush_thread.kernel = env->kimages[0].ki.cptr; 
+    idle_thread.kernel = env->kimages[1].ki.cptr; 
+#endif  /*UNCOLOUR_KERNEL*/
+ 
 #ifdef CONFIG_MANAGER_MITIGATION 
     flush_thread.vka = &env->vka_colour[0]; 
     idle_thread.vka = &env->vka_colour[1]; 
