@@ -111,9 +111,13 @@
 /*spliting according to the LLC cache colours */
 #if CONFIG_MAX_NUM_NODES > 1
 #define CC_DIV             16
+#define CC_BIG             31 
+#define CC_LITTLE          1
 #else  
 /*spliting according to the L2 cache colours, total 8 colours*/
 #define CC_DIV             4
+#define CC_BIG             7
+#define CC_LITTLE          1
 #endif 
 
 #endif  /*x86*/
@@ -124,6 +128,8 @@
 
 #ifdef CONFIG_PLAT_IMX6
 #define CC_DIV             8
+#define CC_BIG             15
+#define CC_LITTLE          1
 #endif
 #ifdef CONFIG_PLAT_EXYNOS4
 #define CC_DIV             8
@@ -335,6 +341,67 @@ enum ipc_funs{
 #ifndef CONFIG_BENCH_DATA_POINTS 
 #define CONFIG_BENCH_DATA_POINTS  1
 #endif 
+
+/*marcos used for the splash bench tests*/
+#define BENCH_SPLASH_FFT_NUM      0
+#define BENCH_SPLASH_CHOLESKY_NUM 1 
+#define BENCH_SPLASH_LU_NUM       2
+#define BENCH_SPLASH_RADIX_NUM     3
+#define BENCH_SPLASH_BARNES_NUM    4
+#define BENCH_SPLASH_FMM_NUM       5
+#define BENCH_SPLASH_OCEAN_NUM           6
+#define BENCH_SPLASH_RADIOSITY_NUM       7
+#define BENCH_SPLASH_RAYTRACE_NUM       8
+#define BENCH_SPLASH_WATER_NSQUARED_NUM       9
+#define BENCH_SPLASH_WATER_SPATIAL_NUM       10
+
+
+
+#define BENCH_SPLASH_FUNS   11
+
+#ifdef CONFIG_BENCH_SPLASH_FFT
+#define BENCH_SPLASH_TEST_NUM     BENCH_SPLASH_FFT_NUM
+#endif 
+
+#ifdef CONFIG_BENCH_SPLASH_CHOLESKY
+#define BENCH_SPLASH_TEST_NUM     BENCH_SPLASH_CHOLESKY_NUM
+#endif 
+
+#ifdef CONFIG_BENCH_SPLASH_LU
+#define BENCH_SPLASH_TEST_NUM     BENCH_SPLASH_LU_NUM
+#endif 
+
+#ifdef CONFIG_BENCH_SPLASH_RADIX
+#define BENCH_SPLASH_TEST_NUM     BENCH_SPLASH_RADIX_NUM
+#endif 
+
+#ifdef CONFIG_BENCH_SPLASH_BARNES
+#define BENCH_SPLASH_TEST_NUM     BENCH_SPLASH_BARNES_NUM
+#endif 
+
+#ifdef CONFIG_BENCH_SPLASH_FMM
+#define BENCH_SPLASH_TEST_NUM     BENCH_SPLASH_FMM_NUM
+#endif
+
+#ifdef CONFIG_BENCH_SPLASH_OCEAN
+#define BENCH_SPLASH_TEST_NUM     BENCH_SPLASH_OCEAN_NUM
+#endif
+
+#ifdef CONFIG_BENCH_SPLASH_RADIOSITY
+#define BENCH_SPLASH_TEST_NUM     BENCH_SPLASH_RADIOSITY_NUM
+#endif
+
+#ifdef CONFIG_BENCH_SPLASH_RAYTRACE
+#define BENCH_SPLASH_TEST_NUM     BENCH_SPLASH_RAYTRACE_NUM
+#endif
+
+#ifdef CONFIG_BENCH_SPLASH_WATER_NSQUARED
+#define BENCH_SPLASH_TEST_NUM     BENCH_SPLASH_WATER_NSQUARED_NUM
+#endif
+
+#ifdef CONFIG_BENCH_SPLASH_WATER_SPATIAL
+#define BENCH_SPLASH_TEST_NUM     BENCH_SPLASH_WATER_SPATIAL_NUM
+#endif
 
 
 #define NUM_L1D_SHARED_PAGE  1

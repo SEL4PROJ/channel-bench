@@ -431,9 +431,6 @@ void launch_bench_covert (m_env_t *env) {
     trojan.prio = 100;
     spy.prio = 100; 
 
-    spy.kernel_prio = SPY_KERNEL_IRQ_PRIORITY;
-    trojan.kernel_prio = TROJAN_KERNEL_IRQ_PRIORITY;
-
     /*set the actual testing num in bench_common.h*/
     spy.test_num = BENCH_COVERT_SPY;
     trojan.test_num = BENCH_COVERT_TROJAN; 

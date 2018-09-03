@@ -65,6 +65,21 @@ int llc_attack_flush(bench_env_t *env);
 /*the function correctness test */
 int funcs_receiver(bench_env_t *env); 
 int funcs_sender(bench_env_t *env);
+
+
+/*the function used for the spalsh bench*/
+int fft_main(int argc, char *argv[]); 
+int cholesky_main(int argc, char *argv[]); 
+int lu_main(int argc, char *argv[]); 
+int radix_main(int argc, char *argv[]); 
+int barnes_main(int argc, char *argv[]); 
+int fmm_main(int argc, char *argv[]); 
+int ocean_main(int argc, char *argv[]); 
+int radiosity_main(int argc, char *argv[]); 
+int raytrace_main(int argc, char *argv[]); 
+int water_nsquared_main(int argc, char *argv[]); 
+int water_spatial_main(int argc, char *argv[]); 
+
 #endif 
 
 

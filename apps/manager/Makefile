@@ -46,8 +46,9 @@ endif
 
 include $(SEL4_COMMON)/common.mk
 
+
 # targets to generate CPIO archive of elf files
-${COMPONENTS}:
+${COMPONENTS}: 
 	false
 
 archive.o: ${COMPONENTS}

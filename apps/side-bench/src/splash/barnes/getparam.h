@@ -1,0 +1,17 @@
+#line 123 "/home/qiang/src/splash2/splash2-master/codes/null_macros/c.m4.null.POSIX_sel4"
+
+#line 1 "getparam.H"
+#ifndef _GETPARAM_H_
+#define _GETPARAM_H_
+
+void initparam(string *defv);
+string getparam(string name);
+long getiparam(string name);
+long getlparam(string name);
+bool getbparam(string name);
+double getdparam(string name);
+long scanbind(string bvec[], string name);
+bool matchname(string bind, string name);
+string extrvalue(string arg);
+
+#endif

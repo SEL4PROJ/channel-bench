@@ -215,8 +215,6 @@ void launch_bench_func_test(m_env_t *env){
     sender.affinity = 1;
     receiver.affinity = 2; 
 #endif 
-    receiver.kernel_prio = 0;
-    sender.kernel_prio = 0;
  
     printf("creating sender\n"); 
     create_thread(&sender); 

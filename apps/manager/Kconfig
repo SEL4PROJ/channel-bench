@@ -40,7 +40,14 @@ menu    "Manager task for benchmarking tests"
                setting up kernel objects, and endpointers for testing mitigation mechanisms. 
         
 
-        config MANAGER_IPC
+       config MANAGER_COLOUR_ONLY 
+        bool "setting up system with coloured memory" 
+        default n 
+        depends on APP_MANAGER 
+        help  
+               setting up the user-level objects with coloured memory. 
+        
+       config MANAGER_IPC
         bool "ipc performance"
         default n 
         depends on APP_MANAGER 
@@ -55,13 +62,13 @@ menu    "Manager task for benchmarking tests"
              The caller and receiver are built from a same cache colour (half of the L2 cache), 
              also using the same kernel image. 
 
-        config MANAGER_IPC_CACHE_DIV_UNEVEN
+     
+      config MANAGER_CACHE_DIV_UNEVEN
         bool "Giving the testing thread n-1 of the L2 cache colours" 
         default n 
-        depends on MANAGER_IPC_SAME_COLOUR
+        depends on APP_MANAGER
         help  
-               The caller and receiver are built from n-1 L2 cache colours.
-
+               The benchmarking thread is  built from n-1 L2 cache colours.
 
         
         config MANAGER_PMU_COUNTER 
@@ -94,7 +101,13 @@ menu    "Manager task for benchmarking tests"
         help 
             enable covert channel benchmarks 
 
-   
+        config MANAGER_SPLASH_BENCH
+        bool "splash benchmarks" 
+        default n 
+        depends on APP_MANAGER 
+        help 
+             running splash-2 benchmarks 
+
         config MANAGER_DCACHE_ATTACK 
         bool "L1 dcache attack" 
         default n 

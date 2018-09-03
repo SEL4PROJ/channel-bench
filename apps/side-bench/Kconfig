@@ -182,5 +182,53 @@ menu   "Timing Channel Benchmarks"
              bool "side"
        endchoice
 
+       config BENCH_SPLASH
+       bool "splash-2 benchmark"
+       default n 
+       depends on APP_SIDE_BENCH 
+       help 
+             a ported splash-2 benchmark
+      choice 
+               prompt "run:"
+               depends on BENCH_SPLASH
+               config BENCH_SPLASH_FFT 
+               bool "fft" 
+
+               config BENCH_SPLASH_CHOLESKY 
+               bool "cholesky" 
+
+               config BENCH_SPLASH_LU
+               bool "lu" 
+               
+               config BENCH_SPLASH_RADIX
+               bool "radix" 
+
+               config BENCH_SPLASH_BARNES
+               bool "barnes" 
+
+               config BENCH_SPLASH_FMM
+               bool "fmm" 
+
+               config BENCH_SPLASH_OCEAN
+               bool "ocean" 
+
+               
+               config BENCH_SPLASH_RADIOSITY
+               bool "radiosity" 
+
+
+               config BENCH_SPLASH_RAYTRACE
+               bool "raytrace" 
+
+
+               config BENCH_SPLASH_WATER_NSQUARED
+               bool "water-nsquared" 
+
+               config BENCH_SPLASH_WATER_SPATIAL
+               bool "water-spatial" 
+
+      endchoice
+
+
  endmenu 
 

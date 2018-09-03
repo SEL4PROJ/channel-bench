@@ -27,8 +27,8 @@ manager-$(CONFIG_LIB_SEL4_CACHECOLOURING) += libsel4cachecolour
 
 # add the tests app  as a component so that we can elf load it
 manager-components-y += side-bench                             
+
 manager-components = $(addprefix $(STAGE_BASE)/bin/, $(manager-components-y))
 
 manager: export COMPONENTS=${manager-components}           
 manager: ${manager-components-y} kernel_elf $(manager-y)
-

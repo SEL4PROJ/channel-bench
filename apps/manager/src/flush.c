@@ -181,14 +181,6 @@ void launch_bench_flush (m_env_t *env) {
 
     idle_thread.prio = flush_thread.prio = 100;
 
-#ifdef CONFIG_ARCH_X86
-    idle_thread.kernel_prio = 0; 
-    flush_thread.kernel_prio = 0;
-#else 
-    /*the 0xf0 is the default INT priority*/
-    idle_thread.kernel_prio = 0xf0; 
-    flush_thread.kernel_prio = 0xf0;
-#endif 
     /*the kernel INT masking is not involved, as the cost is linear with 
      the INT enabled in a domain.*/
 

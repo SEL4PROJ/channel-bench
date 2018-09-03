@@ -114,8 +114,8 @@ static void init_env_colour(m_env_t *env) {
     color_allocator_t *init_allocator; 
     color_allocator_t *color_allocator[CC_NUM_DOMAINS]; 
     reservation_t v_reserve; 
-#ifdef CONFIG_MANAGER_IPC_CACHE_DIV_UNEVEN
-    size_t div[CC_NUM_DOMAINS] = {7, 1}; 
+#ifdef CONFIG_MANAGER_CACHE_DIV_UNEVEN
+    size_t div[CC_NUM_DOMAINS] = {CC_BIG, CC_LITTLE}; 
 #else  
     size_t div[CC_NUM_DOMAINS] = {CC_DIV, CC_DIV}; 
 #endif 
@@ -321,6 +321,10 @@ static void *main_continued (void* arg) {
     launch_bench_func_test(&env); 
 #endif 
 
+#ifdef CONFIG_MANAGER_SPLASH_BENCH 
+    launch_bench_splash(&env);
+#endif 
+
     /*halt cpu*/
     printf("Finished benchmark, now halting...\n"); 
     /*NOTE: using while loop, as debug feature is disabled.*/
@@ -340,6 +344,15 @@ static void create_kernel_pd(m_env_t *env) {
     ik_image = simple_get_ik_image(&env->simple); 
     printf("ik image cap is %zu size %zu \n", ik_image, k_size);
 
+#if defined (CONFIG_MANAGER_CACHE_DIV_UNEVEN) && defined (CONFIG_BENCH_SPLASH) 
+
+    /*the splash only has one thread, the vka with only one colour
+     cannot create a kernel (16K) object*/
+    ret = create_ki(env, env->vka_colour, env->kimages); 
+    assert(ret == BENCH_SUCCESS); 
+
+#else 
+ 
     for (int i = 0; i < MAN_KIMAGES; i++ )  {
         printf("creating ki %d\n", i);
 #ifdef CONFIG_LIB_SEL4_CACHECOLOURING
@@ -350,6 +363,7 @@ static void create_kernel_pd(m_env_t *env) {
         assert(ret == BENCH_SUCCESS); 
 
     }
+#endif /*DIV_UNEVEN && SPLASH*/ 
     printf("done creating ki\n");
     /*the default kernel image created at bootup*/ 
     env->kernel = ik_image; 

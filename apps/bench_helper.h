@@ -18,7 +18,6 @@
 
 #define BENCH_WARMUPS 10
 #define BENCH_OVERHEAD_RUNS 10
-#define BENCH_OVERHEAD_RUNS 10
 #define BENCH_OVERHEAD_RETRIES 4
 
 /* The fence is designed to try and prevent the compiler optimizing across code boundaries

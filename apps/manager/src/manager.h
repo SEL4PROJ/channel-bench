@@ -95,7 +95,6 @@ typedef struct bench_thread {
     vspace_t *vspace;        /*virtual address space of the root task*/
     char *image;            /*binary name of benchmarking elf file*/
     seL4_Word prio;         /*priority of benchmarking thread*/
-    uint8_t kernel_prio;    /*priority of the kernel image, instruction masking*/
     sel4utils_process_t process;  /*internal process context*/ 
     seL4_Word test_num;      /*test number*/
  
@@ -458,6 +457,10 @@ void launch_bench_covert(m_env_t *env);
 void launch_bench_func_test(m_env_t *env);
 
 void launch_bench_flush (m_env_t *env);
+
+void launch_bench_splash (m_env_t *env);
+
+
 
 #endif   /*__MANAGER_H*/
 

@@ -113,6 +113,18 @@ typedef struct {
 } d_time_t; 
 
 
+/*input parameter for the splash benchmarks*/
+typedef struct {
+
+    char argc; 
+    char **argv;
+} splash_para_t; 
+
+
+typedef struct {
+    ccnt_t overhead; 
+    ccnt_t overall; 
+}splash_bench_result_t ; 
 
 
 /*the argument passes to the benchmarking thread*/

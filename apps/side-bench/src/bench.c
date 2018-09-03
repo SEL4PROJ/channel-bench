@@ -43,6 +43,55 @@ static int (*covert_bench_fun[BENCH_COVERT_FUNS])(bench_env_t *) = {NULL,
 static int (*flush_bench_fun[BENCH_CACHE_FLUSH_FUNS])(bench_env_t *) = 
 {l1_cache_flush, l1_cache_flush,llc_cache_flush, llc_attack_flush, bench_idle};  
 
+
+#ifdef CONFIG_BENCH_SPLASH
+static int (*splash_bench_fun[BENCH_SPLASH_FUNS])(int argc, char*argv[]) = 
+{fft_main, cholesky_main, lu_main,
+radix_main, barnes_main, fmm_main, 
+ocean_main, radiosity_main, raytrace_main,
+water_nsquared_main, water_spatial_main};
+
+char *splash_fft_argv[] = {"./FFT", "-m16", "-p1", "-n32768", "-l5"};
+
+char *splash_cholesky_argv[] = {"./CHOLESKY", "-p1", "-B32", "-C1048576", "cholesky_tk14_data" }; 
+
+char *splash_lu_argv[] = {"./LU", "-n512", "-p1", "-b16" };
+    
+
+char *splash_radix_argv[] = { "./RADIX", "-p1", "-n262144", "-r1024", "-m524288"};
+
+char *splash_barnes_argv[] = {"./BARNES"};
+
+char *splash_fmm_argv[] = {"./FMM", "two_cluster", "plummer", "256", "1e-6", "1", "5", "0.025"," 0.0", "cost_zones"};
+
+char *splash_ocean_argv[] = {"./OCEAN"}; 
+
+char *splash_radiosity_argv[] = {"./RADIOSITY", "-batch" /*"-room"*/}; 
+
+char *splash_raytrace_argv[] = {"./RAYTRACE","-m8", "teapot.env"};
+
+char *splash_water_nsquared_argv[] = {"./WATER-NSQUARED"}; 
+
+char *splash_water_spatial_argv[] = {"./WATER-SPATIAL"}; 
+
+
+static splash_para_t splash_bench_parameter[BENCH_SPLASH_FUNS] = {
+
+    {5, splash_fft_argv}, 
+    {5, splash_cholesky_argv}, 
+    {4, splash_lu_argv}, 
+    {5, splash_radix_argv}, 
+    {1, splash_barnes_argv}, 
+    {10, splash_fmm_argv}, 
+    {1,  splash_ocean_argv}, 
+    {2, splash_radiosity_argv},
+    {3, splash_raytrace_argv}, 
+    {1, splash_water_nsquared_argv}, 
+    {1, splash_water_spatial_argv}
+}; 
+
+#endif /*CONFIG_BENCH_SPLASH*/
+
 /* dummy global for libsel4muslcsys */
 char _cpio_archive[1];
 
@@ -128,6 +177,38 @@ int run_bench_cache_flush(bench_env_t *bench_env) {
     return flush_bench_fun[test_num - BENCH_CACHE_FLUSH_FUN_START](bench_env);
 }
 
+#ifdef CONFIG_BENCH_SPLASH
+static int run_bench_splash(bench_env_t *bench_env) {
+
+    int test_num = bench_env->args->test_num; 
+    ccnt_t overhead; 
+
+    seL4_MessageInfo_t tag = seL4_MessageInfo_new(0, 0, 0, 0); 
+
+    splash_bench_result_t *record_vaddr = 
+        (splash_bench_result_t*)bench_env->args->record_vaddr;  
+
+    assert(test_num < BENCH_SPLASH_FUNS); 
+
+    /*measuring the overhead: reading the timestamp counter*/
+    measure_overhead(&overhead);
+
+
+    sel4bench_reset_counters();
+
+    record_vaddr->overall  = splash_bench_fun[test_num](
+            splash_bench_parameter[test_num].argc,
+            splash_bench_parameter[test_num].argv
+            );
+    record_vaddr->overhead = overhead; 
+
+    seL4_Send(bench_env->args->r_ep, tag); 
+
+    wait_init_msg_from(bench_env->args->ep);
+
+
+}
+#endif  /*CONFIG_BENCH_SPLASH*/
 
 #ifdef CONFIG_MASTIK_ATTACK
 void run_bench_mastik(bench_env_t *bench_env) {
@@ -205,6 +286,10 @@ int main (int argc, char **argv) {
     run_bench_func_tests(&setup_env);
 #endif 
 
+#ifdef CONFIG_BENCH_SPLASH 
+    run_bench_splash(&setup_env); 
+#endif 
+    
     /*finished testing, halt*/
     while(1);
 
