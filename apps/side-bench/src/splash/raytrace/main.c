@@ -204,8 +204,9 @@ VOID	StartRayTrace()
 	to processors if need be */
 
 	InitWorkPool(pid);
+	
 	InitRayTreeStack(Display.maxlevel, pid);
-
+	
 	/*
 	 *	Wait for all processes to be created, initialize their work
 	 *	pools, and arrive at this point; then proceed.	This {
@@ -227,7 +228,7 @@ VOID	StartRayTrace()
 	and TIMING if one wanted to measure only the parallel part */
 
 	RayTrace(pid);
-
+	
 
 	if ((pid == 0) || (dostats)) {
           {
@@ -261,7 +262,7 @@ VOID	StartRayTrace()
  *	1 for any type of failure.
  */
 
-int	raytrace_main(int argc, CHAR *argv[])
+unsigned long	raytrace_main(int argc, CHAR *argv[])
 	{
 	INT	i;
 	UINT	begin;
@@ -406,6 +407,7 @@ int	raytrace_main(int argc, CHAR *argv[])
 
 	CreateViewMatrix();
 	MatrixCopy(vtrans, View.vtrans);
+	
 	MatrixInverse(Vinv, vtrans);
 	MatrixCopy(View.vtransInv, Vinv);
 

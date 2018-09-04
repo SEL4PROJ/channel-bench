@@ -68,17 +68,17 @@ int funcs_sender(bench_env_t *env);
 
 
 /*the function used for the spalsh bench*/
-int fft_main(int argc, char *argv[]); 
-int cholesky_main(int argc, char *argv[]); 
-int lu_main(int argc, char *argv[]); 
-int radix_main(int argc, char *argv[]); 
-int barnes_main(int argc, char *argv[]); 
-int fmm_main(int argc, char *argv[]); 
-int ocean_main(int argc, char *argv[]); 
-int radiosity_main(int argc, char *argv[]); 
-int raytrace_main(int argc, char *argv[]); 
-int water_nsquared_main(int argc, char *argv[]); 
-int water_spatial_main(int argc, char *argv[]); 
+unsigned long fft_main(int argc, char *argv[]); 
+unsigned long  cholesky_main(int argc, char *argv[]); 
+unsigned long lu_main(int argc, char *argv[]); 
+unsigned long radix_main(int argc, char *argv[]); 
+unsigned long barnes_main(int argc, char *argv[]); 
+unsigned long fmm_main(int argc, char *argv[]); 
+unsigned long ocean_main(int argc, char *argv[]); 
+unsigned long radiosity_main(int argc, char *argv[]); 
+unsigned long raytrace_main(int argc, char *argv[]); 
+unsigned long water_nsquared_main(int argc, char *argv[]); 
+unsigned long water_spatial_main(int argc, char *argv[]); 
 
 #endif 
 

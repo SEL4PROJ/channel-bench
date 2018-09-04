@@ -127,7 +127,7 @@ void init(long key_start, long key_stop, long from);
 void test_sort(long final);
 void printout(void);
 
-int radix_main(int argc, char *argv[])
+unsigned long radix_main(int argc, char *argv[])
 {
    long i;
    long p;

@@ -79,8 +79,8 @@ endif
 
 ifdef CONFIG_BENCH_SPLASH_RAYTRACE
 SPLASH_CFILES :=  $(patsubst $(SOURCE_DIR)/%,%,$(wildcard $(SOURCE_DIR)/src/splash/raytrace/*.c))
-SPLASH_DATAFILES := $(SOURCE_DIR)/data/teapot.env
-SPLASH_DATAFILES += $(SOURCE_DIR)/data/teapot.geo
+SPLASH_DATAFILES := $(SOURCE_DIR)/data/balls4.env
+SPLASH_DATAFILES += $(SOURCE_DIR)/data/balls4.geo
 endif 
 
 ifdef CONFIG_BENCH_SPLASH_WATER_NSQUARED

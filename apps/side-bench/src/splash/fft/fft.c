@@ -137,7 +137,7 @@ long log_2(long number);
 void srand48(long int seedval);
 double drand48(void);
 
-int fft_main(int argc, char *argv[])
+unsigned long fft_main(int argc, char *argv[])
 {
   long i; 
   long c;

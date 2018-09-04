@@ -145,7 +145,7 @@ long minlevel;
 long do_stats = 0;
 long do_output = 0;
 
-int ocean_main(int argc, char *argv[])
+unsigned long ocean_main(int argc, char *argv[])
 {
    long i;
    long j;

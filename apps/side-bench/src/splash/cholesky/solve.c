@@ -98,7 +98,7 @@ struct gpid {
 long do_test = 0;
 long do_stats = 0;
 
-int cholesky_main(int argc, char *argv[])
+unsigned long cholesky_main(int argc, char *argv[])
 {
   double *b, *x;
   double norm;

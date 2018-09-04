@@ -158,7 +158,7 @@ static void parse_args(int argc, char *argv[]);
 
 static long dostats = 0;
 
-int radiosity_main(int argc, char *argv[])
+unsigned long radiosity_main(int argc, char *argv[])
 {
     long i;
     long total_rad_time, max_rad_time, min_rad_time;

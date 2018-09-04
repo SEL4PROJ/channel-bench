@@ -45,7 +45,7 @@ static int (*flush_bench_fun[BENCH_CACHE_FLUSH_FUNS])(bench_env_t *) =
 
 
 #ifdef CONFIG_BENCH_SPLASH
-static int (*splash_bench_fun[BENCH_SPLASH_FUNS])(int argc, char*argv[]) = 
+static unsigned long (*splash_bench_fun[BENCH_SPLASH_FUNS])(int argc, char*argv[]) = 
 {fft_main, cholesky_main, lu_main,
 radix_main, barnes_main, fmm_main, 
 ocean_main, radiosity_main, raytrace_main,
@@ -53,7 +53,9 @@ water_nsquared_main, water_spatial_main};
 
 char *splash_fft_argv[] = {"./FFT", "-m16", "-p1", "-n32768", "-l5"};
 
-char *splash_cholesky_argv[] = {"./CHOLESKY", "-p1", "-B32", "-C1048576", "cholesky_tk14_data" }; 
+/*ARM cannot run the base tk29, using the tk14*/
+char *splash_cholesky_argv[] = {"./CHOLESKY", "-p1", "-B32", "-C1048576", 
+    "cholesky_tk14_data" }; 
 
 char *splash_lu_argv[] = {"./LU", "-n512", "-p1", "-b16" };
     
@@ -62,13 +64,13 @@ char *splash_radix_argv[] = { "./RADIX", "-p1", "-n262144", "-r1024", "-m524288"
 
 char *splash_barnes_argv[] = {"./BARNES"};
 
-char *splash_fmm_argv[] = {"./FMM", "two_cluster", "plummer", "256", "1e-6", "1", "5", "0.025"," 0.0", "cost_zones"};
+char *splash_fmm_argv[] = {"./FMM", "two_cluster", "plummer", "16384", "1e-6", "1", "5", "0.025"," 0.0", "cost_zones"};
 
 char *splash_ocean_argv[] = {"./OCEAN"}; 
 
-char *splash_radiosity_argv[] = {"./RADIOSITY", "-batch" /*"-room"*/}; 
+char *splash_radiosity_argv[] = {"./RADIOSITY", "-batch", "-room"}; 
 
-char *splash_raytrace_argv[] = {"./RAYTRACE","-m8", "teapot.env"};
+char *splash_raytrace_argv[] = {"./RAYTRACE","-m8", "balls4.env"/*"teapot.env"*/};
 
 char *splash_water_nsquared_argv[] = {"./WATER-NSQUARED"}; 
 

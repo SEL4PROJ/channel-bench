@@ -110,7 +110,7 @@ long NumProcs;                   /* number of processors being used;
                                    run-time input           */
 double XTT;
 
-int water_nsquared_main(int argc, char **argv)
+unsigned long water_nsquared_main(int argc, char **argv)
 {
     /* default values for the control parameters of the driver */
     /* are in parameters.h */

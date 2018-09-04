@@ -121,7 +121,7 @@ void PrintA(void);
 void CheckResult(long n, double **a, double *rhs);
 void printerr(char *s);
 
-int lu_main(int argc, char *argv[])
+unsigned long lu_main(int argc, char *argv[])
 {
   long i, j;
   long ch;

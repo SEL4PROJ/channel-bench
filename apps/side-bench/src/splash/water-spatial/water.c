@@ -116,7 +116,7 @@ long NumProcs;                 /* number of processors being used;
 
 double XTT;
 
-int water_spatial_main(int argc, char **argv)
+unsigned long water_spatial_main(int argc, char **argv)
 {
     /* default values for the control parameters of the driver */
     /* are in parameters.h */

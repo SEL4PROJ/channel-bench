@@ -118,7 +118,7 @@ unsigned long PrintTimes(void);
 void Help(void);
 
 
-int
+unsigned long
 fmm_main (int argc, char *argv[])
 {
    long c;

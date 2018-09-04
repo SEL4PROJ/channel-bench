@@ -4,7 +4,7 @@
 #include <stdlib.h>
 
 #ifndef CONFIG_BENCH_SPLASH_FFT
-int fft_main(int argc, char *argv[]) {
+unsigned long fft_main(int argc, char *argv[]) {
 
     return 0;
 
@@ -12,7 +12,8 @@ int fft_main(int argc, char *argv[]) {
 #endif 
 
 #ifndef CONFIG_BENCH_SPLASH_CHOLESKY
-int cholesky_main(int argc, char *argv[]) {
+unsigned long 
+cholesky_main(int argc, char *argv[]) {
 
     return 0;
 }
@@ -20,35 +21,40 @@ int cholesky_main(int argc, char *argv[]) {
 
 
 #ifndef CONFIG_BENCH_SPLASH_LU
-int lu_main(int argc, char *argv[]) {
+unsigned long 
+lu_main(int argc, char *argv[]) {
 
     return 0;
 }
 #endif 
 
 #ifndef CONFIG_BENCH_SPLASH_RADIX
-int radix_main(int argc, char *argv[]) {
+unsigned long 
+radix_main(int argc, char *argv[]) {
 
     return 0;
 }
 #endif 
 
 #ifndef CONFIG_BENCH_SPLASH_BARNES
-int barnes_main(int argc, char *argv[]) {
+unsigned long 
+barnes_main(int argc, char *argv[]) {
 
     return 0;
 }
 #endif 
 
 #ifndef CONFIG_BENCH_SPLASH_FMM
-int fmm_main(int argc, char *argv[]) {
+unsigned long 
+fmm_main(int argc, char *argv[]) {
 
     return 0;
 }
 #endif 
 
 #ifndef CONFIG_BENCH_SPLASH_OCEAN
-int ocean_main(int argc, char *argv[]) {
+unsigned long 
+ocean_main(int argc, char *argv[]) {
 
     return 0;
 }
@@ -56,28 +62,29 @@ int ocean_main(int argc, char *argv[]) {
 
 
 #ifndef CONFIG_BENCH_SPLASH_RADIOSITY
-int radiosity_main(int argc, char *argv[]) {
+unsigned long 
+radiosity_main(int argc, char *argv[]) {
 
     return 0;
 }
 #endif 
 
 #ifndef CONFIG_BENCH_SPLASH_RAYTRACE
-int raytrace_main(int argc, char *argv[]) {
+unsigned long raytrace_main(int argc, char *argv[]) {
 
     return 0;
 }
 #endif 
 
 #ifndef CONFIG_BENCH_SPLASH_WATER_NSQUARED
-int water_nsquared_main(int argc, char *argv[]) {
+unsigned long water_nsquared_main(int argc, char *argv[]) {
 
     return 0;
 }
 #endif 
 
 #ifndef CONFIG_BENCH_SPLASH_WATER_SPATIAL
-int water_spatial_main(int argc, char *argv[]) {
+unsigned long water_spatial_main(int argc, char *argv[]) {
 
     return 0;
 }

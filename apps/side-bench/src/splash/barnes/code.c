@@ -91,7 +91,7 @@ string defv[] = {                 /* DEFAULT PARAMETER VALUES              */
     "out=",                       /* stream of output snapshots            */
 
     /* params, used if no input specified, to make a Plummer Model         */
-    "nbody=2048",                /* number of particles to generate       */
+    "nbody=8192",                /* number of particles to generate       */
     "seed=123",                   /* random number generator seed          */
 
     /* params to control N-body integration                                */
@@ -249,7 +249,7 @@ static long Direction_Sequence[NUM_DIRECTIONS][NSUB] =
  /* FDA_BLA */
 };
 
-int barnes_main (int argc, string argv[])
+unsigned long barnes_main (int argc, string argv[])
 {
    long c;
 
