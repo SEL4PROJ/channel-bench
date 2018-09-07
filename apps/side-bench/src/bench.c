@@ -51,24 +51,32 @@ radix_main, barnes_main, fmm_main,
 ocean_main, radiosity_main, raytrace_main,
 water_nsquared_main, water_spatial_main};
 
-char *splash_fft_argv[] = {"./FFT", "-m16", "-p1", "-n32768", "-l5"};
+#ifdef CONFIG_PLAT_IMX6
+char *splash_fft_argv[] = {"./FFT", "-m22", "-p1", "-n32768", "-l5"};
+#else 
+char *splash_fft_argv[] = {"./FFT", "-m22", "-p1", "-n131072", "-l6"};
+#endif /*haswell*/
 
+#ifdef CONFIG_PLAT_IMX6
 /*ARM cannot run the base tk29, using the tk14*/
 char *splash_cholesky_argv[] = {"./CHOLESKY", "-p1", "-B32", "-C1048576", 
-    "cholesky_tk14_data" }; 
+    "cholesky_tk29_data" }; 
+#else 
+char *splash_cholesky_argv[] = {"./CHOLESKY", "-p1", "-B32", "-C8388608", "cholesky_tk29_data"}; 
+#endif 
 
-char *splash_lu_argv[] = {"./LU", "-n512", "-p1", "-b16" };
+char *splash_lu_argv[] = {"./LU", "-n1024", "-p1", "-b16" };
     
 
-char *splash_radix_argv[] = { "./RADIX", "-p1", "-n262144", "-r1024", "-m524288"};
+char *splash_radix_argv[] = { "./RADIX", "-p1", "-n13107200", "-r1024", "-m26214400"};
 
 char *splash_barnes_argv[] = {"./BARNES"};
 
-char *splash_fmm_argv[] = {"./FMM", "two_cluster", "plummer", "16384", "1e-6", "1", "5", "0.025"," 0.0", "cost_zones"};
+char *splash_fmm_argv[] = {"./FMM", "two_cluster", "plummer", "32768", "1e-6", "1", "5", "0.025"," 0.0", "cost_zones"};
 
-char *splash_ocean_argv[] = {"./OCEAN"}; 
+char *splash_ocean_argv[] = {"./OCEAN", "-n514"}; 
 
-char *splash_radiosity_argv[] = {"./RADIOSITY", "-batch", "-room"}; 
+char *splash_radiosity_argv[] = {"./RADIOSITY", "-batch", "-largerroom"}; 
 
 char *splash_raytrace_argv[] = {"./RAYTRACE","-m8", "balls4.env"/*"teapot.env"*/};
 
@@ -85,7 +93,7 @@ static splash_para_t splash_bench_parameter[BENCH_SPLASH_FUNS] = {
     {5, splash_radix_argv}, 
     {1, splash_barnes_argv}, 
     {10, splash_fmm_argv}, 
-    {1,  splash_ocean_argv}, 
+    {2,  splash_ocean_argv}, 
     {2, splash_radiosity_argv},
     {3, splash_raytrace_argv}, 
     {1, splash_water_nsquared_argv}, 
@@ -180,6 +188,7 @@ int run_bench_cache_flush(bench_env_t *bench_env) {
 }
 
 #ifdef CONFIG_BENCH_SPLASH
+
 static int run_bench_splash(bench_env_t *bench_env) {
 
     int test_num = bench_env->args->test_num; 
@@ -193,21 +202,31 @@ static int run_bench_splash(bench_env_t *bench_env) {
     assert(test_num < BENCH_SPLASH_FUNS); 
 
     /*measuring the overhead: reading the timestamp counter*/
-    measure_overhead(&overhead);
+    measure_splash_overhead(&overhead);
 
-
-    sel4bench_reset_counters();
-
-    record_vaddr->overall  = splash_bench_fun[test_num](
+#ifdef CONFIG_PLAT_IMX6
+    uint64_t start =  seL4_GlobalTimer(); 
+    splash_bench_fun[test_num](
             splash_bench_parameter[test_num].argc,
             splash_bench_parameter[test_num].argv
             );
+    uint64_t end = seL4_GlobalTimer(); 
+    record_vaddr->overall  =  end - start; 
+#else 
+    record_vaddr->overall = splash_bench_fun[test_num](
+            splash_bench_parameter[test_num].argc,
+            splash_bench_parameter[test_num].argv
+            );
+
+#endif 
+
     record_vaddr->overhead = overhead; 
 
     seL4_Send(bench_env->args->r_ep, tag); 
 
     wait_init_msg_from(bench_env->args->ep);
 
+    return 0;
 
 }
 #endif  /*CONFIG_BENCH_SPLASH*/
@@ -262,6 +281,8 @@ int run_bench_func_tests(bench_env_t *bench_env) {
 #endif
 
 int main (int argc, char **argv) {
+
+
 
 #ifdef CONFIG_DEBUG_BUILD
     platsupport_serial_setup_simple(NULL, NULL, NULL); 

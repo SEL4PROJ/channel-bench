@@ -122,8 +122,8 @@ typedef struct {
 
 
 typedef struct {
-    ccnt_t overhead; 
-    ccnt_t overall; 
+    uint64_t overhead; 
+    uint64_t overall; 
 }splash_bench_result_t ; 
 
 
@@ -143,6 +143,9 @@ typedef struct {
 
     uintptr_t hugepage_vaddr; /*a huge page used for benchmark*/
     size_t hugepage_size;     /*size in bytes*/
+
+    uintptr_t morecore_vaddr;  /*the morecore area for over writing the default*/
+    size_t morecore_size; 
 
     seL4_CPtr ep;   /*communicate between benchmarking threads(spy&trojan)*/
     seL4_CPtr r_ep;  /*reply to root task*/

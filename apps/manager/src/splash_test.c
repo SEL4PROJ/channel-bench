@@ -38,16 +38,15 @@ static vka_object_t reply_ep, syn_ep, idle_ep;
 
 static void print_result (m_env_t *env) {
     
-    ccnt_t takes; 
+    uint64_t takes; 
 
     splash_bench_result_t *result =(splash_bench_result_t*)env->record_vaddr; 
 
     takes = result->overall - result->overhead; 
 
-    printf("cost before scale up : %d, overhead %d\n", result->overall, result->overhead); 
+    printf("raw cost: %lld, overhead %lld\n", result->overall, result->overhead); 
 
-    printf("Total cost in CPU ticks: %lld\n", takes * 64ULL); 
-
+    printf("Total cost: %lld\n", takes); 
 }
 
 void launch_bench_splash(m_env_t *env) {
@@ -71,13 +70,7 @@ void launch_bench_splash(m_env_t *env) {
 #ifdef CONFIG_MANAGER_MITIGATION 
     /*using sperate kernels*/
     flush_thread.kernel = env->kimages[0].ki.cptr; 
-
-#ifdef CONFIG_MANAGER_CACHE_DIV_UNEVEN 
-    /*cannot create a kerne image from domain 1 */
-    idle_thread.kernel = env->kimages[0].ki.cptr; 
-#else 
     idle_thread.kernel = env->kimages[1].ki.cptr; 
-#endif /*UNEVEN*/
 
 #else 
     /*by default the kernel is shared*/
@@ -134,17 +127,22 @@ void launch_bench_splash(m_env_t *env) {
     idle_thread.test_num = BENCH_SPLASH_TEST_NUM;  
 
     /*initing the thread*/
-    create_thread(&flush_thread); 
+    printf("creating splash thread.\n"); 
 
-#ifndef CONFIG_MANAGER_CACHE_DIV_UNEVEN 
-    /*cannot creat a thread with just tiny colour*/
+    create_thread(&flush_thread); 
+    printf("creating idle thread.\n"); 
+
     create_thread(&idle_thread); 
-#endif 
 
     printf("creating recording frames for benchmarking thread.\n"); 
     map_r_buf(env, n_p, &flush_thread);
 
-    printf("launching threads\n");
+#ifdef CONFIG_BENCH_SPLASH_MORECORE
+    printf("creating extra morecore frames for benchmarking thread.\n"); 
+    map_morecore_buf(SPLASH_MORECORE_SIZE, &flush_thread);
+#endif  
+
+    printf("launching splash thread\n");
     launch_thread(&flush_thread);
 
     /*not launching the second thread*/

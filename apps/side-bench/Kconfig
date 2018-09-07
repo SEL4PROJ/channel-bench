@@ -182,6 +182,13 @@ menu   "Timing Channel Benchmarks"
              bool "side"
        endchoice
 
+       config BENCH_SPLASH_MORECORE 
+       bool "overwirte the lib morecore allocation"
+       default n 
+       depends on BENCH_SPLASH 
+       help  
+            overwrite the more core allocation configured in the lib c sys
+
        config BENCH_SPLASH
        bool "splash-2 benchmark"
        default n 

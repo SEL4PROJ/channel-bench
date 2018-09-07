@@ -18,6 +18,15 @@
 #include <sel4platsupport/io.h>
 #include "bench_types.h"
 #include "bench_support.h"
+
+#ifdef CONFIG_BENCH_SPLASH_MORECORE 
+/*use to create huge mappings and given to cache flush benchmark*/
+extern uintptr_t morecore_base;
+extern size_t morecore_size;
+extern uintptr_t morecore_top; 
+#endif
+
+
 /* allocator */
 #define ALLOCATOR_STATIC_POOL_SIZE ((1 << seL4_PageBits) * 20)
 static char allocator_mem_pool[ALLOCATOR_STATIC_POOL_SIZE];
@@ -299,7 +308,14 @@ void bench_init_env(int argc, char **argv,
     /*the virtual address contained the argument, passed by the root task*/
     env->args = (void *)atol(argv[0]);
     args = env->args; 
-    
+
+#ifdef CONFIG_BENCH_SPLASH_MORECORE
+    /*init the more core area for the libc to use*/
+    morecore_base = args->morecore_vaddr;
+    morecore_size = args->morecore_size; 
+    morecore_top = args->morecore_vaddr + args->morecore_size; 
+
+#endif    
     init_simple(env);
 
     env->allocman = init_allocator(&env->simple, &env->vka); 

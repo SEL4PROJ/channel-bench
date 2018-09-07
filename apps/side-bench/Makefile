@@ -49,7 +49,7 @@ endif
 
 ifdef CONFIG_BENCH_SPLASH_CHOLESKY
 SPLASH_CFILES :=  $(patsubst $(SOURCE_DIR)/%,%,$(wildcard $(SOURCE_DIR)/src/splash/cholesky/*.c))
-SPLASH_DATAFILES := $(SOURCE_DIR)/data/cholesky_tk14_data
+SPLASH_DATAFILES := $(SOURCE_DIR)/data/cholesky_tk29_data
 endif 
 
 

@@ -128,8 +128,8 @@
 
 #ifdef CONFIG_PLAT_IMX6
 #define CC_DIV             8
-#define CC_BIG             15
-#define CC_LITTLE          1
+#define CC_BIG             12
+#define CC_LITTLE          4
 #endif
 #ifdef CONFIG_PLAT_EXYNOS4
 #define CC_DIV             8
@@ -138,6 +138,7 @@
 #define CC_DIV             8
 #endif
 
+#define SPLASH_MORECORE_SIZE    200*1024*1024
 
 /*running the capacity benchmark*/ 
 #define BENCH_CAP_SINGLE  1  /*running the benchmark on single core*/

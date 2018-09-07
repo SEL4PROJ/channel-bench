@@ -134,7 +134,7 @@ unsigned long water_nsquared_main(int argc, char **argv)
     /* read input */
 
     TSTEP =  1.5e-16; 
-    NMOL = 512; 
+    NMOL = 1331; 
     NSTEP = 3 ;
     NORDER = 6; 
     NSAVE = -1; 

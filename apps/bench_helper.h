@@ -48,8 +48,39 @@ static inline ccnt_t find_min_overhead(ccnt_t *array) {
     }
     return min; 
 }
+#ifdef CONFIG_BENCH_SPLASH
+static inline bool measure_splash_overhead(ccnt_t *overhead) {
 
+    /*measure the overhead of benchmarking method*/
+    uint64_t start, end; 
 
+    for (int i = 0; i < BENCH_OVERHEAD_RETRIES; i++) {
+        for (int j = 0; j < BENCH_OVERHEAD_RUNS; j++) { 
+            FENCE(); 
+            for (int k = 0; k < BENCH_WARMUPS; k++) { 
+#ifdef CONFIG_PLAT_IMX6
+            start = seL4_GlobalTimer(); 
+            end = seL4_GlobalTimer(); 
+#else 
+
+                start = sel4bench_get_cycle_count(); 
+                end = sel4bench_get_cycle_count(); 
+#endif 
+                FENCE(); 
+                local_overhead[j] = (ccnt_t)(end - start);
+            }
+        }
+
+        if (overhead_stable(local_overhead)) {
+            *overhead = local_overhead[0];
+            return true;
+        }
+    }
+
+    *overhead = find_min_overhead(local_overhead);
+    return false;
+}
+#endif 
 static inline bool measure_overhead(ccnt_t *overhead) {
 
     /*measure the overhead of benchmarking method*/

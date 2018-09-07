@@ -91,7 +91,11 @@ string defv[] = {                 /* DEFAULT PARAMETER VALUES              */
     "out=",                       /* stream of output snapshots            */
 
     /* params, used if no input specified, to make a Plummer Model         */
-    "nbody=8192",                /* number of particles to generate       */
+#ifdef CONFIG_PLAT_IMX6
+    "nbody=16384",                /* number of particles to generate       */
+#else 
+    "nbody=16384",                /* number of particles to generate       */
+#endif 
     "seed=123",                   /* random number generator seed          */
 
     /* params to control N-body integration                                */

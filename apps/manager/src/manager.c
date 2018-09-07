@@ -344,15 +344,6 @@ static void create_kernel_pd(m_env_t *env) {
     ik_image = simple_get_ik_image(&env->simple); 
     printf("ik image cap is %zu size %zu \n", ik_image, k_size);
 
-#if defined (CONFIG_MANAGER_CACHE_DIV_UNEVEN) && defined (CONFIG_BENCH_SPLASH) 
-
-    /*the splash only has one thread, the vka with only one colour
-     cannot create a kernel (16K) object*/
-    ret = create_ki(env, env->vka_colour, env->kimages); 
-    assert(ret == BENCH_SUCCESS); 
-
-#else 
- 
     for (int i = 0; i < MAN_KIMAGES; i++ )  {
         printf("creating ki %d\n", i);
 #ifdef CONFIG_LIB_SEL4_CACHECOLOURING
@@ -363,7 +354,6 @@ static void create_kernel_pd(m_env_t *env) {
         assert(ret == BENCH_SUCCESS); 
 
     }
-#endif /*DIV_UNEVEN && SPLASH*/ 
     printf("done creating ki\n");
     /*the default kernel image created at bootup*/ 
     env->kernel = ik_image; 
