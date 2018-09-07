@@ -348,8 +348,6 @@ static void map_morecore_buf(size_t size, bench_thread_t *t) {
         return; 
     size_t n_p = (size + (1 << PAGE_BITS_4K)) / (1 << PAGE_BITS_4K); 
 
-    printf("mapping morecore area size 0x%x pages %d\n", size, n_p); 
-
     /*allocate record buffer from thread*/
     args->morecore_size = size; 
     args->morecore_vaddr = (uintptr_t)vspace_new_pages(&p->vspace, seL4_AllRights, 
