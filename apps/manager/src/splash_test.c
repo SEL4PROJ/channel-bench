@@ -43,10 +43,16 @@ static void print_result (m_env_t *env) {
     splash_bench_result_t *result =(splash_bench_result_t*)env->record_vaddr; 
 
     takes = result->overall - result->overhead; 
+#ifdef CONFIG_ARCH_X86
+    printf("raw cost: %ld, overhead %ld\n", result->overall, result->overhead); 
 
+    printf("Total cost: %ld\n", takes); 
+
+#else 
     printf("raw cost: %lld, overhead %lld\n", result->overall, result->overhead); 
 
     printf("Total cost: %lld\n", takes); 
+#endif 
 }
 
 void launch_bench_splash(m_env_t *env) {

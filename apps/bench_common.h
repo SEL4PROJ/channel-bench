@@ -109,11 +109,12 @@
 #ifdef CONFIG_ARCH_X86
 
 /*spliting according to the LLC cache colours */
-#if CONFIG_MAX_NUM_NODES > 1
+#if (CONFIG_MAX_NUM_NODES > 1) || defined (CONFIG_MANAGER_CACHE_DIV_LLC)
 #define CC_DIV             16
 #define CC_BIG             31 
-#define CC_LITTLE          1
-#else  
+#define CC_LITTLE          1 
+#else  /*max_num_nodes*/
+
 /*spliting according to the L2 cache colours, total 8 colours*/
 #define CC_DIV             4
 #define CC_BIG             7

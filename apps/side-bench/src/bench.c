@@ -213,10 +213,15 @@ static int run_bench_splash(bench_env_t *bench_env) {
     uint64_t end = seL4_GlobalTimer(); 
     record_vaddr->overall  =  end - start; 
 #else 
-    record_vaddr->overall = splash_bench_fun[test_num](
+
+    uint64_t start = sel4bench_get_cycle_count(); 
+
+    splash_bench_fun[test_num](
             splash_bench_parameter[test_num].argc,
             splash_bench_parameter[test_num].argv
             );
+    uint64_t end = sel4bench_get_cycle_count(); 
+    record_vaddr->overall = end - start; 
 
 #endif 
 

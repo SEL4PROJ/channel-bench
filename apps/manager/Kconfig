@@ -78,6 +78,12 @@ menu    "Manager task for benchmarking tests"
         help  
                The benchmarking thread is  built from n-1 L2 cache colours.
 
+      config MANAGER_CACHE_DIV_LLC 
+        bool "Dividing cache colours based on LLC" 
+        default n 
+        depends on APP_MANAGER
+        help  
+               The benchmarking thread is  built from LLC cache colours.
         
         config MANAGER_PMU_COUNTER 
         bool "using pmu counter to monitor events" 
