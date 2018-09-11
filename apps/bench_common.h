@@ -139,7 +139,13 @@
 #define CC_DIV             8
 #endif
 
+#ifdef CONFIG_PLAT_IMX6
+
 #define SPLASH_MORECORE_SIZE    200*1024*1024
+#else 
+
+#define SPLASH_MORECORE_SIZE    220*1024*1024
+#endif 
 
 /*running the capacity benchmark*/ 
 #define BENCH_CAP_SINGLE  1  /*running the benchmark on single core*/
