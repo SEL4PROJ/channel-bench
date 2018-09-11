@@ -62,7 +62,8 @@ char *splash_fft_argv[] = {"./FFT", "-m22", "-p1", "-n131072", "-l6"};
 char *splash_cholesky_argv[] = {"./CHOLESKY", "-p1", "-B32", "-C1048576", 
     "cholesky_tk29_data" }; 
 #else 
-char *splash_cholesky_argv[] = {"./CHOLESKY", "-p1", "-B32", "-C8388608", "cholesky_tk29_data"}; 
+char *splash_cholesky_argv[] = {"./CHOLESKY", "-p1", "-B32", "-C8388608", 
+    "cholesky_tk29_data"}; 
 #endif 
 
 char *splash_lu_argv[] = {"./LU", "-n1024", "-p1", "-b16" };
