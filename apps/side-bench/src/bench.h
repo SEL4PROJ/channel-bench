@@ -57,6 +57,7 @@ int bp_spy(bench_env_t *env);
 int timer_high(bench_env_t *env); 
 int timer_low(bench_env_t *env); 
 
+int l1_cache_nothing(bench_env_t *env);
 int l1_cache_flush(bench_env_t *env);
 int bench_idle(bench_env_t *env); 
 int llc_cache_flush(bench_env_t *env);

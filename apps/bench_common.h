@@ -221,13 +221,18 @@ enum ipc_funs{
 
 
 #define BENCH_CACHE_FLUSH_FUN_START      100
-#define BENCH_CACHE_FLUSH_L1D            100 
-#define BENCH_CACHE_FLUSH_L1I            101 
-#define BENCH_CACHE_FLUSH_LLC            102
-#define BENCH_CACHE_FLUSH_ATTACK         103
-#define BENCH_CACHE_FLUSH_IDLE           104 
+#define BENCH_CACHE_FLUSH_NOTHING        100 
+#define BENCH_CACHE_FLUSH_L1D            101 
+#define BENCH_CACHE_FLUSH_L1I            102 
+#define BENCH_CACHE_FLUSH_LLC            103
+#define BENCH_CACHE_FLUSH_ATTACK         104
+#define BENCH_CACHE_FLUSH_IDLE           105 
 
-#define BENCH_CACHE_FLUSH_FUNS           5
+#define BENCH_CACHE_FLUSH_FUNS           6
+
+#ifdef CONFIG_BENCH_CACHE_FLUSH_NOTHING
+#define BENCH_FLUSH_THREAD_NUM        BENCH_CACHE_FLUSH_NOTHING
+#endif 
 
 #ifdef CONFIG_BENCH_CACHE_FLUSH_L1_CACHES 
 #define BENCH_FLUSH_THREAD_NUM        BENCH_CACHE_FLUSH_L1D 

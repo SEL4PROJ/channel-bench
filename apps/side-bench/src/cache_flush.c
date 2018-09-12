@@ -78,6 +78,51 @@ int llc_cache_flush(bench_env_t *env) {
     return 0;
 }
 
+int l1_cache_nothing(bench_env_t *env) {
+    seL4_MessageInfo_t info;
+    ccnt_t overhead, start, end;
+
+    bench_args_t *args = env->args; 
+
+    /*the record address*/
+    struct bench_cache_flush *r_addr = (struct bench_cache_flush *)args->record_vaddr;
+
+    /*measuring the overhead: reading the timestamp counter*/
+    measure_overhead(&overhead);
+    r_addr->overhead = overhead; 
+
+    /*syn with the idle thread */
+    info = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 1);
+    seL4_SetMR(0, 0); 
+    seL4_Send(args->ep, info);
+
+
+    /*running benchmark*/
+    for (int i = 0; i < BENCH_CACHE_FLUSH_RUNS; i++) {
+        /*waiting for a system tick*/
+        newTimeSlice();
+        seL4_SetMR(100, 0x12345678); 
+        start = sel4bench_get_cycle_count(); 
+
+        end = sel4bench_get_cycle_count(); 
+
+        /*ping kernel for taking the measurements in kernel
+          a context switch is invovled, switching to the idle user-level thread*/
+        r_addr->costs[i] = end - start - overhead; 
+    }
+    newTimeSlice();
+    seL4_SetMR(100, 0); 
+    /*send result to manager, benchmarking is done*/
+    info = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 1);
+    seL4_SetMR(0, 0);
+    seL4_Send(args->r_ep, info);
+
+    while (1);
+
+    return 0;
+}
+
+
 int l1_cache_flush(bench_env_t *env) {
     seL4_MessageInfo_t info;
     ccnt_t overhead, start, end;

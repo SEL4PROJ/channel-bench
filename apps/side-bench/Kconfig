@@ -22,53 +22,27 @@ menu   "Timing Channel Benchmarks"
         depends on APP_SIDE_BENCH 
         help 
              The cache flushing benchmark. 
+             
+         choice 
+               prompt "types:"
+               depends on BENCH_CACHE_FLUSH
         
-     
-        config BENCH_CACHE_FLUSH_L1_CACHES
-        bool "L1 cache flush (L1D attack)"
-        depends on BENCH_CACHE_FLUSH 
-        default n
-        help 
-             Testing the direct and indirect cost of flushing L1 caches.
-             The buffer is the same used for conducting the timing channel 
-             prob, the L1d prime + probe covert channel. 
-             Direct cost represent the cost of doing L1 cache flushing in kernel
-             (on x86, it is flushed used a chained buffer). 
-             Indirect cost means the performance increase at user-level 
-             for accessing the testing buffer. 
+               config BENCH_CACHE_FLUSH_NOTHING
+               bool "idle"
+             
+               config BENCH_CACHE_FLUSH_L1_CACHES
+               bool "L1D attack"
+               
+               config BENCH_CACHE_FLUSH_L1_CACHES_INSTRUCTION
+               bool "L1I attack"
+               
+               config BENCH_CACHE_FLUSH_ATTACK
+               bool "LLC attack"
         
-        config BENCH_CACHE_FLUSH_L1_CACHES_INSTRUCTION
-        bool "L1 cache flush (L1I attack)"
-        default n 
-        depends on BENCH_CACHE_FLUSH 
-        help 
-             Testing the direct and indirect cost of flushing L1 caches.
-             The buffer is the same used for conducting the timing channel 
-             prob, the L1I prime + probe covert channel. 
-             Direct cost represent the cost of doing L1 cache flushing in kernel
-             (on x86, it is flushed used a chained buffer). 
-             Indirect cost means the performance increase at user-level 
-             for accessing the testing buffer.             T
-   
-        config BENCH_CACHE_FLUSH_ALL_CACHES 
-        bool "LLC cache flush (LLC buffer)"
-        depends on BENCH_CACHE_FLUSH 
-        default n
-        help 
-            Testing the direct and indirect cost of flushing all the caches.
-             The buffer is a LLC sized buffer. 
+               config BENCH_CACHE_FLUSH_ALL_CACHES 
+               bool "probing LLC buffer"
 
-        config BENCH_CACHE_FLUSH_ATTACK
-        bool "LLC cache flush (LLC attack)"
-        depends on BENCH_CACHE_FLUSH 
-        default n
-        help 
-            Testing the direct and indirect cost of flushing all the caches.
-             The buffer is the same used for the LLC side channel attack.
-             Direct cost represent the cost of doing all the cache flush in kernel.
-             Indirect cost means the performance increase at user-level 
-             for accessing the testing buffer. 
-         
+          endchoice
               
         config BENCH_DCACHE_ATTACK 
         bool "simulate the L1 dcache attack (Tromer_OS_10)"
