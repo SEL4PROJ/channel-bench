@@ -41,7 +41,7 @@ static vka_object_t reply_ep, syn_ep, idle_ep;
 static void print_bench_cache_flush(void *user_log_vaddr, 
         void *kernel_log_vaddr) {
 
-    uint32_t count; 
+    uint32_t count;
     struct bench_cache_flush *ulogs = user_log_vaddr; 
 
  
@@ -66,24 +66,40 @@ static void print_bench_cache_flush(void *user_log_vaddr,
 
 #ifdef CONFIG_KERNEL_SWITCH_COST_BENCH 
 
+    /*20 is the warm up round*/
     printf("kernel switching cost: \n"); 
-    for (count = 0; count < BENCH_CACHE_FLUSH_RUNS; count++) {
+    for (count = 20; count < BENCH_CACHE_FLUSH_RUNS; count++) {
 
-        /*skip the warmup rounds*/
-        seL4_BenchmarkGetKSCostPair(count + BENCH_WARMUPS); 
-        /*the cost = measure - overhead*/
-        printf(" "CCNT_FORMAT" ", seL4_GetMR(2) - seL4_GetMR(3)); 
+        /*the first log number is the cost of switching from the attack thread
+          to the idle thread
+         the second log number is the cost of switching back from the
+         idle thread to the attack thread
+         skip the cost of switching from the idle thread*/
+        seL4_BenchmarkGetKSCostPair(count); 
+        /*the cost = measure*/
+        printf(" "CCNT_FORMAT" \n", seL4_GetMR(2)); 
+    }
+    
+    printf("kernel measurement overhead: \n"); 
+    for (count = 20; count < BENCH_CACHE_FLUSH_RUNS; count++) {
+
+        /*the first log number is the cost of switching from the attack thread
+          to the idle thread
+         the second log number is the cost of switching back from the
+         idle thread to the attack thread
+         skip the cost of switching from the idle thread*/
+        seL4_BenchmarkGetKSCostPair(count); 
+        /*the overhead*/
+        printf(" "CCNT_FORMAT" \n", seL4_GetMR(3)); 
 
     }
-    printf("\n");
 
 #endif 
 
     printf("cost in user-level : \n");
-    for (count = 0; count < BENCH_CACHE_FLUSH_RUNS; count++) {
-        printf(" "CCNT_FORMAT" ", ulogs->costs[count]); 
+    for (count = 20; count < BENCH_CACHE_FLUSH_RUNS; count++) {
+        printf(" "CCNT_FORMAT" \n", ulogs->costs[count]); 
     }
-    printf("\n");
 
 }
 

@@ -166,31 +166,22 @@ int llc_attack_flush(bench_env_t *env) {
     seL4_SetMR(0, 0); 
     seL4_Send(args->ep, info);
 
-    /*warming up*/
-    for (int i = 0; i < BENCH_WARMUPS; i++) {
- 
-        start = sel4bench_get_cycle_count(); 
-
-        l3_probe(l3, results);
-
-        end = sel4bench_get_cycle_count(); 
- 
-        seL4_Yield();
-    }
  
     /*running benchmark*/
     for (int i = 0; i < BENCH_CACHE_FLUSH_RUNS; i++) {
-       
+        /*waiting for a system tick*/
+        newTimeSlice();
+        /*start measuing*/
+        seL4_SetMR(100, 0x12345678); 
+
         start = sel4bench_get_cycle_count(); 
         l3_probe(l3, results);
 
         end = sel4bench_get_cycle_count(); 
- 
-        /*ping kernel for taking the measurements in kernel
-          a context switch is invovled, switching to the idle user-level thread*/
-        seL4_Yield(); 
         r_addr->costs[i] = end - start - overhead; 
     }
+    newTimeSlice();
+    seL4_SetMR(100, 0); 
  
     /*send result to manager, benchmarking is done*/
     info = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 1);

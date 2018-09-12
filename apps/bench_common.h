@@ -85,7 +85,7 @@
 #define N_PT_B 256   
 
 /*for cache flushing benchmark*/
-#define BENCH_CACHE_FLUSH_RUNS    10
+#define BENCH_CACHE_FLUSH_RUNS    100
 
 /*ipc benchmark, same as sel4bench*/
 

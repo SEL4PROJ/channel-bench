@@ -157,7 +157,7 @@ static int test_destroy(m_env_t *env, bench_thread_t *sender, bench_thread_t *re
 /*entry point*/
 void launch_bench_func_test(m_env_t *env){
     int ret; 
-    uint32_t share_phy; 
+    uintptr_t share_phy; 
 
     env->ipc_vka = &env->vka;
     

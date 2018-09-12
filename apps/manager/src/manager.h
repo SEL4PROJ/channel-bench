@@ -355,6 +355,8 @@ static void map_morecore_buf(size_t size, bench_thread_t *t) {
     assert(args->morecore_vaddr); 
     
 }
+
+
 static void map_r_buf(m_env_t *env, uint32_t n_p, bench_thread_t *t) {
 
     sel4utils_process_t *p = &t->process; 
@@ -377,11 +379,11 @@ static void map_r_buf(m_env_t *env, uint32_t n_p, bench_thread_t *t) {
 }
 
 static void map_shared_buf(bench_thread_t *owner, bench_thread_t *share, 
-        uint32_t n_p, uint32_t *phy) {
+        uint32_t n_p, uintptr_t *phy) {
 
     /*allocate buffer from owner that shared between two threads*/
     sel4utils_process_t *p_o = &owner->process, *p_s = &share->process;
-    uint32_t cookies; 
+    uintptr_t cookies; 
     bench_args_t *args_o = owner->bench_args, *args_s = share->bench_args; 
     
     /*the number of pages shared*/

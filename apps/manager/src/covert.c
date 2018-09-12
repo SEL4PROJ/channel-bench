@@ -53,7 +53,7 @@ void init_timing_threads(m_env_t *env) {
     n_p = (sizeof (bench_llc_kernel_probe_result_t) / BENCH_PAGE_SIZE) + 1;
 #endif 
 
-    uint32_t share_phy; 
+    uintptr_t share_phy; 
     int error; 
 
     printf("creating trojan\n"); 
