@@ -119,7 +119,14 @@ menu   "Timing Channel Benchmarks"
       help
            number of data points collected, used by both high and low
       
-     
+      config BENCH_COVERT_L2_KERNEL_SCHEDULE 
+      bool  "using the L2 cache for the KD channel"
+      default n
+      depends on BENCH_COVERT_LLC_KERNEL_SCHEDULE
+      help
+          using the L2 probing buffer for the deterministic scheduling attack 
+
+
       config BENCH_COVERT_L1D_WRITE
       bool   "L1D covert channel with writes"
       default n

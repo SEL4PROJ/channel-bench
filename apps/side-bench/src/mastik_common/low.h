@@ -75,6 +75,30 @@
 
 #endif /*CONFIG_BENCH_COVERT_L2*/
 
+#ifdef CONFIG_BENCH_COVERT_L2_KERNEL_SCHEDULE 
+
+/*the L2 probing function shares with L1*/
+#undef L1_ASSOCIATIVITY   
+#define L1_ASSOCIATIVITY   L2_ASSOCIATIVITY
+
+#undef L1_SETS            
+#define L1_SETS            L2_SETS
+
+#undef L1_CACHELINE       
+#define L1_CACHELINE       L2_CACHELINE 
+
+#undef  L1_LINES           
+#define L1_LINES           L2_LINES 
+
+#undef L1_STRIDE   
+#define L1_STRIDE           L2_STRIDE 
+
+#undef L1_PROBE_BUFFER
+#define L1_PROBE_BUFFER    L2_PROBE_BUFFER
+
+#endif /*CONFIG_BENCH_COVERT_L2_KERNEL_SCHEDULE*/
+
+
 
 #define L3_THRESHOLD       140
 #define L3_ASSOCIATIVITY   16

@@ -64,6 +64,9 @@ int l3_kd_trojan(bench_env_t *env) {
 
     uint32_t volatile *share_vaddr = (uint32_t *)args->shared_vaddr; 
 
+#ifdef CONFIG_BENCH_COVERT_L2_KERNEL_SCHEDULE 
+    return l1_trojan(env); 
+#endif  /*using the L2 probing attack for the benchmark*/ 
 
     cachemap_t cm = map();
     assert(cm); 
