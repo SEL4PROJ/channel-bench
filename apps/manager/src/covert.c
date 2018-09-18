@@ -317,6 +317,9 @@ int run_multi(m_env_t *env) {
     
     seL4_Send(s_ep.cptr, tag);
     
+    printf("spy is alive\n"); 
+    
+
     info = seL4_Recv(s_ep.cptr, NULL); 
     if (seL4_MessageInfo_get_label(info) != seL4_Fault_NullFault)
         return BENCH_FAILURE; 

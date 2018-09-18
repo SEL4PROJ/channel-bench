@@ -89,8 +89,9 @@ static void collect(vlist_t es, vlist_t candidates, vlist_t set) {
 
 
 cachemap_t cm_linelist(vlist_t lines) {
-
-//  printf("%d lines\n", vl_len(lines));
+#ifdef CONFIG_DEBUG_BUILD
+  printf("%d lines\n", vl_len(lines));
+#endif 
   cachemap_t cm = (cachemap_t)malloc(sizeof(struct cachemap));
   assert(cm != NULL); 
   vlist_t sets = vl_new();
@@ -123,7 +124,9 @@ cachemap_t cm_linelist(vlist_t lines) {
       collect(es, lines, set);
       while (vl_len(es))
           vl_push(set, vl_del(es, 0));
- //     printf("Set %d - %d\n", vl_len(sets), vl_len(set));
+#ifdef CONFIG_DEBUG_BUILD
+     printf("Set %d - %d\n", vl_len(sets), vl_len(set));
+#endif
       vl_push(sets, set);
   }
 
