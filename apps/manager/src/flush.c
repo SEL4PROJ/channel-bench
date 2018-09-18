@@ -113,9 +113,9 @@ static void print_ipc_result(void *record_vaddr) {
     printf("round trip IPC  after overhead is taken off: \n"); 
 
     for (int i = 0; i < IPC_RUNS; i++ ) {
-        printf(" "CCNT_FORMAT" ", rt_v->call_rt_time[i]); 
+        printf(" "CCNT_FORMAT" \n", rt_v->call_rt_time[i] - rt_v->call_reply_wait_overhead); 
     }
-    printf("\n");
+
 #ifdef CONFIG_MANAGER_PMU_COUNTER 
     /*get pmu counter value*/
     for (int i = 0; i < BENCH_PMU_COUNTERS; i++) {
