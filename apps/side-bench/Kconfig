@@ -45,6 +45,12 @@ menu   "Timing Channel Benchmarks"
                config BENCH_CACHE_FLUSH_L2_CACHES
                bool "L2 attack (x86 only)"
 
+               config BENCH_CACHE_FLUSH_L1_CACHES_ONLY
+               bool "L1D attack (only flushing)"
+
+               config BENCH_CACHE_FLUSH_ALL_CACHES_ONLY 
+               bool "probing LLC buffer (only flushing)"
+
           endchoice
               
         config BENCH_DCACHE_ATTACK 
