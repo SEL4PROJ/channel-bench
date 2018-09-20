@@ -130,7 +130,7 @@ void launch_bench_splash(m_env_t *env) {
      the INT enabled in a domain.*/
 
     flush_thread.test_num = BENCH_SPLASH_TEST_NUM; 
-    idle_thread.test_num = BENCH_SPLASH_TEST_NUM;  
+    idle_thread.test_num = BENCH_SPLASH_IDLE_NUM;  
 
     /*initing the thread*/
     printf("creating splash thread.\n"); 
@@ -151,8 +151,13 @@ void launch_bench_splash(m_env_t *env) {
     printf("launching splash thread\n");
     launch_thread(&flush_thread);
 
-    /*not launching the second thread*/
-//    launch_thread(&idle_thread); 
+#ifdef CONFIG_MANAGER_SPLASH_BENCH_SWITCH
+ 
+    /*testing the cost of context switch*/
+    printf("lanching the idle thread\n");
+    launch_thread(&idle_thread); 
+#endif
+
     printf("waiting for result\n");
     info = seL4_Recv(reply_ep.cptr, NULL);
     assert(seL4_MessageInfo_get_label(info) == seL4_Fault_NullFault); 

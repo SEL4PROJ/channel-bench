@@ -310,11 +310,12 @@ void bench_init_env(int argc, char **argv,
     args = env->args; 
 
 #ifdef CONFIG_BENCH_SPLASH_MORECORE
-    /*init the more core area for the libc to use*/
-    morecore_base = args->morecore_vaddr;
-    morecore_size = args->morecore_size; 
-    morecore_top = args->morecore_vaddr + args->morecore_size; 
-
+    if (args->morecore_size) {
+        /*only the splash bench has more core area, not the idle thread*/
+        morecore_base = args->morecore_vaddr;
+        morecore_size = args->morecore_size; 
+        morecore_top = args->morecore_vaddr + args->morecore_size; 
+    }
 #endif    
     init_simple(env);
 

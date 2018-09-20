@@ -122,6 +122,14 @@ menu    "Manager task for benchmarking tests"
         help 
              running splash-2 benchmarks 
 
+        config MANAGER_SPLASH_BENCH_SWITCH
+        bool "splash benchmarks with context switch" 
+        default n 
+        depends on MANAGER_SPLASH_BENCH 
+        help 
+             running splash-2 benchmarks together with an idle thread, testing the cost of context switch
+
+
         config MANAGER_DCACHE_ATTACK 
         bool "L1 dcache attack" 
         default n 

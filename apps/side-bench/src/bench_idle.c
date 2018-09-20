@@ -11,10 +11,18 @@
  */
 #include <autoconf.h>
 #include <stdio.h>
-
+#include <sys/mman.h>
 #include <sel4/sel4.h>
 #include "bench_types.h"
 #include "bench_common.h"
+#include "low.h"
+
+static void access_llc_buffer(void *buffer) {
+
+    for (int i = 0; i < L3_SIZE; i += L1_CACHELINE)
+        access(buffer + i); 
+}
+
 
 
 int bench_idle(bench_env_t *env) {
@@ -23,12 +31,30 @@ int bench_idle(bench_env_t *env) {
 
     bench_args_t *args = env->args; 
 
-   
+#ifdef CONFIG_MANAGER_SPLASH_BENCH_SWITCH
+
+    char *buf = (char *)mmap(NULL, L3_SIZE + 4096 * 2, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANON, -1, 0);
+    assert(buf); 
+    /*page aligned the buffer*/
+    uintptr_t buf_switch = (uintptr_t) buf; 
+    buf_switch &= ~(0xfffULL); 
+    buf_switch += 0x1000; 
+    buf = (char *) buf_switch; 
+
+#endif
+
     info = seL4_Recv(args->ep, &badge);
     assert(seL4_MessageInfo_get_label(info) == seL4_Fault_NullFault);
 
+#ifdef CONFIG_MANAGER_SPLASH_BENCH_SWITCH
+      /*constantly probing on the LLC buffer, polluting caches*/
+    while (1) {
+        access_llc_buffer(buf);            
+    }
+#else
+    
     /*starting to spin, consuming CPU cycles only*/
     while (1); 
-
+#endif 
     return BENCH_SUCCESS; 
 }

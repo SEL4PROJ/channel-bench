@@ -20,7 +20,7 @@
 #include "bench.h"
 #include "bench_helper.h"
 #include "bench_support.h"
-
+#include "low.h"
 /*the benchmark env created based on 
   the arguments passed by the root thread*/
 bench_env_t setup_env; 
@@ -49,7 +49,7 @@ static unsigned long (*splash_bench_fun[BENCH_SPLASH_FUNS])(int argc, char*argv[
 {fft_main, cholesky_main, lu_main,
 radix_main, barnes_main, fmm_main, 
 ocean_main, radiosity_main, raytrace_main,
-water_nsquared_main, water_spatial_main};
+water_nsquared_main, water_spatial_main, bench_idle};
 
 #ifdef CONFIG_PLAT_IMX6
 char *splash_fft_argv[] = {"./FFT", "-m22", "-p1", "-n32768", "-l5"};
@@ -202,8 +202,27 @@ static int run_bench_splash(bench_env_t *bench_env) {
 
     assert(test_num < BENCH_SPLASH_FUNS); 
 
+    if (test_num == BENCH_SPLASH_IDLE_NUM) 
+        return bench_idle(bench_env);  
+
     /*measuring the overhead: reading the timestamp counter*/
     measure_splash_overhead(&overhead);
+
+#ifdef CONFIG_MANAGER_SPLASH_BENCH_SWITCH
+    /*syn with the idle thread */
+    {
+        seL4_MessageInfo_t info;
+        bench_args_t *args = bench_env->args; 
+
+        info = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 1);
+        seL4_SetMR(0, 0); 
+        seL4_Send(args->ep, info);
+        
+        /*waiting for a system tick before starting the test*/
+        newTimeSlice();
+
+    }
+#endif 
 
 #ifdef CONFIG_PLAT_IMX6
     uint64_t start =  seL4_GlobalTimer(); 
