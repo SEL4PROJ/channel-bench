@@ -131,6 +131,8 @@ void launch_bench_splash(m_env_t *env) {
 
     flush_thread.test_num = BENCH_SPLASH_TEST_NUM; 
     idle_thread.test_num = BENCH_SPLASH_IDLE_NUM;  
+    /*don't allocate any untypes*/
+    idle_thread.untype_none = true; 
 
     /*initing the thread*/
     printf("creating splash thread.\n"); 

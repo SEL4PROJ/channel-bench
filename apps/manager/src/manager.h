@@ -112,6 +112,8 @@ typedef struct bench_thread {
     bench_args_t *bench_args;  
     char *name;    /*name of this thread*/ 
 
+    bool untype_none;  /*not allocating any untypes*/
+
 } bench_thread_t; 
 
 #ifdef CONFIG_MULTI_KERNEL_IMAGES
@@ -232,6 +234,9 @@ static void create_thread(bench_thread_t *t) {
     /*test number*/
     bench_args->test_num = t->test_num; 
 
+    /*untype flag*/
+    bench_args->untype_none = t->untype_none; 
+
     assert(t->simple);
 
     config = process_config_default_simple(t->simple, t->image, t->prio);
@@ -284,15 +289,17 @@ static void launch_thread(bench_thread_t *t) {
     assert(remote_args_vaddr); 
 
     sel4utils_create_word_args(string_args, argv, 1, remote_args_vaddr);
-    
-    /*create untypes with the vka belong to this process then copy*/
-    error = allocate_untyped(t->vka, t->bench_untypes);
-    assert(error == 0); 
-    error = copy_untyped(process, t->vka, t->bench_untypes, args->untyped_cptr); 
-    assert(error == 0);
-    
-    /* this is the last cap we copy - initialise the first free cap */           
-    args->first_free = args->untyped_cptr[CONFIG_BENCH_UNTYPE_COUNT - 1] + 1;                                     
+
+    if (!args->untype_none) {
+        /*create untypes with the vka belong to this process then copy*/
+        error = allocate_untyped(t->vka, t->bench_untypes);
+        assert(error == 0); 
+        error = copy_untyped(process, t->vka, t->bench_untypes, args->untyped_cptr); 
+        assert(error == 0);
+
+        /* this is the last cap we copy - initialise the first free cap */           
+        args->first_free = args->untyped_cptr[CONFIG_BENCH_UNTYPE_COUNT - 1] + 1;                                     
+    }
     /*start process*/ 
     error = sel4utils_spawn_process_v(process, t->vka, 
             t->vspace, 1, argv, 1);

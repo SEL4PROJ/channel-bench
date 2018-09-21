@@ -159,6 +159,7 @@ typedef struct {
     timer_objects_t to;
     /*the flag of an equiped timer*/
     bool timer_enabled; 
+    bool untype_none;  /*the flag of not allocating the untypes, only used by idle thread*/
 
 } bench_args_t;
 

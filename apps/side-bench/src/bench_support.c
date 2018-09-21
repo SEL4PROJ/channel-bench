@@ -309,6 +309,7 @@ void bench_init_env(int argc, char **argv,
     env->args = (void *)atol(argv[0]);
     args = env->args; 
 
+
 #ifdef CONFIG_BENCH_SPLASH_MORECORE
     if (args->morecore_size) {
         /*only the splash bench has more core area, not the idle thread*/
@@ -318,6 +319,10 @@ void bench_init_env(int argc, char **argv,
     }
 #endif    
     init_simple(env);
+
+    /*no untypes, do not create the vspace*/
+    if (args->untype_none) 
+        return; 
 
     env->allocman = init_allocator(&env->simple, &env->vka); 
     assert(env->allocman); 
