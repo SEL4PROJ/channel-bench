@@ -16,6 +16,7 @@
 #include "bench_types.h"
 #include "bench_common.h"
 #include "low.h"
+#include "l1i.h"
 
 static void access_llc_buffer(void *buffer) {
 
@@ -40,6 +41,14 @@ int bench_idle(bench_env_t *env) {
     buf_switch &= ~(0xfffULL); 
     buf_switch += 0x1000; 
     buf = (char *) buf_switch; 
+    int mask_size = I_MONITOR_MASK; 
+
+    uint64_t monitored_mask[mask_size]; 
+
+    for (int m = 0; m < mask_size; m++)
+        monitored_mask[m] = ~0LLU; 
+    
+    l1iinfo_t l1i_1 = l1i_prepare(monitored_mask);
 
 #endif
 
@@ -47,8 +56,10 @@ int bench_idle(bench_env_t *env) {
     assert(seL4_MessageInfo_get_label(info) == seL4_Fault_NullFault);
 
 #ifdef CONFIG_MANAGER_SPLASH_BENCH_SWITCH
-      /*constantly probing on the LLC buffer, polluting caches*/
+      /*constantly probing on the LLC buffer
+        and the L1-I, polluting caches*/
     while (1) {
+        l1i_prime(l1i_1);
         access_llc_buffer(buf);            
     }
 #else
