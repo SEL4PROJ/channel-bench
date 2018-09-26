@@ -159,8 +159,8 @@ enum ipc_funs{
 };
 
 #ifdef CONFIG_ARCH_X86 
-#define BENCH_PMU_BITS 0x1
-#define BENCH_PMU_COUNTERS 1
+#define BENCH_PMU_BITS 0x3f
+#define BENCH_PMU_COUNTERS 6
 #endif 
 
 #ifdef CONFIG_ARM_CORTEX_A9

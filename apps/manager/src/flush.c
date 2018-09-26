@@ -118,15 +118,17 @@ static void print_ipc_result(void *record_vaddr) {
 
 #ifdef CONFIG_MANAGER_PMU_COUNTER 
     /*get pmu counter value*/
-    for (int i = 0; i < BENCH_PMU_COUNTERS; i++) {
 
-        assert(pmu_v->pmuc[IPC_REPLY_WAIT2][i] >=
-                pmu_v->pmuc[IPC_CALL2][i]);
+    for (int j = 0; j < BENCH_PMU_COUNTERS; j++) {
+        printf("pmu event %d\n", j); 
 
-        pmu_counters[i] = pmu_v->pmuc[IPC_REPLY_WAIT2][i] - 
-            pmu_v->pmuc[IPC_CALL2][i];  
+        for (int i = 0; i < IPC_RUNS; i++ ) {
 
+            printf(" "CCNT_FORMAT" \n", rt_v->pmu_value[i][j]); 
+        }
     }
+
+
 #endif
 }
 

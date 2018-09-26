@@ -90,6 +90,8 @@ typedef struct {
     /* Raw results from benchmarking. rt only */
    volatile ccnt_t call_rt_time[IPC_RUNS];
    volatile ccnt_t call_reply_wait_overhead;
+   volatile ccnt_t pmu_value[IPC_RUNS][BENCH_PMU_COUNTERS];
+
 } ipc_rt_result_t; 
  
 

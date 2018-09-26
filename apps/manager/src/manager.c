@@ -228,10 +228,36 @@ static void init_pmu_counters(void) {
 #endif 
 
     /*haswell*/
-    //  sel4bench_set_count_event(0, 0x0280); /*ICACHE.MISSES*/
+#if 0
+     sel4bench_set_count_event(0, 0x0280); /*ICACHE.MISSES*/
+     sel4bench_set_count_event(1, 0x0185); /*ITLB_MISSES.MISS_CAUSES_A_
+                                            WALK*/
 
+    sel4bench_set_count_event(2, 0x0149); /*DTLB_STORE_MISSES.MISS_CAU
+                                           SES_A_WALK*/
+    sel4bench_set_count_event(3, 0x01ae); /*ITLB.ITLB_FLUSH*/
 
+    sel4bench_set_count_event(2, 0x00c5); /*BR_MISP_RETIRED.ALL_BRANC
+                                            HES*/
 
+    sel4bench_set_count_event(0, 0x6085); /*ITLB_MISSES.STLB_HIT*/
+#endif 
+
+#if 1
+    sel4bench_set_count_event(0, 0x0149); /*DTLB_STORE_MISSES.MISS_CAU
+                                           SES_A_WALK*/
+    sel4bench_set_count_event(1, 0x6008);  /*DTLB_LOAD_MISSES.STLB_HIT*/
+    sel4bench_set_count_event(2, 0x0185); /*ITLB_MISSES.MISS_CAUSES_A_
+                                            WALK*/
+
+    sel4bench_set_count_event(3, 0x8008); /*DTLB_LOAD_MISSES.PDE_CACH
+                                            E_MISS*/
+    sel4bench_set_count_event(4, 0x1008); /*DTLB_LOAD_MISSES.WALK_DUR
+                                           ATION*/
+    sel4bench_set_count_event(5, 0x1085);  /*ITLB_MISSES.WALK_DURATION*/
+ 
+ 
+#endif 
 
     /*skylake*/
     // sel4bench_set_count_event(0, 0x0283); /*ICACHE_64B.IFTAG_MISS*/
@@ -239,7 +265,6 @@ static void init_pmu_counters(void) {
     //     sel4bench_set_count_event(0, 0xe424); /*L2_RQSTS.ALL_CODE_RD*/
 
 
-    sel4bench_set_count_event(0, 0x2085); /*ITLB_MISSES.STLB_HIT*/
 #if 0
     /*the following event have numbers */
     sel4bench_set_count_event(0, 0x4424); /*L2_RQSTS.CODE_RD_HIT*/
