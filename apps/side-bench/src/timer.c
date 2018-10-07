@@ -21,7 +21,7 @@
 
 
 #define INTERRUPT_PERIOD_NS (1000 * NS_IN_US)
-#define TIMER_DETECT_INTERVAL_NS ( 1 * NS_IN_US)
+#define TIMER_DETECT_INTERVAL_NS (500)
 
 
 int timer_high(bench_env_t *env) {
