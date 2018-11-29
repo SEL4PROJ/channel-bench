@@ -45,6 +45,7 @@ struct bench_timer_online {
     /*online time: prevs = starts*/
     ccnt_t  prevs[CONFIG_BENCH_DATA_POINTS];
     ccnt_t  starts[CONFIG_BENCH_DATA_POINTS];
+    uint32_t sec[CONFIG_BENCH_DATA_POINTS];
 };
 
 struct bench_cache_flush {

@@ -300,7 +300,7 @@ int run_single_timer(m_env_t *env) {
 
     for (int i = BENCH_TIMING_WARMUPS; i < CONFIG_BENCH_DATA_POINTS; i++) {
 
-        printf(CCNT_FORMAT"\n", 
+        printf("%d "CCNT_FORMAT"\n", r_d->sec[i],
                 r_d->prevs[i] - r_d->starts[i]);
     }
 

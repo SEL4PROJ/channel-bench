@@ -17,12 +17,12 @@
 #include "bench_common.h"
 #include "bench_types.h"
 #include "bench_support.h"
+#include "low.h"
 
 
+#define TIMER_DETECT_INTERVAL_NS (1000)
 
-#define INTERRUPT_PERIOD_NS (1000 * NS_IN_US)
-#define TIMER_DETECT_INTERVAL_NS (500)
-
+#define SIGNAL_RANGE   9
 
 int timer_high(bench_env_t *env) {
 
@@ -30,11 +30,9 @@ int timer_high(bench_env_t *env) {
     int error; 
     seL4_CPtr timer_signal = env->ntfn.cptr; 
     seL4_Word badge = 0;  
-    ccnt_t start, end; 
     seL4_MessageInfo_t info;
-
-    uint32_t *results = malloc(sizeof (uint32_t) * CONFIG_BENCH_DATA_POINTS); 
-    assert(results); 
+    uint64_t secret; 
+    uint32_t *share_vaddr = (uint32_t*)args->shared_vaddr; 
 
     assert(args->timer_enabled); 
     
@@ -47,49 +45,43 @@ int timer_high(bench_env_t *env) {
     seL4_SetMR(0, 0); 
     seL4_Send(args->r_ep, info);
     
-    /*msg LOW: HIGH is ready*/
-    seL4_Send(args->ep, info);
-
-
     error = ltimer_reset(&env->timer.ltimer);
     assert(error == 0); 
     
-    error = ltimer_set_timeout(&env->timer.ltimer, INTERRUPT_PERIOD_NS, TIMEOUT_PERIODIC);
-    assert(error == 0); 
-    //for (int i = 0; i < CONFIG_BENCH_DATA_POINTS; i++) {
-    while(1) {
-        badge = 0; 
+    
+    /*msg LOW: HIGH is ready*/
+    seL4_Send(args->ep, info);
 
-#ifdef CONFIG_ARCH_ARM 
-        SEL4BENCH_READ_CCNT(start);  
-#else 
-        start = rdtscp_64();
-#endif 
-        /* wait for irq */
-        //seL4_Wait(timer_signal, &badge);
-        /*polling for the int until the int is received*/
+    /*actual range 11-19*/
+    secret = random() % SIGNAL_RANGE + 11;
+    error = ltimer_set_timeout(&env->timer.ltimer, secret * NS_IN_MS, TIMEOUT_RELATIVE);
+    assert(error == 0); 
+
+    /*update the secret read by low*/ 
+    *share_vaddr = secret; 
+
+   
+    for (int i = 0; i < CONFIG_BENCH_DATA_POINTS; i++) {
+        
+        /*waiting for a system tick*/
+        newTimeSlice();
+        badge = 0;
         do {
             seL4_Poll(timer_signal, &badge);
-        } while (!badge);
+            /*assuming the interrupt is received while the low is running*/
+        }  while(!badge); 
 
-        /* record result */
-#ifdef CONFIG_ARCH_ARM
-        SEL4BENCH_READ_CCNT(end);  
-#else 
-        end = rdtscp_64();
-#endif 
-//        results[i] = end - start;
         sel4platsupport_handle_timer_irq(&env->timer, badge);
-    }
-#if 0
-    printf("timer intervas are: \n"); 
+        /*actual range 11-19*/
+        secret = random() % SIGNAL_RANGE + 11;
+        /*set the timer again*/
+        error = ltimer_set_timeout(&env->timer.ltimer, secret * NS_IN_MS, TIMEOUT_RELATIVE);
+        assert(error == 0); 
 
-    for (int i = 0; i < CONFIG_BENCH_DATA_POINTS; i++) {
+        /*update the secret read by low*/ 
+        *share_vaddr = secret; 
 
-        printf("%u\n", results[i]); 
-    }
-#endif 
-    free(results); 
+       }
 
     /*waiting on ep never return*/
     seL4_Wait(args->ep, &badge);
@@ -106,6 +98,9 @@ int timer_low(bench_env_t *env) {
     seL4_MessageInfo_t info;
     bench_args_t *args = env->args; 
     struct bench_timer_online *r_addr; 
+    /*the shared address*/
+    uint32_t volatile *secret = (uint32_t *)args->shared_vaddr; 
+
 
     ccnt_t start, cur, prev; 
     
@@ -115,6 +110,7 @@ int timer_low(bench_env_t *env) {
     /*syn with HIGH*/
     info = seL4_Recv(args->ep, &badge);
     assert(seL4_MessageInfo_get_label(info) == seL4_Fault_NullFault);
+    
 
 #ifdef CONFIG_ARCH_ARM
     SEL4BENCH_READ_CCNT(start);  
@@ -122,7 +118,11 @@ int timer_low(bench_env_t *env) {
 
     start = rdtscp_64(); 
 #endif 
+
+  
     prev = start;
+
+    uint32_t prev_s = *secret; 
     for (int i = 0; i < CONFIG_BENCH_DATA_POINTS;) {
 
 #ifdef CONFIG_ARCH_ARM
@@ -133,10 +133,12 @@ int timer_low(bench_env_t *env) {
 
         /*at the begining of the current tick*/
         if (cur - prev > TIMER_DETECT_INTERVAL_NS) {
-            
             /*online time (prevs - starts)*/
             r_addr->prevs[i] = prev;
             r_addr->starts[i] = start;
+            /*prev secret affect online time (prevs - starts)*/
+            r_addr->sec[i] = prev_s;
+            prev_s = *secret;
             start = cur;
             i++;
         }
