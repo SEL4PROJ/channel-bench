@@ -297,12 +297,15 @@ int run_single_timer(m_env_t *env) {
     if (seL4_MessageInfo_get_label(info) != seL4_Fault_NullFault)
         return BENCH_FAILURE;
     printf("benchmark result ready\n");
-
+    printf("probing time start\n");
+ 
     for (int i = BENCH_TIMING_WARMUPS; i < CONFIG_BENCH_DATA_POINTS; i++) {
 
         printf("%d "CCNT_FORMAT"\n", r_d->sec[i],
                 r_d->prevs[i] - r_d->starts[i]);
     }
+    printf("probing time end\n");
+
 
     printf("done covert benchmark\n");
     return BENCH_SUCCESS;

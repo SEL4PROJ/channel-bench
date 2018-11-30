@@ -20,7 +20,7 @@
 #include "low.h"
 
 
-#define TIMER_DETECT_INTERVAL_NS (1000)
+#define TIMER_DETECT_INTERVAL_NS (1200)
 
 #define SIGNAL_RANGE   9
 
@@ -31,7 +31,7 @@ int timer_high(bench_env_t *env) {
     seL4_CPtr timer_signal = env->ntfn.cptr; 
     seL4_Word badge = 0;  
     seL4_MessageInfo_t info;
-    uint64_t secret; 
+    uint32_t secret; 
     uint32_t *share_vaddr = (uint32_t*)args->shared_vaddr; 
 
     assert(args->timer_enabled); 
@@ -54,6 +54,7 @@ int timer_high(bench_env_t *env) {
 
     /*actual range 11-19*/
     secret = random() % SIGNAL_RANGE + 11;
+    
     error = ltimer_set_timeout(&env->timer.ltimer, secret * NS_IN_MS, TIMEOUT_RELATIVE);
     assert(error == 0); 
 
@@ -70,7 +71,7 @@ int timer_high(bench_env_t *env) {
             seL4_Poll(timer_signal, &badge);
             /*assuming the interrupt is received while the low is running*/
         }  while(!badge); 
-
+        
         sel4platsupport_handle_timer_irq(&env->timer, badge);
         /*actual range 11-19*/
         secret = random() % SIGNAL_RANGE + 11;
@@ -101,8 +102,9 @@ int timer_low(bench_env_t *env) {
     /*the shared address*/
     uint32_t volatile *secret = (uint32_t *)args->shared_vaddr; 
 
-
-    ccnt_t start, cur, prev; 
+    ccnt_t  start; 
+    ccnt_t  cur; 
+    ccnt_t  prev; 
     
     /*the record address*/
     r_addr = (struct bench_timer_online *)args->record_vaddr;
@@ -119,20 +121,21 @@ int timer_low(bench_env_t *env) {
     start = rdtscp_64(); 
 #endif 
 
-  
     prev = start;
 
-    uint32_t prev_s = *secret; 
+    uint32_t volatile prev_s = *secret; 
     for (int i = 0; i < CONFIG_BENCH_DATA_POINTS;) {
+        FENCE(); 
 
 #ifdef CONFIG_ARCH_ARM
         SEL4BENCH_READ_CCNT(cur);  
 #else        
         cur = rdtscp_64();
 #endif 
+        FENCE(); 
 
         /*at the begining of the current tick*/
-        if (cur - prev > TIMER_DETECT_INTERVAL_NS) {
+        if (unlikely(cur - prev >= TIMER_DETECT_INTERVAL_NS)) {
             /*online time (prevs - starts)*/
             r_addr->prevs[i] = prev;
             r_addr->starts[i] = start;
@@ -143,6 +146,8 @@ int timer_low(bench_env_t *env) {
             i++;
         }
         prev = cur;
+        FENCE(); 
+
     }
 
     /*send result to manager, benchmark is done*/
