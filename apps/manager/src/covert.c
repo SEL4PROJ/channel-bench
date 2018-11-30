@@ -433,8 +433,11 @@ void launch_bench_covert (m_env_t *env) {
     assert(ret == 0);
     ret = vka_alloc_tcb(spy.vka, &spy.fake_tcb);
     assert(ret == 0);
-
+#ifdef CONFIG_BENCH_COVERT_TIMER 
+    trojan.prio = 101;
+#else 
     trojan.prio = 100;
+#endif 
     spy.prio = 100; 
 
     /*set the actual testing num in bench_common.h*/
