@@ -65,12 +65,12 @@ int timer_high(bench_env_t *env) {
     for (int i = 0; i < CONFIG_BENCH_DATA_POINTS; i++) {
         
         /*waiting for a system tick*/
-       // newTimeSlice();
+        newTimeSlice();
         badge = 0;
-    //    do {
-            seL4_Wait(timer_signal, &badge);
+        do {
+            seL4_Poll(timer_signal, &badge);
             /*assuming the interrupt is received while the low is running*/
-   //     }  while(!badge); 
+        }  while(!badge); 
         
         sel4platsupport_handle_timer_irq(&env->timer, badge);
         /*actual range 11-19*/
