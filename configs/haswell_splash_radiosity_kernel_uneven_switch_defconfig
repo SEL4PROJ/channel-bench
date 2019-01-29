@@ -1,7 +1,7 @@
 #
 # Automatically generated make config: don't edit
 # Project Configuration
-# Tue Sep 25 14:41:02 2018
+# Tue Jan 29 14:19:25 2019
 #
 
 #
@@ -138,6 +138,7 @@ CONFIG_APP_SIDE_BENCH=y
 # CONFIG_BENCH_COVERT is not set
 # CONFIG_MASTIK_ATTACK is not set
 CONFIG_BENCH_SPLASH_MORECORE=y
+CONFIG_BENCH_SPLASH_SWITCH_IDLE=y
 CONFIG_BENCH_SPLASH=y
 # CONFIG_BENCH_SPLASH_FFT is not set
 # CONFIG_BENCH_SPLASH_CHOLESKY is not set
