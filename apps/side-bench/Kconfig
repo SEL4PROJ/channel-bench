@@ -179,6 +179,13 @@ menu   "Timing Channel Benchmarks"
        help  
             overwrite the more core allocation configured in the lib c sys
 
+       config BENCH_SPLASH_SWITCH_IDLE
+       bool "the splash runs together with a idle thread"
+       default n 
+       depends on BENCH_SPLASH 
+       help  
+            the splash-2 benchmark shares a core with an idle thread
+
        config BENCH_SPLASH
        bool "splash-2 benchmark"
        default n 

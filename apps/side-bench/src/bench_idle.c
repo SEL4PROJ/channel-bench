@@ -55,6 +55,13 @@ int bench_idle(bench_env_t *env) {
     info = seL4_Recv(args->ep, &badge);
     assert(seL4_MessageInfo_get_label(info) == seL4_Fault_NullFault);
 
+#ifdef CONFIG_BENCH_SPLASH_SWITCH_IDLE
+    /*starting to spin, consuming CPU cycles only*/
+    while (1); 
+
+#endif 
+
+
 #ifdef CONFIG_MANAGER_SPLASH_BENCH_SWITCH
       /*constantly probing on the LLC buffer
         and the L1-I, polluting caches*/
