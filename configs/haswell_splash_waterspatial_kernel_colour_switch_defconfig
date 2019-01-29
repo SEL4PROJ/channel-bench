@@ -1,7 +1,7 @@
 #
 # Automatically generated make config: don't edit
 # Project Configuration
-# Tue Jan 29 13:55:01 2019
+# Tue Jan 29 13:55:50 2019
 #
 
 #
@@ -147,10 +147,10 @@ CONFIG_BENCH_SPLASH=y
 # CONFIG_BENCH_SPLASH_BARNES is not set
 # CONFIG_BENCH_SPLASH_FMM is not set
 # CONFIG_BENCH_SPLASH_OCEAN is not set
-CONFIG_BENCH_SPLASH_RADIOSITY=y
+# CONFIG_BENCH_SPLASH_RADIOSITY is not set
 # CONFIG_BENCH_SPLASH_RAYTRACE is not set
 # CONFIG_BENCH_SPLASH_WATER_NSQUARED is not set
-# CONFIG_BENCH_SPLASH_WATER_SPATIAL is not set
+CONFIG_BENCH_SPLASH_WATER_SPATIAL=y
 
 #
 # Manager task for benchmarking tests
