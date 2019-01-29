@@ -1,7 +1,7 @@
 #
 # Automatically generated make config: don't edit
 # Project Configuration
-# Tue Jan 29 14:29:57 2019
+# Tue Jan 29 14:32:47 2019
 #
 
 #
@@ -145,9 +145,9 @@ CONFIG_BENCH_SPLASH=y
 # CONFIG_BENCH_SPLASH_CHOLESKY is not set
 # CONFIG_BENCH_SPLASH_LU is not set
 # CONFIG_BENCH_SPLASH_RADIX is not set
-# CONFIG_BENCH_SPLASH_BARNES is not set
+CONFIG_BENCH_SPLASH_BARNES=y
 # CONFIG_BENCH_SPLASH_FMM is not set
-CONFIG_BENCH_SPLASH_OCEAN=y
+# CONFIG_BENCH_SPLASH_OCEAN is not set
 # CONFIG_BENCH_SPLASH_RADIOSITY is not set
 # CONFIG_BENCH_SPLASH_RAYTRACE is not set
 # CONFIG_BENCH_SPLASH_WATER_NSQUARED is not set
