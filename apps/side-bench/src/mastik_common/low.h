@@ -318,6 +318,19 @@ static inline void  newTimeSlice(void){
   }
 }
 
+static inline void  newTimeTick(void){
+  
+  uint32_t volatile  prev, cur; 
+  SEL4BENCH_READ_CCNT(prev);  
+  for (;;) {
+      SEL4BENCH_READ_CCNT(cur);  
+    if (cur - prev > 300)
+      return;
+    prev = cur;
+  }
+}
+
+
 static int __attribute__((noinline)) test(void *pp, 
         int recv, enum timing_api api_no, 
         kernel_timing_caps_t *caps) {
@@ -456,6 +469,18 @@ static inline void  newTimeSlice(void){
   for (;;) {
     uint32_t volatile cur = rdtscp();
     if (cur - prev > TS_THRESHOLD)
+      return;
+    prev = cur;
+  }
+}
+
+/*return when a big jump of the time stamp counter is detected*/
+static inline void  newTimeTick(void){
+  asm("");
+  uint32_t volatile  prev = rdtscp();
+  for (;;) {
+    uint32_t volatile cur = rdtscp();
+    if (cur - prev > 300)
       return;
     prev = cur;
   }

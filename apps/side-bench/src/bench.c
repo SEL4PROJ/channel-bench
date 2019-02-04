@@ -217,11 +217,15 @@ static int run_bench_splash(bench_env_t *bench_env) {
         info = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 1);
         seL4_SetMR(0, 0); 
         seL4_Send(args->ep, info);
-        
         /*waiting for a system tick before starting the test*/
         newTimeSlice();
 
+       
     }
+
+#else 
+    newTimeTick();
+
 #endif 
 
 #ifdef CONFIG_PLAT_IMX6
