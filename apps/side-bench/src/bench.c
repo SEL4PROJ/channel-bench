@@ -217,10 +217,16 @@ static int run_bench_splash(bench_env_t *bench_env) {
         info = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 1);
         seL4_SetMR(0, 0); 
         seL4_Send(args->ep, info);
+#ifdef CONFIG_KERNEL_SWITCH_COST_BENCH 
+ 
+        /*just waiting to be interrupted by kernel*/
+        newTimeTick();
+#else 
         /*waiting for a system tick before starting the test*/
         newTimeSlice();
 
-       
+#endif 
+        
     }
 
 #else 
@@ -228,6 +234,12 @@ static int run_bench_splash(bench_env_t *bench_env) {
 
 #endif 
 
+#ifdef CONFIG_KERNEL_SWITCH_COST_BENCH 
+ 
+    /* flag of measuring the domain switching cost*/
+    seL4_SetMR(100, 0x12345678); 
+#endif 
+ 
 #ifdef CONFIG_PLAT_IMX6
     uint64_t start =  seL4_GlobalTimer(); 
     splash_bench_fun[test_num](
@@ -237,6 +249,7 @@ static int run_bench_splash(bench_env_t *bench_env) {
     uint64_t end = seL4_GlobalTimer(); 
     record_vaddr->overall  =  end - start; 
 #else 
+
 
     uint64_t start = sel4bench_get_cycle_count(); 
 

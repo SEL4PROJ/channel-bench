@@ -57,8 +57,18 @@ int bench_idle(bench_env_t *env) {
 
 #ifdef CONFIG_BENCH_SPLASH_SWITCH_IDLE
     /*starting to spin, consuming CPU cycles only*/
-    while (1); 
+    while (1) {
 
+#ifdef CONFIG_KERNEL_SWITCH_COST_BENCH 
+ 
+        /* flag of measuring the domain switching cost*/
+        //        seL4_SetMR(100, 0x12345678); 
+
+        seL4_Yield(); 
+#else 
+        ;
+#endif 
+    }
 #endif 
 
 

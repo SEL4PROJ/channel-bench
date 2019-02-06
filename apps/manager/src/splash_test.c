@@ -53,6 +53,41 @@ static void print_result (m_env_t *env) {
 
     printf("Total cost: %lld\n", takes); 
 #endif 
+
+
+#ifdef CONFIG_KERNEL_SWITCH_COST_BENCH 
+
+    int count; 
+    /*reading what has been recorded by kernel, currently 100 paris*/
+    printf("kernel switching cost: \n"); 
+    for (count = 0; count < BENCH_CACHE_FLUSH_RUNS; count++) {
+
+        /*the first log number is the cost of switching from the attack thread
+          to the idle thread
+         the second log number is the cost of switching back from the
+         idle thread to the attack thread
+         skip the cost of switching from the idle thread*/
+        seL4_BenchmarkGetKSCostPair(count); 
+        /*the cost = measure*/
+        printf(" "CCNT_FORMAT" \n", seL4_GetMR(2)); 
+    }
+    
+    printf("kernel measurement overhead: \n"); 
+    for (count = 0; count < BENCH_CACHE_FLUSH_RUNS; count++) {
+
+        /*the first log number is the cost of switching from the attack thread
+          to the idle thread
+         the second log number is the cost of switching back from the
+         idle thread to the attack thread
+         skip the cost of switching from the idle thread*/
+        seL4_BenchmarkGetKSCostPair(count); 
+        /*the overhead*/
+        printf(" "CCNT_FORMAT" \n", seL4_GetMR(3)); 
+
+    }
+
+#endif 
+
 }
 
 void launch_bench_splash(m_env_t *env) {
