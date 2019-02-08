@@ -59,6 +59,10 @@ static int copy_kcaps(bench_ki_t *kimage) {
 static int destroy_ki(m_env_t *env, bench_ki_t *kimage) {
     cspacepath_t src;
     int ret; 
+    ccnt_t overhead, start, end;
+    measure_overhead(&overhead);
+
+
     vka_cspace_make_path(&env->vka, kimage->ki.cptr, &src);  
   
     /*revoke first*/ 
@@ -66,7 +70,14 @@ static int destroy_ki(m_env_t *env, bench_ki_t *kimage) {
     if (ret) 
         return ret; 
 
-    return  vka_cnode_delete(&src); 
+    start = sel4bench_get_cycle_count(); 
+    ret =   vka_cnode_delete(&src); 
+    end = sel4bench_get_cycle_count(); 
+
+    printf("cost of the system call on kernel image deletion:\n");
+    printf(" "CCNT_FORMAT" \n", (end - start) - overhead); 
+
+    return ret; 
  
 }
 
@@ -78,13 +89,23 @@ static int destroy_ki_via_kmem(m_env_t *env, bench_ki_t *kimage) {
      then delete the kimage*/
     cspacepath_t src;
     int ret; 
+    ccnt_t overhead, start, end;
+    measure_overhead(&overhead);
 
+    printf("cost of the system call on kernel memory deletion:\n");
     for (int i = 0; i < kimage->k_size; i++)  {
         vka_cspace_make_path(&env->vka, kimage->kmems[i].cptr, &src);  
+        
+        start = sel4bench_get_cycle_count(); 
+        ret =   vka_cnode_delete(&src); 
+        end = sel4bench_get_cycle_count(); 
 
-        ret = vka_cnode_delete(&src); 
         if (ret) 
             return ret; 
+        
+        printf(" "CCNT_FORMAT" \n", (end - start) - overhead); 
+
+
     }
 
     return  destroy_ki(env, kimage); 

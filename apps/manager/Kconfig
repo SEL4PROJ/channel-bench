@@ -107,7 +107,7 @@ menu    "Manager task for benchmarking tests"
         depends on APP_MANAGER 
         help  
              testing the multikernel feature, including creation, kernel switch, deletion, multicore, etc. 
-
+        
         config MANAGER_COVERT_BENCH 
         bool "covert channel benchmarks" 
         default n 

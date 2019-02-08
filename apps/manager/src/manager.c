@@ -327,9 +327,6 @@ static void *main_continued (void* arg) {
     error = sel4platsupport_init_default_timer_caps(&env.vka, &env.vspace, &env.simple, &env.to);
     assert(error == 0); 
     
-    /*init the benchmarking functions*/
-    sel4bench_init();
-
 #ifdef CONFIG_MANAGER_PMU_COUNTER 
     init_pmu_counters(); 
 #endif 
@@ -359,6 +356,35 @@ static void *main_continued (void* arg) {
 }
 
 #ifdef CONFIG_MULTI_KERNEL_IMAGES 
+
+
+static int destroy_ki(m_env_t *env, bench_ki_t *kimage) {
+    cspacepath_t src;
+    int ret; 
+    ccnt_t overhead, start, end;
+    measure_overhead(&overhead);
+
+
+
+    vka_cspace_make_path(&env->vka, kimage->ki.cptr, &src);  
+  
+    /*revoke first*/ 
+    ret = vka_cnode_revoke(&src); 
+    if (ret) 
+        return ret; 
+
+    start = sel4bench_get_cycle_count(); 
+    ret =   vka_cnode_delete(&src); 
+    end = sel4bench_get_cycle_count(); 
+
+    printf("cost of the system call on kernel deletion:\n");
+    printf(" "CCNT_FORMAT" \n", (end - start) - overhead); 
+
+    return ret; 
+
+ 
+}
+
 /*creak kernel images*/
 static void create_kernel_pd(m_env_t *env) {
 
@@ -380,6 +406,7 @@ static void create_kernel_pd(m_env_t *env) {
 
     }
     printf("done creating ki\n");
+
     /*the default kernel image created at bootup*/ 
     env->kernel = ik_image; 
 }
@@ -402,6 +429,10 @@ int main (void) {
     simple_default_init_bootinfo(&env.simple, info); 
 #endif
     env.bootinfo = info; 
+    
+    /*init the benchmarking functions*/
+    sel4bench_init();
+
 
 #ifdef CONFIG_LIB_SEL4_CACHECOLOURING
     /*allocator, vka, and vspace*/

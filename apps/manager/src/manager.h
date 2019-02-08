@@ -28,6 +28,7 @@
 /*common definitions*/
 #include "bench_common.h"
 #include "bench_types.h"
+#include "bench_helper.h"
 
 #define MANAGER_MORECORE_SIZE  (16 * 1024 * 1024)
 
@@ -125,8 +126,11 @@ static int create_ki(m_env_t *env, vka_t *vka, bench_ki_t *kimage) {
     seL4_CPtr *kmem_caps; 
     seL4_MessageInfo_t tag, output_tag;
     int ret; 
-    
+    ccnt_t overhead, start, end; 
+
+
     kimage->k_size = k_size; 
+    measure_overhead(&overhead);
 
     kimage->kmems = malloc(sizeof (vka_object_t) * k_size); 
     if (!kimage->kmems) 
@@ -158,7 +162,6 @@ static int create_ki(m_env_t *env, vka_t *vka, bench_ki_t *kimage) {
             return BENCH_FAILURE; 
         kmem_caps[mems] = kimage->kmems[mems].cptr; 
     }
-
     /*calling kernel clone with the kernel image and master kernel*/
 #ifdef CONFIG_ARCH_X86
     tag = seL4_MessageInfo_new(X86KernelImageClone, 0, 1, k_size + 1);
@@ -172,13 +175,23 @@ static int create_ki(m_env_t *env, vka_t *vka, bench_ki_t *kimage) {
     for (int mems = 0; mems < k_size; mems++) {
         seL4_SetMR(mems + 1, kmem_caps[mems]);
     }
+    start = sel4bench_get_cycle_count(); 
 
     output_tag = seL4_Call(ki->cptr, tag); 
+   
+    end = sel4bench_get_cycle_count(); 
+    
     ret = seL4_MessageInfo_get_label(output_tag);
-    if (ret) 
+    
+      if (ret) 
         return BENCH_FAILURE; 
 
+
     printf("the kernel image clone is done \n");
+    printf("cost of the system call on kernel clone:\n");
+    printf(" "CCNT_FORMAT" \n", (end - start) - overhead); 
+
+
     free(kmem_caps); 
 
     return BENCH_SUCCESS;
