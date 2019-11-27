@@ -13,8 +13,6 @@
 #include "../mastik_common/low.h"
 #include "../ipc_test.h"
 
-#define RANDOM_TLB_ENTIRES
-
 #define TLB_ENTRIES  128 
 #ifdef RANDOM_TLB_ENTRIES 
 #define ATTACK_PAGES  (128 * 5)

@@ -27,7 +27,7 @@ static void access_buffer(char *buffer, uint32_t sets) {
 
     uint32_t offset; 
 
-    for (int i = 0; i < sets; i++) {
+    for (int i = 0; i <= sets; i++) {
         for (int j = 0; j < L1_ASSOCIATIVITY; j++) { 
             offset = i * L1_CACHELINE + j * L1_STRIDE; 
             access(buffer + offset);
@@ -65,7 +65,7 @@ int l1_trojan(bench_covert_t *env) {
 
      /*waiting for a system tick*/
       newTimeSlice();
-      secret = random() % (L1_SETS + 1);
+      secret = random() % L1_SETS;
      
       access_buffer(data, secret);
       

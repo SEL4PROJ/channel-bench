@@ -170,13 +170,13 @@ int l1i_trojan(bench_covert_t *env) {
   
 
 for (int i = 0; i < CONFIG_BENCH_DATA_POINTS; i++) {
-      secret = random() % (total_sec + 1); 
+      secret = random() % total_sec; 
       
       /*waiting for a system tick*/
       newTimeSlice();
      
       monitored_sets = 0ull;
-      for (int n = 0; n < secret; n++) 
+      for (int n = 0; n <= secret; n++) 
           monitored_sets |= 1ull << n;
 
       /*set up the l1i buffer according to the monitored sets*/
