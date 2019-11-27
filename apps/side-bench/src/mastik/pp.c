@@ -31,30 +31,6 @@ void pp_prime(pp_t pp, int reps) {
 
 #define str(x) #x
 #define xstr(x) str(x)
-/*probing on the probe list, return the total cost in time
- used by cache flush benchmark*/
-uint32_t pp_probe_flush(pp_t pp) {
-
-    if (pp == NULL)
-        return 0;
-    void *p = (void *)pp;
-    uint32_t s, e; 
-    
-    s = rdtscp();
-    do {
-  
-#ifndef CONFIG_BENCH_CACHE_FLUSH_READ 
-        *(uint32_t*) ((uint32_t*)p + 4 ) = 0xff;
-#endif 
-        p = LNEXT(p);
-        asm volatile("" ::"r"(p):"memory");
-   } while (p != (void *) pp);
-    
-    e = rdtscp(); 
-
-    return e - s; 
-}
-
 
 int pp_probe(pp_t pp) {
   if (pp == NULL)

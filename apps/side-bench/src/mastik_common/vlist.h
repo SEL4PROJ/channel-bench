@@ -15,7 +15,6 @@ void *vl_del(vlist_t vl, int ind);
 inline int vl_len(vlist_t vl);
 void vl_insert(vlist_t vl, int ind, void *dat);
 
-
 //---------------------------------------------
 // Implementation details
 //---------------------------------------------

@@ -83,7 +83,8 @@ typedef struct bench_thread {
     vka_object_t ep;               /*communication between trojan & spy*/ 
     vka_object_t reply_ep;         /*reply manager*/
     vka_object_t notification_ep;  /*using for seL4_Poll*/       
-   
+    vka_object_t fake_tcb;        /*syscalls to create timing channel*/
+
     vka_t *vka;              /*kernel object allocator*/
     vka_t *ipc_vka;          /*used for endpoint*/
     vka_t *root_vka;         /*vka used by root task*/ 

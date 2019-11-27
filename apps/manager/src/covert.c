@@ -29,17 +29,15 @@
 
 #ifdef  CONFIG_MANAGER_COVERT_BENCH
 
-/*start of the elf file*/
-extern char __executable_start;
-
 /*the benchmarking enviornment for two threads*/
 static bench_thread_t trojan, spy;
 
 /*ep for syn and reply*/
-static vka_object_t syn_ep, t_ep, s_ep; 
+static vka_object_t syn_ep, t_ep, s_ep;
 
-/*init covert bench for single core*/
-void init_single(m_env_t *env) {
+
+/*init covert bench thread then letting them run*/
+void init_timing_threads(m_env_t *env) {
 
     uint32_t n_p = (sizeof (struct bench_l1) / BENCH_PAGE_SIZE) + 1;
 
@@ -50,6 +48,11 @@ void init_single(m_env_t *env) {
 #ifdef CONFIG_BENCH_COVERT_TIMER 
     n_p = (sizeof (struct bench_timer_online) / BENCH_PAGE_SIZE) + 1;
 #endif 
+
+#ifdef CONFIG_BENCH_COVERT_LLC_KERNEL 
+    n_p = (sizeof (bench_llc_kernel_probe_result_t) / BENCH_PAGE_SIZE) + 1;
+#endif 
+
     uint32_t share_phy; 
     int error; 
 
@@ -84,17 +87,29 @@ void init_single(m_env_t *env) {
     create_huge_pages(&trojan, BENCH_MORECORE_HUGE_SIZE); 
     create_huge_pages(&spy, BENCH_MORECORE_HUGE_SIZE); 
 #endif 
-     
-    /*copy the notification cap*/ 
+
+    /*notification ep*/
     trojan.bench_args->notification_ep = 
         sel4utils_copy_cap_to_process(&trojan.process, 
                 trojan.vka, trojan.notification_ep.cptr);
     assert(trojan.bench_args->notification_ep); 
 
-    spy.bench_args->notification_ep= 
+    spy.bench_args->notification_ep=  
         sel4utils_copy_cap_to_process(&spy.process, 
                 spy.vka, spy.notification_ep.cptr);
     assert(spy.bench_args->notification_ep); 
+
+    /*fake tcb*/
+    trojan.bench_args->fake_tcb = 
+        sel4utils_copy_cap_to_process(&trojan.process, 
+                trojan.vka, trojan.fake_tcb.cptr);
+    assert(trojan.bench_args->fake_tcb);
+
+    spy.bench_args->fake_tcb = 
+        sel4utils_copy_cap_to_process(&spy.process, 
+                spy.vka, spy.fake_tcb.cptr);
+    assert(spy.bench_args->fake_tcb);
+
 
     /*lanuch the benchmarking thread*/
     launch_thread(&trojan); 
@@ -133,7 +148,7 @@ int run_single_l1(m_env_t *env) {
 
         /*print out the pmu counter one by one */
         printf("pmu counter %d start\n",  counter); 
-        for (int i = 0; i < CONFIG_BENCH_DATA_POINTS; i++) {
+        for (int i = BENCH_TIMING_WARMUPS; i < CONFIG_BENCH_DATA_POINTS; i++) {
             printf("%d %u\n", r_d->sec[i], r_d->pmu[i][counter]);
         }
         printf("pmu counter %d end\n", counter);
@@ -145,44 +160,64 @@ int run_single_l1(m_env_t *env) {
 }
 
 
-int run_single_llc_kernel(m_env_t *env) {
+int run_covert_llc_kernel(m_env_t *env) {
 
+    bench_llc_kernel_probe_result_t *probe_result = NULL; 
+
+    ccnt_t attack_start;
     seL4_MessageInfo_t info; 
-    seL4_MessageInfo_t tag = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 0); 
-    printf("start covert benchmark, single core, LLC through a shared kernel with seL4_Poll\n"); 
+    seL4_MessageInfo_t tag;
+    int lines = 0; 
+    enum timing_api seq; 
 
-    printf("Starting L3 spy setup\n");
-    seL4_Send(s_ep.cptr, tag);
     info = seL4_Recv(s_ep.cptr, NULL);
     if (seL4_MessageInfo_get_label(info) != seL4_Fault_NullFault)
         return BENCH_FAILURE;
 
-    printf("Starting L3 Trojan setup\n");
+    printf("spy is ready\n");
+
+    tag = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 1);
+    
+    attack_start = rdtscp_64();
+    
+    seL4_SetMR(0, attack_start);
     seL4_Send(t_ep.cptr, tag);
 
-    info = seL4_Recv(t_ep.cptr, NULL);
-    if (seL4_MessageInfo_get_label(info) != seL4_Fault_NullFault)
-        return BENCH_FAILURE;
-
-    printf("Starting test 1\n");
+    seL4_SetMR(0, attack_start);
     seL4_Send(s_ep.cptr, tag);
-    seL4_Send(t_ep.cptr, tag);
+
+    printf("waiting for benchmark result\n");
+    
     info = seL4_Recv(s_ep.cptr, NULL);
     if (seL4_MessageInfo_get_label(info) != seL4_Fault_NullFault)
         return BENCH_FAILURE;
-    info = seL4_Recv(t_ep.cptr, NULL);
-    if (seL4_MessageInfo_get_label(info) != seL4_Fault_NullFault)
-        return BENCH_FAILURE;
 
-    printf("Starting test 2\n");
-    seL4_Send(s_ep.cptr, tag);
-    seL4_Send(t_ep.cptr, tag);
-    info = seL4_Recv(s_ep.cptr, NULL);
-    if (seL4_MessageInfo_get_label(info) != seL4_Fault_NullFault)
-        return BENCH_FAILURE;
-    info = seL4_Recv(t_ep.cptr, NULL);
-    if (seL4_MessageInfo_get_label(info) != seL4_Fault_NullFault)
-        return BENCH_FAILURE;
+    printf("benchmark result ready\n");
+    
+    probe_result = (bench_llc_kernel_probe_result_t *)env->record_vaddr;
+    printf("probing time start\n");
+
+
+    for (int i = BENCH_TIMING_WARMUPS; i < CONFIG_BENCH_DATA_POINTS; i++) {
+
+        seq = probe_result->probe_seq[i]; 
+
+        printf("seq %d misses:", seq); 
+
+
+        for (int j = 0; j < timing_api_num; j++) {
+            printf(" %d", probe_result->probe_results[i][j]);
+ 
+            lines += probe_result->probe_results[i][j]; 
+        }
+
+        printf(" total misses: %d", lines);
+
+        printf("\n"); 
+
+        lines = 0; 
+    }
+    printf("Probing end\n");
 
     printf("done covert benchmark\n");
     return BENCH_SUCCESS; 
@@ -209,7 +244,7 @@ int run_single_llc_kernel_schedule(m_env_t *env) {
     r_d =  (struct bench_kernel_schedule *)env->record_vaddr;
     printf("online time start\n");
 
-    for (int i = 3; i < CONFIG_BENCH_DATA_POINTS; i++) {
+    for (int i = BENCH_TIMING_WARMUPS; i < CONFIG_BENCH_DATA_POINTS; i++) {
 
         printf("%d "CCNT_FORMAT"\n", 
                 r_d->prev_sec[i], r_d->prevs[i] - r_d->starts[i]);
@@ -218,14 +253,11 @@ int run_single_llc_kernel_schedule(m_env_t *env) {
     printf("online time end\n");
 
     printf("offline time start\n");
-    for (int i = 3; i < CONFIG_BENCH_DATA_POINTS; i++) {
+    for (int i = BENCH_TIMING_WARMUPS; i < CONFIG_BENCH_DATA_POINTS; i++) {
         printf("%d "CCNT_FORMAT"\n", 
                 r_d->cur_sec[i], r_d->curs[i] - r_d->prevs[i]);
     }
     printf("offline time end\n");
-
-    /*printf("Trojan: %llu %llu %llu -> %llu %llu %llu\n", r_d->prevs[i], r_d->starts[i], r_d->curs[i], r_d->prevs[i] - r_d->starts[i], r_d->curs[i] - r_d->prevs[i], r_d->curs[i] - r_d->starts[i]);
-     */
 
     printf("done covert benchmark\n");
     return BENCH_SUCCESS;
@@ -246,7 +278,7 @@ int run_single_timer(m_env_t *env) {
         return BENCH_FAILURE;
     printf("benchmark result ready\n");
 
-    for (int i = 3; i < CONFIG_BENCH_DATA_POINTS; i++) {
+    for (int i = BENCH_TIMING_WARMUPS; i < CONFIG_BENCH_DATA_POINTS; i++) {
 
         printf(CCNT_FORMAT"\n", 
                 r_d->prevs[i] - r_d->starts[i]);
@@ -254,29 +286,6 @@ int run_single_timer(m_env_t *env) {
 
     printf("done covert benchmark\n");
     return BENCH_SUCCESS;
-}
-
-
-/*running the single core attack*/ 
-int run_single(m_env_t *env) {
-
-    printf("starting covert channel benchmark\n");
-
-    printf("data points %d with random sequence\n", CONFIG_BENCH_DATA_POINTS);
-
-#ifdef CONFIG_BENCH_COVERT_LLC_KERNEL 
-    return run_single_llc_kernel(env); 
-#endif
-
-#ifdef CONFIG_BENCH_COVERT_LLC_KERNEL_SCHEDULE
-    return run_single_llc_kernel_schedule(env); 
-#endif 
-
-#ifdef CONFIG_BENCH_COVERT_TIMER 
-    return run_single_timer(env); 
-#endif
-
-    return run_single_l1(env); 
 }
 
 int run_multi(m_env_t *env) {
@@ -306,24 +315,36 @@ int run_multi(m_env_t *env) {
     return BENCH_SUCCESS; 
 
 }
-/*init the covert benchmark for multicore attack*/
-void init_multi(m_env_t *env) {
 
 
-    spy.affinity  = 0;
-    trojan.affinity = 1; 
 
-    /*one trojan, one spy thread*/ 
-    create_thread(&trojan); 
-    create_thread(&spy); 
 
-    launch_thread(&trojan); 
-    launch_thread(&spy); 
+/*running the single core attack*/ 
+int run_timing_threads(m_env_t *env) {
 
-    if (run_multi(env) != BENCH_SUCCESS) 
-        printf("running multi benchmark failed\n");
+    printf("starting covert channel benchmark\n");
 
+    printf("data points %d with random sequence\n", CONFIG_BENCH_DATA_POINTS);
+
+#ifdef CONFIG_BENCH_COVERT_LLC_KERNEL
+    return run_covert_llc_kernel(env); 
+#endif 
+
+#ifdef CONFIG_BENCH_COVERT_LLC_KERNEL_SCHEDULE
+    return run_single_llc_kernel_schedule(env); 
+#endif 
+
+#ifdef CONFIG_BENCH_COVERT_TIMER 
+    return run_single_timer(env); 
+#endif
+
+#ifdef CONFIG_MANAGER_COVERT_MULTI 
+    return run_multi(env); 
+#endif 
+
+    return run_single_l1(env); 
 }
+
 
 /*entry point of covert channel benchmark*/
 void launch_bench_covert (m_env_t *env) {
@@ -340,9 +361,9 @@ void launch_bench_covert (m_env_t *env) {
 #else 
     /*by default the kernel is shared*/
     trojan.kernel = spy.kernel = env->kernel;
-#endif 
+#endif  
 
-#ifdef CONFIG_MANAGER_MITIGATION 
+#if defined (CONFIG_MANAGER_MITIGATION) || defined (CONFIG_BENCH_COVERT_LLC_KERNEL)
     trojan.vka = &env->vka_colour[0]; 
     spy.vka = &env->vka_colour[1]; 
     env->ipc_vka = &env->vka_colour[0];
@@ -350,6 +371,7 @@ void launch_bench_covert (m_env_t *env) {
     spy.vka = trojan.vka = &env->vka; 
     env->ipc_vka = &env->vka;
 #endif
+
 
     spy.root_vka = trojan.root_vka = &env->vka;
 
@@ -379,7 +401,13 @@ void launch_bench_covert (m_env_t *env) {
     
     ret = vka_alloc_notification(spy.vka, &spy.notification_ep); 
     assert(ret == 0); 
- 
+
+    /*Create TCB objects for syscall timing channel*/
+    ret = vka_alloc_tcb(trojan.vka, &trojan.fake_tcb);
+    assert(ret == 0);
+    ret = vka_alloc_tcb(spy.vka, &spy.fake_tcb);
+    assert(ret == 0);
+
     trojan.prio = 100;
     spy.prio = 100; 
 
@@ -390,15 +418,15 @@ void launch_bench_covert (m_env_t *env) {
     spy.test_num = BENCH_COVERT_SPY;
     trojan.test_num = BENCH_COVERT_TROJAN; 
 
-#ifdef CONFIG_BENCH_COVERT_SINGLE
-    init_single(env);
-    /*run bench*/
-    ret = run_single(env);
-    assert(ret == BENCH_SUCCESS);
-#endif /*covert single*/ 
-
-#ifdef CONFIG_MANAGER_COVERT_MULTI 
-    init_multi(env); 
+#if CONFIG_MAX_NUM_NODES > 1
+    spy.affinity  = 0;
+    trojan.affinity = 1; 
 #endif 
+
+    init_timing_threads(env);
+
+    ret = run_timing_threads(env);
+    assert(ret == BENCH_SUCCESS);
+
 }
 #endif  /*CONFIG_MANAGER_COVERT_BENCH*/

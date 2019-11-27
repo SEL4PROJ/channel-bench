@@ -31,12 +31,12 @@ static int (*covert_bench_fun[BENCH_COVERT_FUNS])(bench_env_t *) = {NULL,
     NULL, NULL, 
     l1_trojan, l1_spy, 
     l1i_trojan, l1i_spy,
-    l3_trojan, l3_spy, 
     l3_kd_trojan, l3_kd_spy,
     tlb_trojan, tlb_spy,
     btb_trojan, btb_spy,
     l3_trojan_single, l3_spy_single,
     bp_trojan, bp_spy,
+    l3_trojan, l3_spy,
 #ifdef CONFIG_BENCH_COVERT_TIMER
     timer_high, timer_low,
 #endif 
@@ -128,7 +128,6 @@ int run_bench_cache_flush(bench_env_t *bench_env) {
     assert(flush_bench_fun[test_num - BENCH_CACHE_FLUSH_FUN_START]); 
 
     return flush_bench_fun[test_num - BENCH_CACHE_FLUSH_FUN_START](bench_env);
-
 }
 
 
@@ -198,7 +197,7 @@ int main (int argc, char **argv) {
 #ifdef CONFIG_BENCH_IPC
     run_bench_ipc(&bench_env); 
 #endif 
-#ifdef CONFIG_BENCH_COVERT_SINGLE
+#ifdef CONFIG_BENCH_COVERT
     run_bench_covert(&bench_env); 
 #endif
 

@@ -106,9 +106,16 @@
 /*dividing cache colours into security domains*/
 #define CC_NUM_DOMAINS     2
 
-#ifdef CONFIG_ARCH_X86 
+#ifdef CONFIG_ARCH_X86
+
+/*spliting according to the LLC cache colours */
+#if CONFIG_MAX_NUM_NODES > 1
+#define CC_DIV             16
+#else  
 /*spliting according to the L2 cache colours, total 8 colours*/
 #define CC_DIV             4
+#endif 
+
 #endif  /*x86*/
 
 #ifdef CONFIG_PLAT_HIKEY
@@ -166,8 +173,6 @@ enum ipc_funs{
 
 #define BENCH_MORECORE_HUGE_SIZE  (16 * 1024 * 1024) /* huge pages created by master for benchmarking thread */
 
-
-
 #define BENCH_PAGE_SIZE  4096
 
 /*opt for running covert channel bench*/
@@ -181,22 +186,24 @@ enum ipc_funs{
 #define BENCH_COVERT_L1D_SPY       8 
 #define BENCH_COVERT_L1I_TROJAN    9 
 #define BENCH_COVERT_L1I_SPY       10
-#define BENCH_COVERT_LLC_KERNEL_TROJAN   11 
-#define BENCH_COVERT_LLC_KERNEL_SPY      12 
-#define BENCH_COVERT_LLC_KD_TROJAN       13   /*kernel determinisitic scheduling*/
-#define BENCH_COVERT_LLC_KD_SPY          14 
-#define BENCH_COVERT_TLB_TROJAN          15 
-#define BENCH_COVERT_TLB_SPY             16
-#define BENCH_COVERT_BRANCH_TROJAN       17 
-#define BENCH_COVERT_BRANCH_SPY          18
-#define BENCH_COVERT_LLC_SINGLE_TROJAN   19 
-#define BENCH_COVERT_LLC_SINGLE_SPY      20
+#define BENCH_COVERT_LLC_KD_TROJAN       11   /*kernel determinisitic scheduling*/
+#define BENCH_COVERT_LLC_KD_SPY          12 
+#define BENCH_COVERT_TLB_TROJAN          13 
+#define BENCH_COVERT_TLB_SPY             14
+#define BENCH_COVERT_BRANCH_TROJAN       15 
+#define BENCH_COVERT_BRANCH_SPY          16
+#define BENCH_COVERT_LLC_SINGLE_TROJAN   17 
+#define BENCH_COVERT_LLC_SINGLE_SPY      18
 
-#define BENCH_COVERT_BP_TROJAN		 21
-#define BENCH_COVERT_BP_SPY              22
+#define BENCH_COVERT_BP_TROJAN		 19
+#define BENCH_COVERT_BP_SPY              20
+#define BENCH_COVERT_LLC_KERNEL_TROJAN   21 
+#define BENCH_COVERT_LLC_KERNEL_SPY      22
 #define BENCH_COVERT_TIMER_HIGH          23 
 #define BENCH_COVERT_TIMER_LOW           24
+
 #define BENCH_COVERT_FUNS                25
+
 
 
 #define BENCH_CACHE_FLUSH_FUN_START      100
@@ -234,7 +241,12 @@ enum ipc_funs{
 #define BENCH_FUNC_RECEIVER              80 
 #define BENCH_FUNC_SENDER                81 
 
+#ifdef CONFIG_BENCH_COVERT_LLC_KERNEL
+#define BENCH_COVERT_MSG_LEN  4 /*msg len for init env*/
+#else
 #define BENCH_COVERT_MSG_LEN  3 /*msg len for init env*/
+#endif
+
 /*matching the test number according to the config*/ 
 #ifdef CONFIG_BENCH_COVERT_L1D 
 #define BENCH_COVERT_TROJAN    BENCH_COVERT_L1D_TROJAN 
@@ -248,11 +260,6 @@ enum ipc_funs{
 #define BENCH_COVERT_TROJAN    BENCH_COVERT_L2_TROJAN 
 #define BENCH_COVERT_SPY       BENCH_COVERT_L2_SPY 
 #endif 
-#ifdef CONFIG_BENCH_COVERT_LLC_KERNEL  /*LLC channel through shared kernel*/
-#define BENCH_COVERT_TROJAN    BENCH_COVERT_LLC_KERNEL_TROJAN 
-#define BENCH_COVERT_SPY       BENCH_COVERT_LLC_KERNEL_SPY 
-#endif 
-
 
 /*LLC covert channel, single core*/
 #ifdef CONFIG_BENCH_COVERT_LLC 
@@ -295,6 +302,12 @@ enum ipc_funs{
 #define BENCH_COVERT_SPY         BENCH_COVERT_BP_SPY
 #endif
 
+#ifdef CONFIG_BENCH_COVERT_LLC_KERNEL 
+#define BENCH_COVERT_TROJAN      BENCH_COVERT_LLC_KERNEL_TROJAN 
+#define BENCH_COVERT_SPY         BENCH_COVERT_LLC_KERNEL_SPY 
+#endif
+
+
 #ifdef CONFIG_BENCH_COVERT_TIMER 
 #define BENCH_COVERT_TROJAN     BENCH_COVERT_TIMER_HIGH 
 #define BENCH_COVERT_SPY        BENCH_COVERT_TIMER_LOW 
@@ -315,10 +328,6 @@ enum ipc_funs{
 #ifndef CONFIG_BENCH_DATA_POINTS 
 #define CONFIG_BENCH_DATA_POINTS  1
 #endif 
-
-#define SYSTEM_TICK_SYN_FLAG   0xffff
-#define SPY_SYN_FLAG           0x87654321
-#define TROJAN_SYN_FLAG        0x12345678
 
 
 #define NUM_L1D_SHARED_PAGE  1

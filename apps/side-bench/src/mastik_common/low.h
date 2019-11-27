@@ -68,6 +68,7 @@
 
 #define L3_THRESHOLD       140
 #define L3_ASSOCIATIVITY   16
+#define L3_SETS            8192
 #define L3_SIZE            (8*1024*1024)
 
 #endif /* CONFIG_ARCH_X86 */

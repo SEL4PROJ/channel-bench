@@ -83,15 +83,15 @@ menu   "Timing Channel Benchmarks"
         help 
               enable pmu counters 
 
-       config BENCH_COVERT_SINGLE 
-       bool "covert benchmark on single core"
+       config BENCH_COVERT
+       bool "covert channel benchmark"
        default n 
        depends on APP_SIDE_BENCH 
        help 
-             a simple P+P attack on single core
+             a covert channel benchmark on various hardware components
       choice 
                prompt "attack model"
-               depends on BENCH_COVERT_SINGLE
+               depends on BENCH_COVERT
                config BENCH_COVERT_L1D 
                bool "L1 data cache" 
                
@@ -99,6 +99,7 @@ menu   "Timing Channel Benchmarks"
                bool "L1 instruction cache"
 
                config BENCH_COVERT_L2 
+               depends on ARCH_X86
                bool "L2 cache"
 
                config BENCH_COVERT_LLC 
@@ -107,9 +108,6 @@ menu   "Timing Channel Benchmarks"
 
                config BENCH_COVERT_LLC_KERNEL_SCHEDULE 
                bool "determinisitc kernel switching with LLC buffer"
-
-               config BENCH_COVERT_LLC_KERNEL 
-               bool "LLC through shared kernel"
 
                config BENCH_COVERT_TLB 
                bool "unified tlb"
@@ -123,12 +121,16 @@ menu   "Timing Channel Benchmarks"
                config BENCH_COVERT_TIMER
                bool "Timer interrupt (HIGH)"
 
+               config BENCH_COVERT_LLC_KERNEL 
+               bool "a covert channel through a shared kernel"
+               depends on ARCH_X86
+
       endchoice
 
       config BENCH_DATA_POINTS
       int "total number of random data points from high domain"
       default 409600
-      depends on BENCH_COVERT_SINGLE 
+      depends on BENCH_COVERT
       help
            number of data points collected, used by both high and low
       
@@ -172,5 +174,5 @@ menu   "Timing Channel Benchmarks"
              bool "side"
        endchoice
 
-endmenu 
+ endmenu 
 

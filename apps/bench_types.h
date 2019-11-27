@@ -53,6 +53,24 @@ struct bench_cache_flush {
 };
 
 
+/*the API used for timing channel*/
+enum timing_api {
+
+    timing_signal, 
+    timing_tcb, 
+    timing_poll, 
+    /*total 3 APIs used for this test*/
+    timing_api_num
+}; 
+
+
+typedef struct  {
+    
+    uint32_t probe_results[CONFIG_BENCH_DATA_POINTS][timing_api_num];
+    enum timing_api probe_seq[CONFIG_BENCH_DATA_POINTS]; 
+
+} bench_llc_kernel_probe_result_t; 
+
 /*pmu counter result structure*/
 typedef struct {
 
@@ -60,32 +78,12 @@ typedef struct {
 } ipc_pmu_t;  
 
 typedef struct {
-    /* Raw results from benchmarking. These get checked for sanity */
-    ccnt_t call_time_inter[IPC_RUNS][BENCH_PMU_COUNTERS];
-    ccnt_t reply_wait_time_inter[IPC_RUNS][BENCH_PMU_COUNTERS];
-    ccnt_t call_time_inter_low[IPC_RUNS][BENCH_PMU_COUNTERS];
-    ccnt_t reply_wait_time_inter_high[IPC_RUNS][BENCH_PMU_COUNTERS];
-    ccnt_t call_time_inter_high[IPC_RUNS][BENCH_PMU_COUNTERS];
-    ccnt_t reply_wait_time_inter_low[IPC_RUNS][BENCH_PMU_COUNTERS];
-    ccnt_t send_time_inter[IPC_RUNS][BENCH_PMU_COUNTERS];
-    ccnt_t wait_time_inter[IPC_RUNS][BENCH_PMU_COUNTERS];
-    ccnt_t call_10_time_inter[IPC_RUNS][BENCH_PMU_COUNTERS];
-    ccnt_t reply_wait_10_time_inter[IPC_RUNS][BENCH_PMU_COUNTERS];
-} ipc_test_pmu_t; 
-
-typedef struct {
     /* Raw results from benchmarking. rt only */
    volatile ccnt_t call_rt_time[IPC_RUNS];
    volatile ccnt_t call_reply_wait_overhead;
 } ipc_rt_result_t; 
  
-#ifdef CONFIG_ARCH_X86
-#define CCNT64BIT
-typedef uint64_t ccnt_t;
-#else
-#define CCNT32BIT
-typedef uint32_t ccnt_t;
-#endif
+
 
 struct ipc_overhead_t {
     /* Raw results from benchmarking. These get checked for sanity */
@@ -128,7 +126,7 @@ typedef struct {
     seL4_CPtr ep;   /*communicate between benchmarking threads(spy&trojan)*/
     seL4_CPtr r_ep;  /*reply to root task*/
     seL4_CPtr notification_ep; /*notification ep used only within a domain*/ 
-   
+    seL4_CPtr fake_tcb;    /*a tcb object for the benchmarking thread calling seL4*/
     /*the cspace allocation start from here*/
     seL4_CPtr first_free;
     /*untyped allocated by the root task*/

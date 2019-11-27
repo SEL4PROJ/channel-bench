@@ -136,14 +136,6 @@ static void init_env_colour(m_env_t *env) {
     error = sel4utils_bootstrap_vspace_with_bootinfo_leaky(&env->vspace, &vdata, simple_get_pd(&env->simple), &env->vka, platsupport_get_bootinfo()); 
     assert(error == BENCH_SUCCESS); 
 
-#if 0
-    /*config malloc to use virtual memory*/
-    sel4utils_reserve_range_no_alloc(&vspace, &muslc_brk_reservation_memory,
-            BRK_VIRTUAL_SIZE, seL4_AllRights, 1, &muslc_brk_reservation_start); 
-
-    muslc_this_vspace = &vspace; 
-    muslc_brk_reservation = &muslc_brk_reservation_memory; 
-#endif
     /*fill allocator with virtual memory*/ 
     v_reserve = vspace_reserve_range(&env->vspace, ALLOCATOR_VIRTUAL_POOL_SIZE, seL4_AllRights, 1, &vaddr); 
     assert(v_reserve.res != NULL); 

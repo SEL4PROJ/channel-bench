@@ -186,6 +186,11 @@ static cachemap_t map() {
 
     cm = cm_linelist(candidates);
 
+#ifdef CONFIG_DEBUG_BUILD
+  printf("Cachemap done: %d sets, %d unloved\n", cm->nsets, vl_len(candidates));
+#endif
+
+
     return cm;
 
 }
