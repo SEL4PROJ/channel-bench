@@ -10,6 +10,7 @@
 
 /*Kconfig variables*/
 #include <autoconf.h>
+#include <manager/gen_config.h>
 
 #include <stdio.h>
 #include <string.h>
@@ -39,7 +40,7 @@
 #include <vka/capops.h>
 
 #include <vspace/vspace.h>
-#include "bench_common.h"
+#include <channel-bench/bench_common.h>
 #include "manager.h"
 
 #ifdef CONFIG_LIB_SEL4_CACHECOLOURING 

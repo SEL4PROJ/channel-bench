@@ -1,5 +1,6 @@
 /*the functional correctness test*/
 #include <autoconf.h>
+#include <manager/gen_config.h>
 
 #include <stdio.h>
 #include <assert.h>

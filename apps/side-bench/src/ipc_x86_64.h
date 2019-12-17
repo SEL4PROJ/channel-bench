@@ -12,6 +12,8 @@
 #pragma once
 
 #include <autoconf.h>
+#include <manager/gen_config.h>
+#include <side-bench/gen_config.h>
 
 #ifdef CONFIG_SYSCALL
 

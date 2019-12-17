@@ -11,6 +11,7 @@
  */
 
 #include <autoconf.h>
+#include <manager/gen_config.h>
 
 #include <stdio.h>
 #include <assert.h>
@@ -25,7 +26,7 @@
 #include <simple/simple.h>
 
 #include "manager.h"
-#include "bench_types.h"
+#include <channel-bench/bench_types.h>
 
 #ifdef  CONFIG_MANAGER_COVERT_BENCH
 

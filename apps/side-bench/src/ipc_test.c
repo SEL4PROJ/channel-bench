@@ -3,9 +3,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sel4/sel4.h>
-#include "bench_common.h"
-#include "bench_types.h"
-#include "bench_helper.h"
+#include <channel-bench/bench_common.h>
+#include <channel-bench/bench_types.h>
+#include <channel-bench/bench_helper.h>
 
 #ifdef CONFIG_BENCH_IPC 
 

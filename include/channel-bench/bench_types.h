@@ -14,6 +14,7 @@
 #pragma once
 
 #include <autoconf.h>
+#include <manager/gen_config.h>
 #include <vka/vka.h>
 #include <allocman/allocman.h>
 #include <sel4utils/vspace.h>

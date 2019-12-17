@@ -1,17 +1,18 @@
 #ifndef __LOW_H__
 #define __LOW_H__
 
+#include <autoconf.h>
 #include <sel4bench/sel4bench.h>
-#include "bench_helper.h"
-#include "bench_types.h"
+#include <channel-bench/bench_helper.h>
+#include <channel-bench/bench_types.h>
 #include "vlist.h"
 
 #ifdef CONFIG_ARCH_ARM 
-#include "l3_arm.h"
+#include "../mastik_arm/l3_arm.h"
 #endif 
 
 #ifdef CONFIG_ARCH_X86 
-#include "cachemap.h"
+#include "../mastik/cachemap.h"
 #endif 
 
 #ifndef PAGE_SIZE 

@@ -10,17 +10,19 @@
 
 
 #include <autoconf.h>
+#include <manager/gen_config.h>
+#include <side-bench/gen_config.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <sel4/sel4.h>
 #include <utils/attribute.h>
 #include <sel4platsupport/platsupport.h>
-#include "../../bench_common.h"
-#include "../../bench_types.h"
+#include <channel-bench/bench_common.h>
+#include <channel-bench/bench_types.h>
 #include "bench.h"
-#include "bench_helper.h"
+#include <channel-bench/bench_helper.h>
 #include "bench_support.h"
-#include "low.h"
+#include "mastik_common/low.h"
 /*the benchmark env created based on 
   the arguments passed by the root thread*/
 bench_env_t setup_env; 

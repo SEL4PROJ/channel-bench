@@ -4,6 +4,8 @@
 #include <sys/mman.h>
 #include <assert.h>
 #include <autoconf.h>
+#include <manager/gen_config.h>
+#include <side-bench/gen_config.h>
 #include "low.h"
 #include "l1.h"
 

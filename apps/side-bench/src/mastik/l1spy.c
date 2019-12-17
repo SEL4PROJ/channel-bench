@@ -1,14 +1,16 @@
 #include <autoconf.h>
+#include <manager/gen_config.h>
+#include <side-bench/gen_config.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <sel4/sel4.h>
 
-#include "low.h"
-#include "l1.h"
-#include "bench_common.h"
-#include "bench_types.h"
-#include "bench_helper.h"
+#include "../mastik_common/low.h"
+#include "../mastik_common/l1.h"
+#include <channel-bench/bench_common.h>
+#include <channel-bench/bench_types.h>
+#include <channel-bench/bench_helper.h>
 
 
 

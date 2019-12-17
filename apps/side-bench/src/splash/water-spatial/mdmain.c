@@ -18,6 +18,8 @@
 /*************************************************************************/
 
 #include <autoconf.h>
+#include <manager/gen_config.h>
+#include <side-bench/gen_config.h>
 #line 17
 #include <unistd.h>
 #line 17

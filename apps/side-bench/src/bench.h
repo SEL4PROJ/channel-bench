@@ -13,7 +13,7 @@
 
 
 #include <sel4/sel4.h>
-#include "bench_types.h"
+#include <channel-bench/bench_types.h>
 
 /*init crypto services*/
 void crypto_init(void);

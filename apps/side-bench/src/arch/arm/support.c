@@ -11,6 +11,8 @@
  */
 
 #include <autoconf.h>
+#include <manager/gen_config.h>
+#include <side-bench/gen_config.h>
 #include <stdio.h>
 
 
@@ -21,7 +23,7 @@
 void
 benchmark_arch_get_timers(bench_env_t *env, ps_io_ops_t ops)
 {
-    int error = ltimer_default_init(&env->timer.ltimer, ops);
+    int error = ltimer_default_init(&env->timer.ltimer, ops, NULL, NULL);
     assert(error == 0); 
 }
 

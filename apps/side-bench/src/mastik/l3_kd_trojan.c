@@ -1,4 +1,6 @@
 #include <autoconf.h>
+#include <manager/gen_config.h>
+#include <side-bench/gen_config.h>
 #include <sys/types.h>
 #include <sys/mman.h>
 #include <stdio.h>
@@ -7,14 +9,14 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sel4/sel4.h>
-#include "vlist.h"
+#include "../mastik_common/vlist.h"
 #include "cachemap.h"
 #include "pp.h"
-#include "low.h"
+#include "../mastik_common/low.h"
 #include "search.h"
 
-#include "bench_common.h"
-#include "bench_types.h"
+#include <channel-bench/bench_common.h>
+#include <channel-bench/bench_types.h>
 
 
 static void visit_page(cachemap_t cm, int secret) {

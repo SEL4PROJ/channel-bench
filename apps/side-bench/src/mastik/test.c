@@ -1,4 +1,6 @@
 #include <autoconf.h>
+#include <manager/gen_config.h>
+#include <side-bench/gen_config.h>
 #include <sys/types.h>
 #include <sys/mman.h>
 #include <stdio.h>
@@ -6,10 +8,10 @@
 #include <assert.h>
 #include <stdlib.h>
 
-#include "vlist.h"
+#include "../mastik_common/vlist.h"
 #include "cachemap.h"
 #include "pp.h"
-#include "low.h"
+#include "../mastik_common/low.h"
 
 #define SIZE (16*1024*1024)
 

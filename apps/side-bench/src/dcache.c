@@ -38,7 +38,7 @@ backward for probing
 #include <stdlib.h>
 #include <string.h>
 #include <platsupport/arch/tsc.h>
-#include "../../bench_common.h"
+#include <channel-bench/bench_common.h>
 #include "bench.h"
 
 /*a buffer line layout, less than a cache line*/

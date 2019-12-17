@@ -1,4 +1,6 @@
 #include <autoconf.h>
+#include <manager/gen_config.h>
+#include <side-bench/gen_config.h>
 #include <stdio.h>
 #include <assert.h>
 #include <stdint.h>
@@ -9,10 +11,10 @@
 #endif
 
 //#define DEBUG
-#include "low.h"
-#include "vlist.h"
+#include "../mastik_common/low.h"
+#include "../mastik_common/vlist.h"
 #include "l3_arm.h"
-#include "timestats.h"
+#include "../mastik_common/timestats.h"
 
 #define CHECKTIMES 256
 

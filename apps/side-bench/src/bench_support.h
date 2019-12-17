@@ -15,7 +15,7 @@
 
 #include <sel4utils/slab.h>
 #include <simple/arch/simple.h>
-#include "../../bench_types.h"
+#include <channel-bench/bench_types.h>
 
 void benchmark_arch_get_simple(arch_simple_t *simple);
 void benchmark_arch_get_timers(bench_env_t *env, ps_io_ops_t ops);

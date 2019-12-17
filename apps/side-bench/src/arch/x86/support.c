@@ -11,6 +11,8 @@
  */
 
 #include <autoconf.h>
+#include <manager/gen_config.h>
+#include <side-bench/gen_config.h>
 #include <stdio.h>
 
 #include <platsupport/plat/timer.h>
@@ -18,8 +20,8 @@
 #include <platsupport/plat/hpet.h>
 #include <utils/util.h>
 #include <sel4utils/process.h>
-#include "bench_types.h"
-#include "bench_support.h"
+#include <channel-bench/bench_types.h>
+#include "../../bench_support.h"
 
 static inline sel4ps_irq_t
 hpet_irq(bench_env_t *env)
@@ -35,7 +37,7 @@ benchmark_arch_get_timers(bench_env_t *env, ps_io_ops_t ops)
     /* we know the HPET driver has just one pmem region and one irq -> just grab them */
     ps_irq_t irq = hpet_irq(env).irq;
     pmem_region_t region = env->args->to.objs[0].region;
-    int error = ltimer_hpet_init(&env->timer.ltimer, ops, irq, region);
+    int error = ltimer_hpet_init(&env->timer.ltimer, ops, irq, region, NULL, NULL);
     assert(error == 0); 
 }
 

@@ -10,6 +10,7 @@
 /*This file contains functions for processing benchmark data.*/
 
 #include <autoconf.h>
+#include <manager/gen_config.h>
 #include <stdio.h>
 #include <sel4/sel4.h>
 #include <sel4bench/sel4bench.h>

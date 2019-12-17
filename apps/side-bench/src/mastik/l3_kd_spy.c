@@ -1,10 +1,10 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <sel4/sel4.h>
-#include "bench_common.h"
-#include "bench_types.h"
-#include "bench_helper.h"
-#include "low.h"
+#include <channel-bench/bench_common.h>
+#include <channel-bench/bench_types.h>
+#include <channel-bench/bench_helper.h>
+#include "../mastik_common/low.h"
 
 
 int l3_kd_spy(bench_env_t *env) {

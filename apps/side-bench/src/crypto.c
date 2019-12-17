@@ -9,7 +9,7 @@
  */
 #ifdef CONFIG_BENCH_DCACHE_ATTACK 
 #include <stdlib.h>
-#include "../../bench_common.h"
+#include <channel-bench/bench_common.h>
 #include "bench.h"
 #include "aes/aes.h"
 

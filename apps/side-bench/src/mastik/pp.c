@@ -1,11 +1,13 @@
 #include <autoconf.h>
+#include <manager/gen_config.h>
+#include <side-bench/gen_config.h>
 #include <stdio.h>
 #include <assert.h>
 #include <stdint.h>
 
-#include "vlist.h"
+#include "../mastik_common/vlist.h"
 #include "pp.h"
-#include "low.h"
+#include "../mastik_common/low.h"
 
 #define LNEXT(p) (*(void **)(p))
 #define OFFSET(p, o) ((void *)((uintptr_t)(p) + (o)))

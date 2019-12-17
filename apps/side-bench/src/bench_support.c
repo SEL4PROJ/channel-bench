@@ -11,12 +11,14 @@
  */
 
 #include <autoconf.h>
+#include <manager/gen_config.h>
+#include <side-bench/gen_config.h>
 #include <sel4/sel4.h>
 #include <allocman/bootstrap.h>
 #include <allocman/vka.h>
 #include <sel4utils/process.h>
 #include <sel4platsupport/io.h>
-#include "bench_types.h"
+#include <channel-bench/bench_types.h>
 #include "bench_support.h"
 
 #ifdef CONFIG_BENCH_SPLASH_MORECORE 
@@ -281,8 +283,8 @@ int benchmark_init_timer(bench_env_t *env)
     if (error) 
         return error; 
 
-    error = sel4platsupport_new_io_mapper(env->vspace, 
-            env->vka, &ops.io_mapper);
+    error = sel4platsupport_new_io_mapper(&env->vspace, 
+            &env->vka, &ops.io_mapper);
     if (error) 
         return error; 
 

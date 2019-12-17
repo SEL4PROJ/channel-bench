@@ -2,7 +2,7 @@
 #include <stdint.h>
 
 #include "mpi.h"
-#include "bench_helper.h"
+#include <channel-bench/bench_helper.h>
 
 void mpi_victim(void ) {
   MPI p = mpi_alloc(0);

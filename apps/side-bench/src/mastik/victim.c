@@ -1,7 +1,7 @@
 #include <sys/types.h>
 #include <sys/mman.h>
 #include <stdint.h>
-#include "low.h"
+#include "../mastik_common/low.h"
 
 
 int mastik_victim(int ac, char **av) {

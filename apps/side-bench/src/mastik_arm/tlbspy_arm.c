@@ -4,15 +4,17 @@
  a result of update the contextID register
  the unified tlb has 2 * 64 entreis, 2 way associative*/
 #include <autoconf.h>
+#include <manager/gen_config.h>
+#include <side-bench/gen_config.h>
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <sel4/sel4.h>
-#include "bench_common.h"
-#include "bench_types.h"
-#include "bench_helper.h"
-#include "low.h"
+#include <channel-bench/bench_common.h>
+#include <channel-bench/bench_types.h>
+#include <channel-bench/bench_helper.h>
+#include "../mastik_common/low.h"
 
 static inline void tlb_access(char *buf, uint32_t s) {
 

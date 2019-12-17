@@ -12,6 +12,8 @@
 #pragma once
 
 #include <autoconf.h>
+#include <manager/gen_config.h>
+#include <side-bench/gen_config.h>
 
 #define DO_CALL(ep, tag, swi) do { \
     register seL4_Word dest asm("r0") = (seL4_Word)ep; \

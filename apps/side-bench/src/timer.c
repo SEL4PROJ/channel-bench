@@ -11,13 +11,15 @@
  */
 
 #include <autoconf.h>
+#include <manager/gen_config.h>
+#include <side-bench/gen_config.h>
 #include <sel4/sel4.h>
 #include <sel4platsupport/timer.h>
 #include <sel4bench/sel4bench.h>
-#include "bench_common.h"
-#include "bench_types.h"
+#include <channel-bench/bench_common.h>
+#include <channel-bench/bench_types.h>
 #include "bench_support.h"
-#include "low.h"
+#include "mastik_common/low.h"
 
 
 #define TIMER_DETECT_INTERVAL_NS (1200)

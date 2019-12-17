@@ -3,9 +3,9 @@
 #include <stdint.h>
 #include <sel4/sel4.h>
 
-#include "low.h"
-#include "bench_common.h"
-#include "bench_types.h"
+#include "../mastik_common/low.h"
+#include <channel-bench/bench_common.h>
+#include <channel-bench/bench_types.h>
 
 
 #define JMP_ALIGN   16

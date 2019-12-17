@@ -1,4 +1,6 @@
 #include <autoconf.h>
+#include <manager/gen_config.h>
+#include <side-bench/gen_config.h>
 
 #define X_4(a) a; a; a; a
 #define X_16(a) X_4(X_4(a))

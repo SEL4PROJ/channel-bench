@@ -1,5 +1,7 @@
 /*the branch attack that probes N number of branch instructions*/
 #include <autoconf.h>
+#include <manager/gen_config.h>
+#include <side-bench/gen_config.h>
 
 /*putting the probing code in data section therefore 
  giving the L1I_REWRITE an option to rewrite the buffer
