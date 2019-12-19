@@ -21,7 +21,7 @@ void benchmark_arch_get_simple(arch_simple_t *simple);
 void benchmark_arch_get_timers(bench_env_t *env, ps_io_ops_t ops);
 
 /*init timer for the benchmark thread*/
-int benchmark_init_timer(bench_env_t *env);
+int timing_benchmark_init_timer(bench_env_t *env);
 /*init benchmarking enviroment accroding to the arguments created by root thread*/
 void bench_init_env(int argc, char **argv, bench_env_t *env); 
  

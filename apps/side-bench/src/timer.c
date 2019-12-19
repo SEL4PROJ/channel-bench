@@ -38,7 +38,7 @@ int timer_high(bench_env_t *env) {
 
     assert(args->timer_enabled); 
     
-    error = benchmark_init_timer(env);
+    error = timing_benchmark_init_timer(env);
     assert(error == BENCH_SUCCESS); 
 
 

@@ -268,7 +268,7 @@ static void init_simple(bench_env_t *env)
     benchmark_arch_get_simple(&env->simple.arch_simple);
 }
 
-int benchmark_init_timer(bench_env_t *env)
+int timing_benchmark_init_timer(bench_env_t *env)
 {   
     
     ps_io_ops_t ops;
