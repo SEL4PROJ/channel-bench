@@ -32,7 +32,7 @@ inline uint64_t *l1i_get_monitored_set(l1iinfo_t l1) {
   return l1->monitored_sets;
 }
 
-inline int l1i_nsets(l1iinfo_t l1) {
+static inline int l1i_nsets(l1iinfo_t l1) {
   return l1->nsets;
 }
 
