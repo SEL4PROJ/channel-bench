@@ -23,6 +23,8 @@
 #include <stdint.h>
 #include <sel4bench/sel4bench.h>
 #include <autoconf.h>
+#include <manager/gen_config.h>
+#include <side-bench/gen_config.h>
 
 /*elf file name of benchmark thread*/ 
 #define CONFIG_BENCH_THREAD_NAME    "side-bench"

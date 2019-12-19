@@ -215,7 +215,9 @@ target_link_libraries(
 		utils
         sel4cachecolour
 		sel4bench
-    PRIVATE manager_Config
+    PRIVATE
+		manager_Config
+		side-bench_Config
 )
 target_compile_options(manager PRIVATE -Werror -g)
 
