@@ -21,7 +21,7 @@
 static void access_llc_buffer(void *buffer) {
 
     for (int i = 0; i < L3_SIZE; i += L1_CACHELINE)
-        access(buffer + i); 
+        low_access(buffer + i); 
 }
 
 

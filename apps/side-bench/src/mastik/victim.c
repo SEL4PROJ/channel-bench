@@ -12,7 +12,7 @@ int mastik_victim(int ac, char **av) {
   uint32_t t = rdtscp();
   for (;;) {
     do {
-      access((void*)p);
+      low_access((void*)p);
     } while (rdtscp() - t < 50000);
     t = rdtscp();
     do {

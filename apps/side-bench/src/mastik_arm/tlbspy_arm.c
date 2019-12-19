@@ -28,7 +28,7 @@ static inline void tlb_access(char *buf, uint32_t s) {
  
         /*align to a cache line size*/
         addr = (void *)((uintptr_t)addr & ~(L1_CACHELINE - 1)); 
-        access(addr);
+        low_access(addr);
     }
 
 }

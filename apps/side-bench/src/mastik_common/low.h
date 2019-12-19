@@ -252,7 +252,7 @@ static void inline do_timing_api(enum timing_api api_no,
 #define INSTRUCTION_LENGTH  4
 
 #define LLC_KERNEL_TEST_COUNT 16
-static inline int access(void *v) {
+static inline int low_access(void *v) {
     int rv = 0xff; 
 #ifdef CONFIG_BENCH_L1D_WRITE
     asm volatile("str %1, [%0]": "+r" (v): "r" (rv):);
@@ -429,7 +429,7 @@ static inline uint32_t probing_sets(vlist_t set_list) {
 #ifdef CONFIG_ARCH_X86
 
 #define LLC_KERNEL_TEST_COUNT 10
-static inline int access(void *v) {
+static inline int low_access(void *v) {
   int rv = 0xff;
 #ifdef CONFIG_BENCH_L1D_WRITE
   asm volatile("mov %1, (%0)": "+r" (v): "r" (rv): "memory");
@@ -654,7 +654,7 @@ static inline void l1d_data_access(char *buf, uint32_t sets) {
     for (int s = 0; s < sets; s++) {
         for (int i = 0; i < L1_ASSOCIATIVITY; i++) {
 
-            access(buf + s * L1_CACHELINE + i * L1_STRIDE);
+            low_access(buf + s * L1_CACHELINE + i * L1_STRIDE);
         }
     }
 }

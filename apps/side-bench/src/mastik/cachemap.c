@@ -30,7 +30,7 @@ static int timedwalk(void *list, register void *candidate) {
   void *c2 = (void *)((uintptr_t)candidate ^ 0x200);
   LNEXT(c2) = candidate;
   clflush(c2);
-  access(candidate);
+  low_access(candidate);
   for (int i = 0; i < CHECKTIMES; i++) {
     walk(list, 20);
     void *p = LNEXT(c2);

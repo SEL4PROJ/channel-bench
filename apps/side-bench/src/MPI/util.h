@@ -320,7 +320,7 @@ void riscos_list_openfiles(void);
 #ifndef __RISCOS__C__
 #define getpid riscos_getpid
 #define kill(a,b) riscos_kill((a),(b))
-#define access(a,b) riscos_access((a),(b))
+#define low_access(a,b) riscos_access((a),(b))
 #endif /* !__RISCOS__C__ */
 #endif /* __riscos__ */
 
