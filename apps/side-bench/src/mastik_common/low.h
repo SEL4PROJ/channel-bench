@@ -268,7 +268,7 @@ static inline void clflush(void *v) {
 
 static inline void dmb(void) {
     /*memory barrier*/
-    asm volatile("dmb" : : :);
+    asm volatile("dmb sy" : : :);
 }
 
 static volatile int a;
