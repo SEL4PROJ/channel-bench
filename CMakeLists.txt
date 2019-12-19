@@ -23,7 +23,9 @@ find_package(sel4benchsupport REQUIRED)
 # Set the rootttask CNode size to be large enough for DTB, timer caps, etc
 # Note that this works for the platforms that we have at the moment, and may
 # need to be increased in the future
-set(KernelRootCNodeSizeBits 13 CACHE INTERNAL "")
+set(KernelRootCNodeSizeBits 20 CACHE INTERNAL "")
+set(LibSel4CacheColourAllocSizeBits 17 CACHE INTERNAL "")
+set(LibSel4MuslcSysMorecoreBytes 0x400000 CACHE INTERNAL "")
 
 # Set our custom domain schedule
 set(KernelDomainSchedule "${CMAKE_CURRENT_LIST_DIR}/domain_schedule.c" CACHE INTERNAL "")

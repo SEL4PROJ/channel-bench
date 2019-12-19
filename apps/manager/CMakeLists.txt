@@ -24,7 +24,7 @@ config_string(
 	BENCH_UNTYPE_COUNT
 	"Number of untypeds to allocate to each benchmark thread"
 	DEFAULT
-	1
+	64
 	UNQUOTE
 )
 
