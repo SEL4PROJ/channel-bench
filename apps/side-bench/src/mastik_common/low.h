@@ -11,7 +11,7 @@
 #include "../mastik_arm/l3_arm.h"
 #endif 
 
-#ifdef CONFIG_ARCH_X86 
+#if defined CONFIG_ARCH_X86 || defined CONFIG_ARCH_RISCV
 #include "../mastik/cachemap.h"
 #endif 
 
@@ -221,6 +221,36 @@
 
 #endif /* CONFIG_PLAT_SABRE  */
 
+#ifdef CONFIG_PLAT_ARIANE
+
+#define L1_ASSOCIATIVITY   8
+#define L1_SETS            256
+#define L1_LINES           2048
+#define L1_CACHELINE       16
+#define L1_STRIDE          (L1_CACHELINE * L1_SETS)
+#define L1_PROBE_BUFFER    (L1_STRIDE * L1_ASSOCIATIVITY * 5 + PAGE_SIZE)
+
+#define L1I_ASSOCIATIVITY  4
+#define L1I_SETS           256
+#define L1I_LINES          1024
+#define L1I_CACHELINE      16
+#define L1I_STRIDE         (L1I_CACHELINE * L1I_SETS)
+
+#define L3_THRESHOLD       1
+#define L3_ASSOCIATIVITY   1
+#define L3_SIZE            1 /* 2MB */
+#define L3_CACHELINE       1
+// The number of cache sets in each slice.
+#define L3_SETS_PER_SLICE  1
+
+// The number of cache sets in each page
+#define L3_SETS_PER_PAGE   1
+
+#define BTAC_ENTRIES        32 
+#define TLB_ENTRIES         16
+#define TLB_PROBE_PAGES     8
+
+#endif /* CONFIG_PLAT_ARIANE */
 
 typedef void *pp_t;
 
@@ -645,6 +675,174 @@ inline void cpuid(struct cpuidRegs *regs) {
   asm volatile ("cpuid": "+a" (regs->eax), "+b" (regs->ebx), "+c" (regs->ecx), "+d" (regs->edx));
 }
 #endif /* CONFIG_ARCH_X86 */
+
+#ifdef CONFIG_ARCH_RISCV
+
+#define LLC_KERNEL_TEST_COUNT 10
+static inline int low_access(void *v) {
+    int rv = 0xff; 
+#ifdef CONFIG_BENCH_L1D_WRITE
+    asm volatile("sw %1, 0(%0)": "+r" (v): "r" (rv):);
+#else
+    asm volatile("lw %0, 0(%1)": "=r" (rv): "r" (v):);
+#endif 
+    return rv;
+}
+
+
+static inline int accesstime(void *v) {
+  int rv = 0;
+  asm volatile(
+      "fence\n"
+      "rdtime t0\n"
+      "lw t0, 0(%1)\n"
+      "rdtime a0\n"
+      "sub a0, a0, t0\n"
+      : "=r" (rv): "r" (v): );
+  return rv;
+}
+
+static inline void clflush(void *v) {
+//  asm volatile ("clflush 0(%0)": : "r" (v):);
+//  asm volatile("clflush %[v]" : [v] "+m"(*(volatile char *)v));
+}
+
+static inline void fence() {
+  asm volatile("fence": : :);
+}
+
+/*return when a big jump of the time stamp counter is detected*/
+static inline void  newTimeSlice(void){
+  asm("");
+  uint32_t best = 0;
+  uint32_t volatile  prev = rdtime();
+  for (;;) {
+    uint32_t volatile cur = rdtime();
+    /*if (cur - prev > best) {
+      best = cur - prev;
+      //printf("best = %d\n", best);
+    }*/
+    if (cur - prev > TS_THRESHOLD)
+      return;
+    prev = cur;
+  }
+}
+
+/*return when a big jump of the time stamp counter is detected*/
+static inline void  newTimeTick(void){
+  asm("");
+  uint32_t volatile  prev = rdtime();
+  for (;;) {
+    uint32_t volatile cur = rdtime();
+    if (cur - prev > 100)
+      return;
+    prev = cur;
+  }
+}
+
+extern int pp_probe(pp_t pp);
+extern pp_t pp_prepare(vlist_t list, int count, int offset);
+
+static int __attribute__((noinline)) test(pp_t pp, int recv, enum timing_api api_no, 
+        kernel_timing_caps_t *caps) {
+
+    int count = 0;
+
+    pp_probe(pp);
+    pp_probe(pp);
+    pp_probe(pp);
+
+
+    for (int i = 0; i < LLC_KERNEL_TEST_COUNT; i++) {
+        
+        if (recv){
+            do_timing_api(api_no, caps);
+        }
+        
+        count <<= 1;
+        if (pp_probe(pp) != 0)
+            count++;
+    }
+    // If at most one is set - this is not a collision
+    int c = count & (count - 1);
+    c = c & (c - 1);
+    if ((c & (c - 1))== 0)
+        return 0;
+    
+    return 1;
+}
+
+static int scan(pp_t pp,  enum timing_api api_no, 
+                kernel_timing_caps_t *caps) {
+    if (test(pp, 0, api_no, caps))
+        return 0;
+    /*if do not have conflict with the test code, 
+      try to detect the conflict with seL4 Poll*/
+    return test(pp, 1, api_no, caps);
+}
+
+
+
+
+static inline vlist_t search(cachemap_t cm, enum timing_api api_no, 
+            kernel_timing_caps_t *caps) {
+
+
+    vlist_t probed = vl_new();
+    for (int line = 0; line < 4096; line += 64) {
+        //printf("Searching in line 0x%02x\n", line / 64);
+        // For every page...
+        /*preparing the probing set 
+          find one that do not have conflict with the test code
+          but have conflict with the seL4 Poll service*/
+        for (int p  = 0; p < cm->nsets; p++) {
+            pp_t pp = pp_prepare(cm->sets[p] , L3_ASSOCIATIVITY, line);
+            int t = scan(pp, api_no, caps);
+            if (t) {
+                /*record target probing set*/
+                vl_push(probed, pp);
+
+#ifdef CONFIG_DEBUG_BUILD
+                printf("Probed at %3d.%03x (%08p)\n", p, line, pp);
+#endif
+
+            }
+        }
+  }
+  return probed;
+}
+
+
+
+static inline uint32_t probing_sets(vlist_t set_list) {
+
+    uint32_t result = 0; 
+
+    for (int j = 0; j < vl_len(set_list); j++){
+       result += pp_probe((pp_t)vl_get(set_list, j));
+    }
+
+    return result; 
+
+}
+
+static volatile int b;
+
+static inline void walk(void *p, int count) {
+    if (p == NULL)
+        return;
+    void *pp;
+    for (int i = 0; i < count; i++) {
+        pp = p;
+        do {
+            pp = (void *)(((void **)pp)[0]);
+        } while (pp != p);
+        b += *(int *)pp;
+    }
+
+}
+
+#endif /* CONFIG_ARCH_RISCV */
 
 /*accessing N number of L1 D cache sets*/
 static inline void l1d_data_access(char *buf, uint32_t sets) {

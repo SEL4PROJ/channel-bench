@@ -169,6 +169,8 @@ int run_bench_covert(bench_env_t *bench_env) {
 
 #ifdef CONFIG_ARCH_ARM 
     SEL4BENCH_READ_CCNT(seed);  
+#elif defined CONFIG_ARCH_RISCV
+    seed = rdtime();
 #else 
     seed = rdtscp();
 #endif 

@@ -249,6 +249,23 @@ if(KernelArchARM)
 	)
 endif()
 
+# RISC-V files
+if (KernelArchRiscV)
+	file(
+		GLOB
+			arch_deps
+			src/mastik_riscv/*.S
+			src/aes/*.c
+			src/mastik_riscv/*.c
+			src/MPI/*.c
+	)
+	file(
+		GLOB
+			arch_include
+			src/mastik_riscv
+	)
+endif()
+
 if(BenchSplash)
 	file(
 		GLOB

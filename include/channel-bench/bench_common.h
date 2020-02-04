@@ -180,6 +180,10 @@ enum ipc_funs{
 #define BENCH_PMU_COUNTERS 1 
 #endif 
 
+#ifdef CONFIG_PLAT_ARIANE
+#define BENCH_PMU_BITS  0x1
+#define BENCH_PMU_COUNTERS 1
+#endif
 
 #define BENCH_RECORD_PAGES    1
 #define BENCH_COVERT_BUF_PAGES  4096 /*trojan/probe buffers*/
