@@ -8,24 +8,41 @@
 #include <channel-bench/bench_types.h>
 
 
-#define JMP_ALIGN   16
-#define BTB_ENTRIES  BTAC_ENTRIES
-
-
+// same function, once forwards and once backwards
 extern void btb_probe(void);
+extern void btb_prime(void);
 
+int btb_jmp(bool spy, uint32_t s) {
 
+    unsigned long entry;
+    unsigned long increment;
+    unsigned long result;
+    if (spy)
+    {
+      /* start from the first indirect jump and jump forwards */
+      entry = (unsigned long)btb_probe;
+      increment = (signed long)CONFIG_BENCH_BTB_ALIGN;
+    }
+    else
+    {
+      /* calculate the jump entry based on the secret and jump backwards */
+      entry = (unsigned long)btb_prime - (CONFIG_BENCH_BTB_ENTRIES - s + 1) * CONFIG_BENCH_BTB_ALIGN;
+      increment = -(signed long)CONFIG_BENCH_BTB_ALIGN;
+    }
 
-static void btb_jmp(uint32_t s) {
-
-    /*calculate the jump entry based on the secret*/ 
-    unsigned long entry = (unsigned long)btb_probe + (BTB_ENTRIES - s) * JMP_ALIGN;
     volatile long ra;
     asm volatile (
       "sd ra, %0\n"
-      "jalr ra, %1\n" 
+      "mv a0, %2\n"
+      "mv a1, %3\n"
+      "rdtime t0\n"
+      "jalr ra, a0\n"
+      "rdtime %1\n"
+      "sub %1, %1, t0\n"
       "lw ra, %0\n"
-      : "+m"(ra) : "r" (entry));
+      : "+m"(ra), "=r"(result) : "r"(entry), "r"(increment));
+
+    return((int)result);
 }
 
 int btb_trojan(bench_env_t *env) {
@@ -45,16 +62,16 @@ int btb_trojan(bench_env_t *env) {
   seL4_Send(args->ep, info);
 
   for (int i = 0; i < CONFIG_BENCH_DATA_POINTS; i++) {
-      if (i % 1000 == 0) printf("Data point %d\n", i);
+      if (i % 1000 == 0 || (i - 1) % 1000 == 0 || i == (CONFIG_BENCH_DATA_POINTS - 1)) printf("TROJAN: Data point %d\n", i);
 
       /*waiting for a system tick*/
       newTimeSlice();
 
       /*trojan: 0 - BTB_ENTRIES*/
-      secret = random() % (BTB_ENTRIES + 1); 
+      secret = random() % (CONFIG_BENCH_BTB_ENTRIES + 1); 
 
       /*do the probe*/
-      btb_jmp(secret);
+      btb_jmp(0, secret);
 
       /*update the secret read by low*/ 
       *share_vaddr = secret; 
@@ -82,12 +99,11 @@ int btb_spy(bench_env_t *env) {
 
 
   for (int i = 0; i < CONFIG_BENCH_DATA_POINTS; i++) {
+    if (i % 1000 == 0 || (i - 1) % 1000 == 0 || i == (CONFIG_BENCH_DATA_POINTS - 1)) printf("SPY: Data point %d\n", i);
 
       newTimeSlice();
-      start = rdtime(); 
-      btb_jmp(BTB_ENTRIES);
-       
-      r_addr->result[i] = rdtime() - start; 
+
+      r_addr->result[i] = btb_jmp(1, CONFIG_BENCH_BTB_ENTRIES);
       r_addr->sec[i] = *secret; 
 
   }

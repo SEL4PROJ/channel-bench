@@ -37,7 +37,7 @@ int l1i_trojan(bench_env_t *env) {
   seL4_Send(args->ep, info);
 
 for (int i = 0; i < CONFIG_BENCH_DATA_POINTS; i++) {
-      if (i % 1000 == 0) printf("TROJAN: data point %d\n", i);
+      if (i % 1000 == 0 || (i - 1) % 1000 == 0 || i == (CONFIG_BENCH_DATA_POINTS - 1)) printf("TROJAN: Data point %d\n", i);
       
       /*waiting for a system tick*/
       newTimeSlice();
@@ -109,6 +109,7 @@ int l1i_spy(bench_env_t *env) {
 
 
   for (int i = 0; i < CONFIG_BENCH_DATA_POINTS; i++) {
+      if (i % 1000 == 0 || (i - 1) % 1000 == 0 || i == (CONFIG_BENCH_DATA_POINTS - 1)) printf("SPY: Data point %d\n", i);
       newTimeSlice();
 #ifdef CONFIG_MANAGER_PMU_COUNTER
       pmu_start = sel4bench_get_counter(0);  

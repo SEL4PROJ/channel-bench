@@ -6,23 +6,21 @@
 #define X_16(a) X_4(X_4(a))
 #define X_256(a) X_16(X_16(a))
 
-#define JMP	beqz t0, 1f
-#define JMP_4 JMP; JMP; JMP; JMP
-#define JMP_16 JMP_4; JMP_4; JMP_4; JMP_4
-#define JMP_64 JMP_16; JMP_16; JMP_16; JMP_16
-#define JMP_256 JMP_64; JMP_64; JMP_64; JMP_64; .align 4; 1:
+#define CONFIGBHT_ENTRIES 64
+#define JMP_HW_ALIGN CONFIG_BENCH_BHT_ALIGN/2
 
 .global bp_probe
 .type bp_probe, @function
-.align 8
-bp_probe:
-  mv t0, zero
-  JMP_256
-  
-  rdtime t1
-  beqz a0, 2f
-  X_256(nop)
-2:
+.align 4
+bp_probe:  
+  rdtime t0
+.rept CONFIG_BENCH_BHT_ENTRIES
+  .word 0x50A63 //beqz a0, 20. bloody compiler will rip this apart otherwise. 20 = CONFIG_BENCH_BHT_ALIGN
+  addi a0, a0, -1 
+  .rept JMP_HW_ALIGN - 3
+    nop
+  .endr
+.endr
   rdtime a0
-  sub a0, a0, t1
+  sub a0, a0, t0
   ret

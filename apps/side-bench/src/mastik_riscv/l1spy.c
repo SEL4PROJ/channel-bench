@@ -41,7 +41,7 @@ int l1_trojan(bench_env_t *env) {
 
 
     for (int i = 0; i < CONFIG_BENCH_DATA_POINTS; i++) {
-        if (i % 1000 == 0) printf("Data point %d\n", i);
+        if (i % 1000 == 0 || (i - 1) % 1000 == 0 || i == (CONFIG_BENCH_DATA_POINTS - 1)) printf("TROJAN: Data point %d\n", i);
 
         /*waiting for a system tick*/
         newTimeSlice();
@@ -88,6 +88,7 @@ int l1_spy(bench_env_t *env) {
 
 
     for (int i = 0; i < CONFIG_BENCH_DATA_POINTS; i++) {
+        if (i % 1000 == 0 || (i - 1) % 1000 == 0 || i == (CONFIG_BENCH_DATA_POINTS - 1)) printf("SPY: Data point %d\n", i);
 
         newTimeSlice();
 

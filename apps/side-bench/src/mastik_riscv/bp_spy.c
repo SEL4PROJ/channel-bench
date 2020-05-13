@@ -29,20 +29,17 @@ int bp_trojan(bench_env_t *env) {
   
   for (int i = 0; i < CONFIG_BENCH_DATA_POINTS; i++) {
       
-      if (i % 1000 == 0) printf("Data point %d\n", i);
+      if (i % 1000 == 0 || (i - 1) % 1000 == 0 || i == (CONFIG_BENCH_DATA_POINTS - 1)) printf("TROJAN: Data point %d\n", i);
 
-      secret = (random() / 2) & 1;
+      /*waiting for a system tick*/
+      newTimeSlice();
+
+      secret = random() % (BHT_ENTRIES + 1);
       /*update the secret read by low*/ 
       *share_vaddr = secret; 
 
-      asm("");
-      uint32_t prev = rdtime();
-      for (;;) {
-          uint32_t cur = rdtime();
-          X_64(bp_probe(secret & 1);)
-              if (cur - prev > TS_THRESHOLD)
-                  break;
-          prev = cur;
+      for (int i = 0; i < 16; i++) {
+          bp_probe(secret);
       }
       
   }
@@ -69,12 +66,19 @@ int bp_spy(bench_env_t *env) {
 
   for (int i = 0; i < CONFIG_BENCH_DATA_POINTS; i++) {
 
+      if (i % 1000 == 0 || (i - 1) % 1000 == 0 || i == (CONFIG_BENCH_DATA_POINTS - 1)) printf("SPY: Data point %d\n", i);
+
       newTimeSlice();
    
       /*result is the total probing cost
         secret is updated by trojan in the previous system tick*/
       r_addr->result[i] = bp_probe(0); 
-      r_addr->sec[i] = *secret; 
+      r_addr->sec[i] = *secret;
+
+      /* Prime (make sure all saturation counters are reset) */
+      for (int i = 0; i < 16; i++) {
+          bp_probe(0);
+      }
 
   }
 

@@ -2,18 +2,42 @@
 #include <manager/gen_config.h>
 #include <side-bench/gen_config.h>
 
-#define X_4(a) a; a; a; a
-#define X_16(a) X_4(X_4(a))
-#define X_256(a) X_16(X_16(a))
-#define X_4096(a) X_256(X_16(a))
+/*
+            ret
+       |=== block 1
+   spy ||   block 2   /\
+       \/   ...       || trojan
+            block s ===|
+            ...
+            ret
+*/
 
-#define JMP	j 1f; .align 4; 1:
+/* number of half words per block */
+#define JUMP_HW_ALIGN CONFIG_BENCH_BTB_ALIGN/2
 
 .global btb_probe
 .type btb_probe, @function
+.global btb_prime
+.type btb_prime, @function
+
 .align 4
-btb_probe:
-  X_16(JMP)
-  X_16(JMP)
+/* end of prime */
   ret
-  
+/* align. ret already takes one HW */
+.rept JUMP_HW_ALIGN - 1
+  nop
+.endr
+btb_probe:
+.rept CONFIG_BENCH_BTB_ENTRIES 
+  /* a1 should either be +BTB_ALIGN (probe) or -BTB_ALIGN (prime)
+     a0 points to the next (probe) or previous (prime) block */
+  add a0, a0, a1  // 
+  jalr x0, a0     // 
+  /* align. add and ret already take three HWs */
+  .rept JUMP_HW_ALIGN - 3
+    nop
+  .endr
+.endr
+btb_prime:
+  ret
+/* end of probe */

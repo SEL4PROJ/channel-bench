@@ -236,17 +236,18 @@
 #define L1I_CACHELINE      16
 #define L1I_STRIDE         (L1I_CACHELINE * L1I_SETS)
 
-#define L3_THRESHOLD       1
-#define L3_ASSOCIATIVITY   1
-#define L3_SIZE            1 /* 2MB */
-#define L3_CACHELINE       1
+#define L3_THRESHOLD       100
+#define L3_ASSOCIATIVITY   8
+#define L3_SIZE            (512 * 1024) /* 512KiB */
+#define L3_CACHELINE       64
 // The number of cache sets in each slice.
-#define L3_SETS_PER_SLICE  1
+#define L3_SETS_PER_SLICE  64
 
 // The number of cache sets in each page
 #define L3_SETS_PER_PAGE   1
 
-#define BTAC_ENTRIES        32 
+#define BTAC_ENTRIES        32
+#define BHT_ENTRIES         64
 #define TLB_ENTRIES         16
 #define TLB_PROBE_PAGES     8
 
