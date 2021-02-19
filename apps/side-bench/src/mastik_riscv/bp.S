@@ -13,7 +13,7 @@
 .type bp_probe, @function
 .align 4
 bp_probe:  
-  rdtime t0
+  rdcycle t0
 .rept CONFIG_BENCH_BHT_ENTRIES
   .word 0x50A63 //beqz a0, 20. bloody compiler will rip this apart otherwise. 20 = CONFIG_BENCH_BHT_ALIGN
   addi a0, a0, -1 
@@ -21,6 +21,6 @@ bp_probe:
     nop
   .endr
 .endr
-  rdtime a0
+  rdcycle a0
   sub a0, a0, t0
   ret

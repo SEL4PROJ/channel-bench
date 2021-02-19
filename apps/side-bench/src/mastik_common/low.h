@@ -695,9 +695,9 @@ static inline int accesstime(void *v) {
   int rv = 0;
   asm volatile(
       "fence\n"
-      "rdtime t0\n"
+      "rdcycle t0\n"
       "lw t0, 0(%1)\n"
-      "rdtime a0\n"
+      "rdcycle a0\n"
       "sub a0, a0, t0\n"
       : "=r" (rv): "r" (v): );
   return rv;

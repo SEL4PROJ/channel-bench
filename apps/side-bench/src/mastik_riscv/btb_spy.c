@@ -35,9 +35,9 @@ int btb_jmp(bool spy, uint32_t s) {
       "sd ra, %0\n"
       "mv a0, %2\n"
       "mv a1, %3\n"
-      "rdtime t0\n"
+      "rdcycle t0\n"
       "jalr ra, a0\n"
-      "rdtime %1\n"
+      "rdcycle %1\n"
       "sub %1, %1, t0\n"
       "lw ra, %0\n"
       : "+m"(ra), "=r"(result) : "r"(entry), "r"(increment));

@@ -124,7 +124,7 @@ static inline uint32_t rdtscp() {
 
 static inline uint32_t rdtime() {
   uint32_t rv;
-  asm volatile ("rdtime %0": "=r" (rv) ::);
+  asm volatile ("rdcycle %0": "=r" (rv) ::);
   return rv;
 }
 
