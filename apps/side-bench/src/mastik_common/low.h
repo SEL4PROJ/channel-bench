@@ -228,7 +228,7 @@
 #define L1_LINES           2048
 #define L1_CACHELINE       16
 #define L1_STRIDE          (L1_CACHELINE * L1_SETS)
-#define L1_PROBE_BUFFER    (L1_STRIDE * L1_ASSOCIATIVITY * 5 + PAGE_SIZE)
+#define L1_PROBE_BUFFER    (L1_STRIDE * L1_ASSOCIATIVITY + PAGE_SIZE)
 
 #define L1I_ASSOCIATIVITY  4
 #define L1I_SETS           256
