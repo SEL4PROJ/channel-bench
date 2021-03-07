@@ -23,6 +23,9 @@ static int probelist(void *pp, int segments, int seglen, uint16_t *results) {
 #ifdef CONFIG_ARCH_X86
       s = rdtscp();
 #endif 
+#ifdef CONFIG_ARCH_RISCV
+      s = rdtime();
+#endif
       for (int i = seglen; i--; ) {
           // Under normal circumstances, p is never NULL. 
           // We need this test to ensure the optimiser does not kill the whole loop...
@@ -39,7 +42,10 @@ static int probelist(void *pp, int segments, int seglen, uint16_t *results) {
 #endif 
 #ifdef CONFIG_ARCH_X86
     res = rdtscp() - s;
-#endif 
+#endif
+#ifdef CONFIG_ARCH_RISCV
+    res = rdtime() - s;
+#endif
     *results = res > UINT16_MAX ? UINT16_MAX : res;
     results++;
   }

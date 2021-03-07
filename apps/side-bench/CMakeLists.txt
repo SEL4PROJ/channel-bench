@@ -31,6 +31,42 @@ config_option(
 	OFF
 )
 
+config_string(
+	BenchBTBEntries
+	BENCH_BTB_ENTRIES
+	"Number of entries in BTB"
+	DEFAULT
+	16
+	UNQUOTE
+)
+
+config_string(
+	BenchBTBAlign
+	BENCH_BTB_ALIGN
+	"Alignment of indirect branch instructions (bytes). This should guarantee iterating over all BTB indices."
+	DEFAULT
+	20
+	UNQUOTE
+)
+
+config_string(
+	BenchBHTEntries
+	BENCH_BHT_ENTRIES
+	"Number of entries in BHT"
+	DEFAULT
+	64
+	UNQUOTE
+)
+
+config_string(
+	BenchBHTAlign
+	BENCH_BHT_ALIGN
+	"Alignment of conditional branch instructions (bytes). This should guarantee iterating over all BHT indices."
+	DEFAULT
+	20
+	UNQUOTE
+)
+
 config_choice(
 	BenchCacheFlushChoice
 	BENCH_CACHE_FLUSH_CHOICE
@@ -246,6 +282,23 @@ if(KernelArchARM)
 		GLOB
 			arch_include
 			src/mastik_arm
+	)
+endif()
+
+# RISC-V files
+if (KernelArchRiscV)
+	file(
+		GLOB
+			arch_deps
+			src/mastik_riscv/*.S
+			src/aes/*.c
+			src/mastik_riscv/*.c
+			src/MPI/*.c
+	)
+	file(
+		GLOB
+			arch_include
+			src/mastik_riscv
 	)
 endif()
 
