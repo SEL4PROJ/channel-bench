@@ -43,8 +43,8 @@
 #endif
 #endif
 
-#define DBG_MPI     mpi_debug_mode
-EXTERN_UNLESS_MAIN_MODULE int mpi_debug_mode;
+// #define DBG_MPI     mpi_debug_mode
+// EXTERN_UNLESS_MAIN_MODULE int mpi_debug_mode;
 
 
 struct gcry_mpi; 

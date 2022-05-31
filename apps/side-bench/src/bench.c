@@ -106,7 +106,7 @@ static splash_para_t splash_bench_parameter[BENCH_SPLASH_FUNS] = {
 #endif /*CONFIG_BENCH_SPLASH*/
 
 /* dummy global for libsel4muslcsys */
-char _cpio_archive[1];
+// char _cpio_archive[1];
 
 
 

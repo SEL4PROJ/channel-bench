@@ -23,7 +23,7 @@
 #include "types.h"
 
 
-#define DBG_IOBUF   iobuf_debug_mode
+// #define DBG_IOBUF   iobuf_debug_mode
 
 #define IOBUFCTRL_INIT	    1
 #define IOBUFCTRL_FREE	    2
@@ -77,7 +77,7 @@ struct iobuf_struct {
 #define EXTERN_UNLESS_MAIN_MODULE 
 #endif
 #endif
-EXTERN_UNLESS_MAIN_MODULE int iobuf_debug_mode;
+// EXTERN_UNLESS_MAIN_MODULE int iobuf_debug_mode;
 
 void  iobuf_enable_special_filenames ( int yes );
 int   iobuf_is_pipe_filename (const char *fname);

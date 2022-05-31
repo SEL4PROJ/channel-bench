@@ -17,7 +17,7 @@ static const char mask[] = ".....@@@@@@.....";
 
 static int a;
 
-char record[RECORDLEN + 1];
+static char record[RECORDLEN + 1];
 
 typedef enum {
     st_zero,
