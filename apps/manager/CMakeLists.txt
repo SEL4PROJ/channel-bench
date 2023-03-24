@@ -19,6 +19,13 @@ set(configure_string "")
 
 # App-specific settings
 
+config_option(
+	LibSel4CacheColouring
+	LIB_SEL4_CACHECOLOURING
+	"Enable cache colouring"
+    DEFAULT OFF
+)
+
 config_string(
 	BenchUntypeCount
 	BENCH_UNTYPE_COUNT

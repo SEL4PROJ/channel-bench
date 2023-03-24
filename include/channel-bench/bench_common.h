@@ -140,6 +140,9 @@
 #ifdef CONFIG_PLAT_EXYNOS54XX
 #define CC_DIV             8
 #endif
+#ifdef CONFIG_PLAT_ARIANE
+#define CC_DIV             8
+#endif
 
 #ifdef CONFIG_PLAT_IMX6
 
