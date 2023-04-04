@@ -56,6 +56,8 @@ int bp_trojan(bench_env_t *env);
 int bp_spy(bench_env_t *env); 
 int timer_high(bench_env_t *env); 
 int timer_low(bench_env_t *env); 
+int cs_trojan(bench_env_t *env);
+int cs_spy(bench_env_t *env);
 
 int l1_cache_nothing(bench_env_t *env);
 int l1_cache_flush(bench_env_t *env);

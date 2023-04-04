@@ -135,6 +135,7 @@ config_choice(
 	"bp;BenchCovertBP;BENCH_COVERT_BP;BenchCovert"
 	"timer;BenchCovertTimer;BENCH_COVERT_TIMER;BenchCovert"
 	"llc kernel;BenchCovertLLCKernel;BENCH_COVERT_LLC_KERNEL;BenchCovert"
+	"cs;BenchCovertCS;BENCH_COVERT_CS;BenchCovert"
 )
 
 config_string(

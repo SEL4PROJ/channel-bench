@@ -224,8 +224,10 @@ enum ipc_funs{
 #define BENCH_COVERT_LLC_KERNEL_SPY      22
 #define BENCH_COVERT_TIMER_HIGH          23 
 #define BENCH_COVERT_TIMER_LOW           24
+#define BENCH_COVERT_CS_TROJAN    25 
+#define BENCH_COVERT_CS_SPY       26
 
-#define BENCH_COVERT_FUNS                25
+#define BENCH_COVERT_FUNS                27
 
 
 
@@ -360,6 +362,11 @@ enum ipc_funs{
 #ifdef CONFIG_BENCH_COVERT_TIMER 
 #define BENCH_COVERT_TROJAN     BENCH_COVERT_TIMER_HIGH 
 #define BENCH_COVERT_SPY        BENCH_COVERT_TIMER_LOW 
+#endif 
+
+#ifdef CONFIG_BENCH_COVERT_CS 
+#define BENCH_COVERT_TROJAN    BENCH_COVERT_CS_TROJAN 
+#define BENCH_COVERT_SPY       BENCH_COVERT_CS_SPY 
 #endif 
 
 

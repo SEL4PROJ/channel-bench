@@ -682,7 +682,8 @@ inline void cpuid(struct cpuidRegs *regs) {
 #define LLC_KERNEL_TEST_COUNT 10
 static inline int low_access(void *v) {
     int rv = 0xff; 
-#ifdef CONFIG_BENCH_L1D_WRITE
+#if defined(CONFIG_BENCH_L1D_WRITE) || defined(CONFIG_BENCH_COVERT_CS)
+// #ifdef CONFIG_BENCH_L1D_WRITE
     asm volatile("sw %1, 0(%0)": "+r" (v): "r" (rv):);
 #else
     asm volatile("lw %0, 0(%1)": "=r" (rv): "r" (v):);
@@ -725,6 +726,23 @@ static inline void  newTimeSlice(void){
     }*/
     if (cur - prev > TS_THRESHOLD)
       return;
+    prev = cur;
+  }
+}
+
+/*When a big jump of the time stamp counter is detected, return the difference*/
+static inline int newTimeSliceTimed(void){
+  asm("");
+  uint32_t best = 0;
+  uint32_t volatile  prev = rdtime();
+  for (;;) {
+    uint32_t volatile cur = rdtime();
+    /*if (cur - prev > best) {
+      best = cur - prev;
+      //printf("best = %d\n", best);
+    }*/
+    if (cur - prev > TS_THRESHOLD)
+      return cur - prev;
     prev = cur;
   }
 }
