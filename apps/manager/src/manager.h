@@ -30,6 +30,7 @@
 #include <channel-bench/bench_common.h>
 #include <channel-bench/bench_types.h>
 #include <channel-bench/bench_helper.h>
+#include <sel4/types.h>
 
 #define MANAGER_MORECORE_SIZE  (16 * 1024 * 1024)
 
@@ -230,12 +231,13 @@ static int copy_untyped(sel4utils_process_t *process, vka_t *vka,
 }
 
 
-static void create_thread(bench_thread_t *t) {
+static void create_thread(bench_thread_t *t, seL4_Domain d) {
 
     sel4utils_process_t *process = &t->process; 
     bench_args_t *bench_args = NULL; 
     
     sel4utils_process_config_t config;
+    config.domain = d;
     int error = 0; 
 
     /*allocating a page for arguments*/
@@ -283,6 +285,12 @@ static void create_thread(bench_thread_t *t) {
 
     bench_args->r_ep = sel4utils_copy_cap_to_process(process, t->ipc_vka, t->reply_ep.cptr);
     assert(bench_args->r_ep);
+
+    /*set domain of thread*/
+    error = seL4_DomainSet_Set(seL4_CapDomain, d, process->thread.tcb.cptr);
+    printf("Error code from domain set: ");
+    printf("%d\n", error);
+    assert(error == 0);
 
 }
 

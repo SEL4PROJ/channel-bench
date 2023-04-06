@@ -58,10 +58,10 @@ void init_timing_threads(m_env_t *env) {
     int error; 
 
     printf("creating trojan\n"); 
-    create_thread(&trojan);  
+    create_thread(&trojan, 1);  
     
     printf("creating spy\n"); 
-    create_thread(&spy);
+    create_thread(&spy, 2);
 
     printf("creating shared frames between spy and trojan\n"); 
     /*creating shared frame between trojan and spy*/
