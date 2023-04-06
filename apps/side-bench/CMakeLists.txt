@@ -391,4 +391,4 @@ target_link_libraries(
 )
 
 target_compile_options(side-bench PRIVATE -DDBG_MEMORY=0)
-target_link_options(side-bench PRIVATE -u __vsyscall_ptr -lm)
+target_link_options(side-bench PRIVATE -u __vsyscall_ptr)
