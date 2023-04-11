@@ -237,7 +237,6 @@ static void create_thread(bench_thread_t *t, seL4_Domain d) {
     bench_args_t *bench_args = NULL; 
     
     sel4utils_process_config_t config;
-    config.domain = d;
     int error = 0; 
 
     /*allocating a page for arguments*/
@@ -257,6 +256,7 @@ static void create_thread(bench_thread_t *t, seL4_Domain d) {
 
     config = process_config_default_simple(t->simple, t->image, t->prio);
     config = process_config_mcp(config, seL4_MaxPrio);
+    config.domain = d;
     error = sel4utils_configure_process_custom(process, t->vka, t->vspace, config);
     assert(error == 0); 
 
