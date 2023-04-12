@@ -11,8 +11,12 @@
 #include "../mastik_arm/l3_arm.h"
 #endif 
 
-#if defined CONFIG_ARCH_X86 || defined CONFIG_ARCH_RISCV
+#if defined CONFIG_ARCH_X86
 #include "../mastik/cachemap.h"
+#endif 
+
+#ifdef CONFIG_ARCH_RISCV
+#include "../mastik_riscv/l3.h"
 #endif 
 
 #ifndef PAGE_SIZE 
@@ -244,7 +248,16 @@
 #define L3_SETS_PER_SLICE  64
 
 // The number of cache sets in each page
-#define L3_SETS_PER_PAGE   1
+#define L3_SETS_PER_PAGE   64
+
+/*the total probing group = groups * sets per page*/
+/*there are total 16 colours on L3 cache*/
+
+#if defined (CONFIG_MANAGER_MITIGATION) || defined(CONFIG_BENCH_COVERT_LLC_KERNEL) 
+#define L3_PROBE_GROUPS    8
+#else
+#define L3_PROBE_GROUPS    16 
+#endif
 
 #define BTAC_ENTRIES        32
 #define BHT_ENTRIES         64
@@ -709,6 +722,28 @@ static inline void clflush(void *v) {
 //  asm volatile("clflush %[v]" : [v] "+m"(*(volatile char *)v));
 }
 
+static volatile int a;
+
+static inline int memaccess(void *v) {
+    a +=  *(int *)v;
+    return *(int *)v;
+}   
+
+static inline int memaccesstime(void *v) {
+    uint32_t start, end ; 
+
+    SEL4BENCH_READ_CCNT(start);  
+ 
+    int rv; 
+    asm volatile("");
+    rv = *(int *)v;
+    asm volatile("");
+    a+= rv;
+    SEL4BENCH_READ_CCNT(end);  
+ 
+    return end - start; 
+} 
+
 static inline void fence() {
   asm volatile("fence": : :);
 }
@@ -803,34 +838,38 @@ static int scan(pp_t pp,  enum timing_api api_no,
 
 
 
-static inline vlist_t search(cachemap_t cm, enum timing_api api_no, 
+static inline vlist_t search(l3pp_t l3,  enum timing_api api_no, 
             kernel_timing_caps_t *caps) {
 
-
     vlist_t probed = vl_new();
-    for (int line = 0; line < 4096; line += 64) {
-        //printf("Searching in line 0x%02x\n", line / 64);
+
+    int nsets = l3_getSets(l3);
+
+    for (int set = 0; set < nsets; set++) {
+        //printf("Searching in line 0x%02x\n", set);
         // For every page...
         /*preparing the probing set 
           find one that do not have conflict with the test code
           but have conflict with the seL4 Poll service*/
-        for (int p  = 0; p < cm->nsets; p++) {
-            pp_t pp = pp_prepare(cm->sets[p] , L3_ASSOCIATIVITY, line);
-            int t = scan(pp, api_no, caps);
-            if (t) {
-                /*record target probing set*/
-                vl_push(probed, pp);
+
+        void *pp = l3_set_probe_head(l3, set);
+        assert(pp); 
+
+        int t = scan(pp, api_no, caps);
+        if (t) {
+            /*record target probing set*/
+            vl_push(probed, pp);
 
 #ifdef CONFIG_DEBUG_BUILD
-                printf("Probed at %3d.%03x (%08p)\n", p, line, pp);
+            printf("search at %x (%08p)\n", set, pp);
 #endif
-
-            }
+     
         }
+
+
   }
   return probed;
 }
-
 
 
 static inline uint32_t probing_sets(vlist_t set_list) {
@@ -838,11 +877,11 @@ static inline uint32_t probing_sets(vlist_t set_list) {
     uint32_t result = 0; 
 
     for (int j = 0; j < vl_len(set_list); j++){
-       result += pp_probe((pp_t)vl_get(set_list, j));
+       //result += probecount((pp_t)vl_get(set_list, j));
+        result += probetime(vl_get(set_list, j));
     }
 
     return result; 
-
 }
 
 static volatile int b;
