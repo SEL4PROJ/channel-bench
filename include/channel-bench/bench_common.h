@@ -226,8 +226,10 @@ enum ipc_funs{
 #define BENCH_COVERT_TIMER_LOW           24
 #define BENCH_COVERT_CS_TROJAN    25 
 #define BENCH_COVERT_CS_SPY       26
+#define BENCH_COVERT_LLC_SKD_TROJAN    27
+#define BENCH_COVERT_LLC_SKD_SPY       28
 
-#define BENCH_COVERT_FUNS                27
+#define BENCH_COVERT_FUNS                29
 
 
 
@@ -368,6 +370,11 @@ enum ipc_funs{
 #define BENCH_COVERT_TROJAN    BENCH_COVERT_CS_TROJAN 
 #define BENCH_COVERT_SPY       BENCH_COVERT_CS_SPY 
 #endif 
+
+#ifdef CONFIG_BENCH_COVERT_LLC_SKD
+#define BENCH_COVERT_TROJAN    BENCH_COVERT_LLC_SKD_TROJAN
+#define BENCH_COVERT_SPY       BENCH_COVERT_LLC_SKD_SPY
+#endif
 
 
 /*used by kernel determinsitic scheduling benchmark*/

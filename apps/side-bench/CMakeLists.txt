@@ -136,6 +136,7 @@ config_choice(
 	"timer;BenchCovertTimer;BENCH_COVERT_TIMER;BenchCovert"
 	"llc kernel;BenchCovertLLCKernel;BENCH_COVERT_LLC_KERNEL;BenchCovert"
 	"cs;BenchCovertCS;BENCH_COVERT_CS;BenchCovert"
+	"llc shared kernel data;BenchCovertLLCSKD;BENCH_COVERT_LLC_SKD;BenchCovert"
 )
 
 config_string(

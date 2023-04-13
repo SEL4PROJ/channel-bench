@@ -242,8 +242,9 @@
 
 #define L3_THRESHOLD       100
 #define L3_ASSOCIATIVITY   8
-#define L3_SIZE            (512 * 1024) /* 512KiB */
+#define L3_SETS            1024
 #define L3_CACHELINE       64
+#define L3_SIZE            (L3_CACHELINE * L3_SETS * L3_ASSOCIATIVITY) /* 512KiB */
 // The number of cache sets in each slice.
 #define L3_SETS_PER_SLICE  64
 

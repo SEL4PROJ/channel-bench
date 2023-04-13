@@ -41,6 +41,7 @@ static int (*covert_bench_fun[BENCH_COVERT_FUNS])(bench_env_t *) = {NULL,
     l3_trojan, l3_spy,
     timer_high, timer_low,
     cs_trojan, cs_spy,
+    llc_skd_trojan, llc_skd_spy,
 };
 
 static int (*flush_bench_fun[BENCH_CACHE_FLUSH_FUNS])(bench_env_t *) = 
