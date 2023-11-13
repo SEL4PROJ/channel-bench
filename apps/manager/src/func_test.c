@@ -239,9 +239,9 @@ void launch_bench_func_test(m_env_t *env){
 #endif 
  
     printf("creating sender\n"); 
-    create_thread(&sender); 
+    create_thread(&sender, 0); 
     printf("creating receiver\n"); 
-    create_thread(&receiver);
+    create_thread(&receiver, 0);
 
     /*recording buffer in the receiver*/
     map_r_buf(env, BENCH_FUNC_TEST_PAGES, &receiver);

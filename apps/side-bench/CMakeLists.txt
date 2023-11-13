@@ -31,6 +31,42 @@ config_option(
 	OFF
 )
 
+config_string(
+	BenchBTBEntries
+	BENCH_BTB_ENTRIES
+	"Number of entries in BTB"
+	DEFAULT
+	16
+	UNQUOTE
+)
+
+config_string(
+	BenchBTBAlign
+	BENCH_BTB_ALIGN
+	"Alignment of indirect branch instructions (bytes). This should guarantee iterating over all BTB indices."
+	DEFAULT
+	20
+	UNQUOTE
+)
+
+config_string(
+	BenchBHTEntries
+	BENCH_BHT_ENTRIES
+	"Number of entries in BHT"
+	DEFAULT
+	64
+	UNQUOTE
+)
+
+config_string(
+	BenchBHTAlign
+	BENCH_BHT_ALIGN
+	"Alignment of conditional branch instructions (bytes). This should guarantee iterating over all BHT indices."
+	DEFAULT
+	20
+	UNQUOTE
+)
+
 config_choice(
 	BenchCacheFlushChoice
 	BENCH_CACHE_FLUSH_CHOICE
@@ -99,6 +135,8 @@ config_choice(
 	"bp;BenchCovertBP;BENCH_COVERT_BP;BenchCovert"
 	"timer;BenchCovertTimer;BENCH_COVERT_TIMER;BenchCovert"
 	"llc kernel;BenchCovertLLCKernel;BENCH_COVERT_LLC_KERNEL;BenchCovert"
+	"cs;BenchCovertCS;BENCH_COVERT_CS;BenchCovert"
+	"llc shared kernel data;BenchCovertLLCSKD;BENCH_COVERT_LLC_SKD;BenchCovert"
 )
 
 config_string(
@@ -249,6 +287,23 @@ if(KernelArchARM)
 	)
 endif()
 
+# RISC-V files
+if (KernelArchRiscV)
+	file(
+		GLOB
+			arch_deps
+			src/mastik_riscv/*.S
+			src/aes/*.c
+			src/mastik_riscv/*.c
+			src/MPI/*.c
+	)
+	file(
+		GLOB
+			arch_include
+			src/mastik_riscv
+	)
+endif()
+
 if(BenchSplash)
 	file(
 		GLOB
@@ -337,4 +392,4 @@ target_link_libraries(
 )
 
 target_compile_options(side-bench PRIVATE -DDBG_MEMORY=0)
-target_link_options(side-bench PRIVATE -u __vsyscall_ptr -lm)
+target_link_options(side-bench PRIVATE -u __vsyscall_ptr)

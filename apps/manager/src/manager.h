@@ -30,6 +30,7 @@
 #include <channel-bench/bench_common.h>
 #include <channel-bench/bench_types.h>
 #include <channel-bench/bench_helper.h>
+#include <sel4/types.h>
 
 #define MANAGER_MORECORE_SIZE  (16 * 1024 * 1024)
 
@@ -230,7 +231,7 @@ static int copy_untyped(sel4utils_process_t *process, vka_t *vka,
 }
 
 
-static void create_thread(bench_thread_t *t) {
+static void create_thread(bench_thread_t *t, seL4_Domain d) {
 
     sel4utils_process_t *process = &t->process; 
     bench_args_t *bench_args = NULL; 
@@ -255,6 +256,7 @@ static void create_thread(bench_thread_t *t) {
 
     config = process_config_default_simple(t->simple, t->image, t->prio);
     config = process_config_mcp(config, seL4_MaxPrio);
+    config.domain = d;
     error = sel4utils_configure_process_custom(process, t->vka, t->vspace, config);
     assert(error == 0); 
 
@@ -283,6 +285,12 @@ static void create_thread(bench_thread_t *t) {
 
     bench_args->r_ep = sel4utils_copy_cap_to_process(process, t->ipc_vka, t->reply_ep.cptr);
     assert(bench_args->r_ep);
+
+    /*set domain of thread*/
+    error = seL4_DomainSet_Set(seL4_CapDomain, d, process->thread.tcb.cptr);
+    printf("Error code from domain set: ");
+    printf("%d\n", error);
+    assert(error == 0);
 
 }
 
@@ -443,9 +451,10 @@ static void create_huge_pages(bench_thread_t *owner, uint32_t size) {
     /*4M*/
     huge_page_size = seL4_LargePageBits;
     huge_page_object = seL4_X86_LargePageObject;
-#else  /*ARCH_X86*/
-
-#ifdef CONFIG_ARCH_AARCH64
+#elif defined CONFIG_ARCH_RISCV
+    huge_page_size = seL4_LargePageBits;
+    huge_page_object = seL4_RISCV_Mega_Page;
+#elif defined CONFIG_ARCH_AARCH64
     /*2M, Can be changed to be 1G with seL4_HugePageBits*/ 
     huge_page_size = vka_get_object_size(seL4_ARM_LargePageObject, 0); 
     huge_page_object = seL4_ARM_LargePageObject;
@@ -453,7 +462,6 @@ static void create_huge_pages(bench_thread_t *owner, uint32_t size) {
     /*16M*/ 
     huge_page_size = vka_get_object_size(seL4_ARM_SuperSectionObject, 0); 
     huge_page_object = seL4_ARM_SuperSectionObject;
-#endif 
 #endif  /*ARCH_X86*/
 
     if (size % (1 << huge_page_size)) { 

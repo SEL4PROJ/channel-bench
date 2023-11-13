@@ -40,6 +40,8 @@ static int (*covert_bench_fun[BENCH_COVERT_FUNS])(bench_env_t *) = {NULL,
     bp_trojan, bp_spy,
     l3_trojan, l3_spy,
     timer_high, timer_low,
+    cs_trojan, cs_spy,
+    llc_skd_trojan, llc_skd_spy,
 };
 
 static int (*flush_bench_fun[BENCH_CACHE_FLUSH_FUNS])(bench_env_t *) = 
@@ -106,7 +108,7 @@ static splash_para_t splash_bench_parameter[BENCH_SPLASH_FUNS] = {
 #endif /*CONFIG_BENCH_SPLASH*/
 
 /* dummy global for libsel4muslcsys */
-char _cpio_archive[1];
+// char _cpio_archive[1];
 
 
 
@@ -169,6 +171,8 @@ int run_bench_covert(bench_env_t *bench_env) {
 
 #ifdef CONFIG_ARCH_ARM 
     SEL4BENCH_READ_CCNT(seed);  
+#elif defined CONFIG_ARCH_RISCV
+    seed = rdtime();
 #else 
     seed = rdtscp();
 #endif 

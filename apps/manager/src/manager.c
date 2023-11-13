@@ -437,8 +437,10 @@ int main (void) {
 
 #ifdef CONFIG_LIB_SEL4_CACHECOLOURING
     /*allocator, vka, and vspace*/
+    printf("Init env colour\n");
     init_env_colour(&env);
 #else 
+    printf("Init env\n");
     init_env(&env); 
 #endif
 

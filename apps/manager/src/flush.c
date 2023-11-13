@@ -207,8 +207,8 @@ void launch_bench_flush (m_env_t *env) {
     idle_thread.test_num = BENCH_IDLE_THREAD_NUM;  
 
     /*initing the thread*/
-    create_thread(&flush_thread); 
-    create_thread(&idle_thread); 
+    create_thread(&flush_thread, 0); 
+    create_thread(&idle_thread, 0); 
 
 
     printf("creating recording frames for benchmarking thread.\n"); 

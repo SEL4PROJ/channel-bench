@@ -173,10 +173,10 @@ void launch_bench_splash(m_env_t *env) {
     /*initing the thread*/
     printf("creating splash thread.\n"); 
 
-    create_thread(&flush_thread); 
+    create_thread(&flush_thread, 0); 
     printf("creating idle thread.\n"); 
 
-    create_thread(&idle_thread); 
+    create_thread(&idle_thread, 0); 
 
     printf("creating recording frames for benchmarking thread.\n"); 
     map_r_buf(env, n_p, &flush_thread);

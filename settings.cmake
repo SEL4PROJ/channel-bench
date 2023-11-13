@@ -24,7 +24,7 @@ list(
 )
 
 set(NANOPB_SRC_ROOT_FOLDER "${project_dir}/tools/nanopb" CACHE INTERNAL "")
-set(BBL_PATH ${project_dir}/tools/riscv-pk CACHE STRING "BBL Folder location")
+set(OPENSBI_PATH "${project_dir}/tools/opensbi" CACHE STRING "OpenSBI Folder location")
 
 set(SEL4_CONFIG_DEFAULT_ADVANCED ON)
 
@@ -72,11 +72,11 @@ if(NOT ChannelBenchAllowSettingsOverride)
 
     ApplyCommonReleaseVerificationSettings(${RELEASE} ${VERIFICATION})
 
-	if(NUM_DOMAINS MATCHES "^[0-9]+$")
-		set(KernelNumDomains ${NUM_DOMAINS} CACHE STRING "" FORCE)
-    else()
-        set(KernelNumDomains 1 CACHE STRING "" FORCE)
-    endif()
+	# if(NUM_DOMAINS MATCHES "^[0-9]+$")
+	# 	set(KernelNumDomains ${NUM_DOMAINS} CACHE STRING "" FORCE)
+    # else()
+    #     set(KernelNumDomains 1 CACHE STRING "" FORCE)
+    # endif()
 
     if(SMP)
         if(NUM_NODES MATCHES "^[0-9]+$")
@@ -94,11 +94,11 @@ if(NOT ChannelBenchAllowSettingsOverride)
         set(KernelIsMCS OFF CACHE BOOL "" FORCE)
     endif()
 
-    if(KERNEL_IMAGES)
-        set(KernelImages ON CACHE BOOL "" FORCE)
-    else()
-        set(KernelImages OFF CACHE BOOL "" FORCE)
-    endif()
+    # if(KERNEL_IMAGES)
+    #     set(KernelImages ON CACHE BOOL "" FORCE)
+    # else()
+    #     set(KernelImages OFF CACHE BOOL "" FORCE)
+    # endif()
 
 	if(DEBUG_RUN)
 		set(KernelDangerousCodeInjection ON CACHE BOOL "" FORCE)

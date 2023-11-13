@@ -140,6 +140,9 @@
 #ifdef CONFIG_PLAT_EXYNOS54XX
 #define CC_DIV             8
 #endif
+#ifdef CONFIG_PLAT_ARIANE
+#define CC_DIV             8
+#endif
 
 #ifdef CONFIG_PLAT_IMX6
 
@@ -180,6 +183,10 @@ enum ipc_funs{
 #define BENCH_PMU_COUNTERS 1 
 #endif 
 
+#ifdef CONFIG_PLAT_ARIANE
+#define BENCH_PMU_BITS  0x1
+#define BENCH_PMU_COUNTERS 1
+#endif
 
 #define BENCH_RECORD_PAGES    1
 #define BENCH_COVERT_BUF_PAGES  4096 /*trojan/probe buffers*/
@@ -217,8 +224,12 @@ enum ipc_funs{
 #define BENCH_COVERT_LLC_KERNEL_SPY      22
 #define BENCH_COVERT_TIMER_HIGH          23 
 #define BENCH_COVERT_TIMER_LOW           24
+#define BENCH_COVERT_CS_TROJAN    25 
+#define BENCH_COVERT_CS_SPY       26
+#define BENCH_COVERT_LLC_SKD_TROJAN    27
+#define BENCH_COVERT_LLC_SKD_SPY       28
 
-#define BENCH_COVERT_FUNS                25
+#define BENCH_COVERT_FUNS                29
 
 
 
@@ -354,6 +365,16 @@ enum ipc_funs{
 #define BENCH_COVERT_TROJAN     BENCH_COVERT_TIMER_HIGH 
 #define BENCH_COVERT_SPY        BENCH_COVERT_TIMER_LOW 
 #endif 
+
+#ifdef CONFIG_BENCH_COVERT_CS 
+#define BENCH_COVERT_TROJAN    BENCH_COVERT_CS_TROJAN 
+#define BENCH_COVERT_SPY       BENCH_COVERT_CS_SPY 
+#endif 
+
+#ifdef CONFIG_BENCH_COVERT_LLC_SKD
+#define BENCH_COVERT_TROJAN    BENCH_COVERT_LLC_SKD_TROJAN
+#define BENCH_COVERT_SPY       BENCH_COVERT_LLC_SKD_SPY
+#endif
 
 
 /*used by kernel determinsitic scheduling benchmark*/
